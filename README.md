@@ -109,6 +109,8 @@ Python is only needed if you want to redraw the room's art.
 
 ## Host: set it up
 
+> **Using an AI coding agent?** Point it at this repo and say "set this up for me". [AGENTS.md](AGENTS.md) walks it through hosting, building the installer and connecting friends, and tells it which steps are yours to do (signing in, accepting terms, sending invites).
+
 ```
 npm install
 npm run setup
