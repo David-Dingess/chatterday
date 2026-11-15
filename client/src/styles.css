@@ -1,0 +1,1095 @@
+:root {
+  --bg: #14161c; --panel: #1b1e27; --raised: #262a36; --text: #e8eaf0; --muted: #8e94a7;
+  --accent: #7c8cff; --accent-text: #0d0f14; --radius: 10px; --font: 'Segoe UI', system-ui, sans-serif; --wallpaper: none; --logo-tile: #0d1410;
+  --line: color-mix(in srgb, var(--text) 12%, transparent);
+  --hover: color-mix(in srgb, var(--text) 8%, transparent);
+  --danger: #f0554f; --ok: #3ecf8e; --warn: #f5a623;
+  --r-sm: calc(var(--radius) * 0.6);
+}
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body { background: var(--bg) var(--wallpaper) center / cover fixed; color: var(--text); font: 14px/1.45 var(--font); overflow: hidden; }
+h1, h2, h3 { margin: 0; font-weight: 650; }
+h1 { font-size: 16px; } h2 { font-size: 15px; }
+h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 16px 0 6px; display: flex; align-items: center; justify-content: space-between; }
+p { margin: 0 0 8px; }
+a { color: var(--accent); }
+small { color: var(--muted); font-size: 12px; }
+code { background: var(--raised); padding: 1px 5px; border-radius: 4px; font: 12.5px 'Cascadia Code', Consolas, monospace; }
+::selection { background: color-mix(in srgb, var(--accent) 40%, transparent); }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 5px; border: 2px solid transparent; background-clip: content-box; }
+
+button, .btn, select, input, textarea { font: inherit; color: inherit; }
+button, .btn {
+  background: var(--raised); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 6px 12px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px; justify-content: center; white-space: nowrap;
+}
+button:hover:not(:disabled), .btn:hover { background: color-mix(in srgb, var(--raised) 80%, var(--text)); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button:focus-visible, .btn:focus-within, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button.primary { background: var(--accent); color: var(--accent-text); border-color: transparent; font-weight: 600; }
+button.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 85%, #fff); }
+button.danger { color: var(--danger); }
+button.icon, label.icon { background: none; border: none; padding: 4px 7px; color: var(--muted); border-radius: var(--r-sm); cursor: pointer; font-size: 15px; }
+button.icon:hover:not(:disabled), label.icon:hover { background: var(--hover); color: var(--text); }
+input:not([type]), input[type='text'], select, textarea {
+  background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 7px 10px; width: 100%; min-width: 0;
+}
+input[type='range'] { accent-color: var(--accent); width: 100%; }
+input[type='color'] { width: 34px; height: 28px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: none; cursor: pointer; }
+.muted, .hint { color: var(--muted); }
+.hint { font-size: 12.5px; }
+.error { color: var(--danger); font-size: 12.5px; }
+.empty { color: var(--muted); font-size: 12.5px; padding: 8px 0; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.row.spread { justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--line); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 0; }
+.grid2 label, .hotkey { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--muted); }
+.vol { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--muted); margin: 8px 0; }
+.toggle { display: flex; gap: 10px; align-items: flex-start; padding: 7px 0; cursor: pointer; }
+.toggle input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--accent); }
+.toggle span { display: flex; flex-direction: column; } .toggle b { font-weight: 550; }
+
+/* ── avatars ── */
+.avatar { position: relative; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; flex: none; user-select: none; line-height: 1; }
+.avatar.speaking { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ok); }
+
+/* ── gate ── */
+.gate { height: 100%; display: grid; place-items: center; padding: 24px; }
+.gate-card { width: min(400px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: calc(var(--radius) * 1.4); padding: 28px; display: flex; flex-direction: column; gap: 12px; text-align: center; align-items: stretch; }
+.gate-card img { align-self: center; } .gate-card h1 { font-size: 20px; } .gate-card p { color: var(--muted); margin: 0; }
+.logo { display: block; flex: none; align-self: center; } .logo svg { display: block; width: 100%; height: 100%; }
+
+/* ── layout ── */
+.shell { height: 100%; display: grid; grid-template-columns: 236px minmax(0, 1fr) 272px; }
+.bar { height: 48px; flex: none; display: flex; align-items: center; gap: 10px; padding: 0 16px; border-bottom: 1px solid var(--line); }
+.bar h2 { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar { background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
+.sidebar { border-right: 1px solid var(--line); }
+main { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: color-mix(in srgb, var(--bg) 88%, transparent); }
+main > section { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.banner { background: var(--warn); color: #201400; padding: 6px 16px; font-weight: 600; text-align: center; }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--raised); border: 1px solid var(--line); padding: 10px 16px; border-radius: var(--radius); box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4); z-index: 60; max-width: 80vw; }
+
+.channels { flex: 1; overflow-y: auto; padding: 8px; }
+.channels h3 { padding: 0 8px; }
+.chan { width: 100%; justify-content: flex-start; background: none; border: none; color: var(--muted); padding: 6px 8px; gap: 8px; }
+.chan .glyph { width: 18px; text-align: center; opacity: 0.8; }
+.chan.active { background: var(--raised); color: var(--text); }
+.chan em { margin-left: auto; background: var(--accent); color: var(--accent-text); font-style: normal; font-size: 11px; font-weight: 700; padding: 0 6px; border-radius: 9px; }
+.voice-member { display: flex; align-items: center; gap: 8px; padding: 3px 8px 3px 34px; font-size: 13px; color: var(--muted); }
+.voice-member span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .voice-member i { font-style: normal; font-size: 12px; }
+
+.voicebar { border-top: 1px solid var(--line); padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.voicebar-title { display: flex; align-items: center; gap: 8px; } .voicebar-title b { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.live, .pulse { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); flex: none; }
+.pulse { background: var(--warn); animation: pulse 1s infinite; }
+.voicebar-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.voicebar-buttons button { font-size: 17px; padding: 7px 0; }
+.voicebar-buttons button.on { background: color-mix(in srgb, var(--danger) 30%, var(--raised)); border-color: var(--danger); }
+.mebar { border-top: 1px solid var(--line); padding: 10px; display: flex; align-items: center; gap: 10px; background: color-mix(in srgb, var(--panel) 80%, var(--bg)); }
+.mebar > span:nth-child(2) { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.mebar b, .mebar small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.person-vols { padding: 0 8px 6px 48px; }
+
+
+/* ── chat ── */
+.messages { flex: 1; overflow-y: auto; padding: 12px 0 4px; overflow-anchor: none; }
+.beginning { color: var(--muted); text-align: center; padding: 24px 0 8px; }
+.day { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 12px; margin: 14px 16px 4px; }
+.day::before, .day::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.msg { position: relative; display: grid; grid-template-columns: 58px minmax(0, 1fr); padding: 1px 16px 1px 0; }
+.msg.head { margin-top: 12px; }
+.msg:hover { background: var(--hover); }
+.msg.mentioned { background: color-mix(in srgb, var(--warn) 12%, transparent); box-shadow: inset 3px 0 var(--warn); }
+.gutter { display: flex; justify-content: center; padding-top: 2px; }
+.gutter time { font-size: 10px; color: var(--muted); opacity: 0; padding-top: 3px; } .msg:hover .gutter time { opacity: 1; }
+.meta { display: flex; gap: 8px; align-items: baseline; } .meta time { font-size: 11px; color: var(--muted); }
+.text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.mention { background: color-mix(in srgb, var(--accent) 25%, transparent); color: var(--accent); border-radius: 4px; padding: 0 3px; font-weight: 600; }
+.edit { margin: 4px 0; min-height: 60px; resize: vertical; }
+.picture { position: relative; display: inline-block; margin: 4px 6px 2px 0; vertical-align: top; }
+.picture > img { display: block; max-width: min(420px, 100%); max-height: 320px; border-radius: var(--r-sm); cursor: zoom-in; }
+.stash-btn { position: absolute; top: 6px; right: 6px; padding: 2px 7px; opacity: 0; background: rgba(0, 0, 0, 0.65); color: #ffd84a; border: none; }
+.picture:hover .stash-btn { opacity: 1; }
+/* a GIF whose five minutes are up (Chat.tsx, Picture): the frame it stopped on lies over it, and it is not played underneath */
+.picture.held > img { visibility: hidden; }
+.picture > canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; border-radius: var(--r-sm); cursor: zoom-in; }
+.held-tag { position: absolute; left: 6px; bottom: 6px; padding: 0 6px; background: rgba(0, 0, 0, 0.65); color: #fff; font-style: normal; font-size: 12px; letter-spacing: 0.08em; pointer-events: none; }
+.lightbox { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); display: grid; place-items: center; z-index: 70; cursor: zoom-out; }
+.lightbox img { max-width: 94vw; max-height: 94vh; }
+.ask { display: flex; flex-direction: column; gap: 12px; padding-top: 16px; }
+.yt.poster { display: grid !important; place-items: center; }
+.clip, .yt { display: block; width: min(480px, 100%); aspect-ratio: 16 / 9; border-radius: var(--r-sm); margin: 4px 0; border: none; background: #000; }
+.yt.poster { background-size: cover; background-position: center; padding: 0; } .yt.poster span { background: rgba(0, 0, 0, 0.7); color: #fff; width: 60px; height: 42px; border-radius: 10px; display: grid; place-items: center; font-size: 18px; }
+.audio-file { display: flex; flex-direction: column; gap: 2px; margin: 4px 0; } .audio-file audio { height: 36px; max-width: 100%; }
+.file-chip { display: inline-flex; gap: 8px; align-items: center; background: var(--raised); border: 1px solid var(--line); padding: 8px 12px; border-radius: var(--r-sm); text-decoration: none; color: var(--text); margin: 4px 0; }
+.reactions { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+.reactions button { padding: 1px 8px; font-size: 13px; border-radius: 12px; } .reactions .mine { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 20%, var(--raised)); }
+.actions { position: absolute; right: 12px; top: -14px; display: none; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-sm); z-index: 2; }
+.msg:hover .actions, .msg.picking .actions { display: flex; }
+.msg.picking { background: var(--hover); }
+.actions > button { background: none; border: none; padding: 3px 8px; }
+.quick { position: absolute; right: 0; top: 100%; display: flex; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 2px; }
+.quick button { background: none; border: none; padding: 4px 6px; font-size: 17px; }
+.typing { height: 20px; padding: 0 16px; font-size: 12px; color: var(--muted); flex: none; }
+.pending { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 16px 6px; }
+.chip { background: var(--raised); border-radius: 12px; padding: 2px 4px 2px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
+.chip button { background: none; border: none; padding: 0 6px; font-size: 10px; }
+.composer { position: relative; display: flex; align-items: flex-end; gap: 6px; margin: 0 16px 16px; background: var(--raised); border-radius: var(--radius); padding: 6px; }
+.composer textarea { flex: 1; border: none; background: none; resize: none; padding: 6px 4px; max-height: 180px; outline: none; }
+.composer .icon { font-weight: 700; font-size: 13px; padding: 7px 8px; }
+.stash { position: absolute; right: 0; bottom: calc(100% + 8px); width: min(420px, 92vw); background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45); z-index: 5; }
+.stash-item { position: relative; } .stash-item img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--r-sm); cursor: pointer; display: block; }
+.stash-item button { position: absolute; top: 3px; right: 3px; padding: 0 5px; font-size: 10px; opacity: 0; background: rgba(0, 0, 0, 0.7); color: #fff; border: none; } .stash-item:hover button { opacity: 1; }
+
+/* ── modal and settings ── */
+.scrim { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); display: grid; place-items: center; z-index: 50; padding: 20px; }
+.modal { background: var(--panel); border: 1px solid var(--line); border-radius: calc(var(--radius) * 1.3); width: min(480px, 100%); max-height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+.modal.wide { width: min(860px, 100%); height: min(640px, 100%); }
+.modal > header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--line); flex: none; }
+.modal-body { padding: 4px 18px 18px; overflow-y: auto; }
+.source-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+.source-grid button { flex-direction: column; padding: 8px; white-space: normal; } .source-grid img { width: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: #000; border-radius: 4px; }
+.source-grid span { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.settings { display: grid; grid-template-columns: 170px minmax(0, 1fr); flex: 1; min-height: 0; }
+.settings nav { border-right: 1px solid var(--line); padding: 10px; display: flex; flex-direction: column; gap: 2px; }
+.settings nav button { justify-content: flex-start; background: none; border: none; color: var(--muted); } .settings nav button.active { background: var(--raised); color: var(--text); }
+.pane { padding: 16px 20px 24px; overflow-y: auto; } .pane h3:first-child { margin-top: 0; }
+.hotkey { margin: 6px 0; flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; color: var(--text); } .hotkey input { width: 190px; text-align: center; }
+.copybox { display: grid; grid-template-columns: 1fr auto; gap: 6px; margin: 10px 0; } .copybox small { grid-column: 1 / -1; }
+
+/* ── stage ── */
+
+.static { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, #222 0 2px, #333 2px 4px); animation: pulse 1.2s infinite; }
+@keyframes zzz { 0% { opacity: 0; transform: translateY(6px); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(-12px); } }
+@keyframes arrive { from { opacity: 0; transform: translateY(8px) scale(0.92); } }
+@keyframes pulse { 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+@media (max-width: 1100px) { .shell { grid-template-columns: 210px minmax(0, 1fr) 236px; } }
+@media (max-width: 860px) { .shell { grid-template-columns: 200px minmax(0, 1fr); } .grid2 { grid-template-columns: 1fr 1fr; } }
+
+/* ── soundboard dock (bottom of the main area) ── */
+.dock { flex: none; display: flex; align-items: center; gap: 14px; padding: 8px 14px; border-top: 1px solid var(--line); background: var(--panel); min-height: 60px; }
+.dock.closed { width: 100%; justify-content: flex-start; border: none; border-top: 1px solid var(--line); border-radius: 0; min-height: 0; padding: 5px 14px; color: var(--muted); font-size: 12px; background: var(--panel); }
+.dock.closed span { margin-left: auto; }
+.dock-side { display: flex; flex-direction: column; flex: none; width: 152px; line-height: 1.25; } .dock-side small { font-size: 11px; }
+.dock-sounds { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 6px; max-height: 80px; overflow-y: auto; padding: 5px 4px; align-content: flex-start; }
+.dock-sounds .empty { padding: 4px 0; }
+.dock-draft { flex: 1; min-width: 0; display: flex; gap: 6px; align-items: center; }
+.dock-tools { display: flex; align-items: center; gap: 6px; flex: none; }
+.dock-vol { display: flex; align-items: center; gap: 4px; width: 104px; color: var(--muted); }
+.sound { position: relative; display: inline-flex; }
+.sound > button:first-child { padding: 5px 11px 5px 8px; gap: 6px; border-radius: 999px; }
+.sound > button:first-child:active { transform: scale(0.94); background: color-mix(in srgb, var(--accent) 35%, var(--raised)); }
+.sound i { font-style: normal; font-size: 16px; }
+.sound .del { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; padding: 0; border-radius: 50%; background: var(--danger); color: #fff; font-size: 9px; border: none; }
+
+/* ── GIF picker ── */
+.stash-tabs, .seg { display: inline-flex; background: var(--bg); border-radius: var(--r-sm); padding: 2px; gap: 2px; }
+.stash-tabs { display: flex; margin-bottom: 8px; }
+.stash-tabs button, .seg button { flex: 1; background: none; border: none; color: var(--muted); padding: 4px 12px; }
+.stash-tabs button.active, .seg button.active { background: var(--raised); color: var(--text); }
+.gif-grid { columns: 3; column-gap: 6px; max-height: 340px; overflow-y: auto; margin-top: 8px; }
+.gif-grid .stash-item { display: block; margin-bottom: 6px; break-inside: avoid; }
+.gif-grid .stash-item img { aspect-ratio: auto; min-height: 40px; background: var(--raised); }
+.gif-grid .empty { column-span: all; }
+.powered { display: block; text-align: right; font-size: 10px; letter-spacing: 0.05em; margin-top: 6px; }
+button.link { background: none; border: none; padding: 0; color: var(--accent); text-decoration: underline; display: inline; }
+.hotkey.wide input { width: 320px; text-align: left; }
+
+/* ── streams: grid, focus and full screen ── */
+.stage { background: var(--bg); }
+.tiles { flex: 1; min-height: 0; display: grid; gap: 10px; padding: 12px; grid-auto-rows: minmax(0, 1fr); }
+.tile { position: relative; display: flex; flex-direction: column; min-height: 0; min-width: 0; background: #000; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); }
+.tile .frame { flex: 1; min-height: 0; display: grid; cursor: pointer; }
+.tile video { width: 100%; height: 100%; object-fit: contain; min-height: 0; }
+.tile-bar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--panel); }
+.tile-bar b { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile-bar label { display: flex; align-items: center; gap: 6px; width: 150px; }
+.tile:fullscreen { border: none; border-radius: 0; }
+.tile:fullscreen .frame { cursor: default; }
+.tile:fullscreen .tile-bar { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(transparent, rgba(0, 0, 0, 0.8)); color: #fff; padding: 28px 16px 12px; opacity: 0; transition: opacity 0.15s; }
+.tile:fullscreen:hover .tile-bar { opacity: 1; }
+.focus-view { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; padding: 12px; }
+.focus-view .tile.big { flex: 1; }
+.filmstrip { flex: none; display: flex; gap: 8px; justify-content: center; overflow-x: auto; }
+.thumb { position: relative; flex: none; width: 184px; aspect-ratio: 16 / 9; padding: 0; overflow: hidden; background: #000; border: 2px solid var(--line); }
+.thumb:hover { border-color: var(--accent); }
+.thumb video { width: 100%; height: 100%; object-fit: cover; }
+.thumb span { position: absolute; left: 4px; bottom: 4px; background: rgba(0, 0, 0, 0.7); color: #fff; font-size: 11px; padding: 0 6px; border-radius: 4px; }
+
+/* ── pixel sprites (sheets drawn by client/src/draw: 48px frames, 4 across and the same 4 talking, a row for each pose) ──
+   Every cell of a sheet has --up rows of headroom over its 48: for a party hat, or a head at the top of a jump. The
+   picture is that much taller than the 48px square it stands in, and hangs over the top of it: nothing round it moves. */
+.sprite { --u: calc(48px * var(--k, 2)); --v: calc((48px + var(--up, 18) * 1px) * var(--k, 2)); display: block; flex: none; width: var(--u); height: var(--v); margin-top: calc(var(--up, 18) * -1px * var(--k, 2)); pointer-events: none; background-repeat: no-repeat; background-size: calc(var(--u) * 8) calc(var(--v) * var(--rows, 11)); background-position: calc(var(--u) * -1 * (var(--from, 0) + var(--talk, 0))) calc(var(--v) * -1 * var(--row, 4)); image-rendering: auto; }
+.sprite.anim { animation: sprite-step var(--dur, 1s) steps(var(--n, 2)) infinite; }
+@keyframes sprite-step { to { background-position-x: calc(var(--u) * -1 * (var(--from, 0) + var(--n, 2) + var(--talk, 0))); } }
+.avatar .face { display: block; width: 100%; height: 100%; border-radius: 50%; background-repeat: no-repeat; image-rendering: auto; }
+.voice-member .avatar { flex: none; }
+
+/* ── the clubhouse (art from scripts/make-clubhouse.py; everything inside is in its own pixels and zoomed) ── */
+.club-wrap { flex: 1; min-height: 0; overflow: hidden; display: grid; place-items: center; background: #05060a; }
+.club { position: relative; flex: none; overflow: hidden; border-radius: 3px; box-shadow: 0 6px 30px rgba(0, 0, 0, 0.5); isolation: isolate; }
+.club-base { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+.club > i, .rig > i { position: absolute; display: block; }
+.club-over { background: url(/clubhouse/over.png) no-repeat; pointer-events: none; }
+.rig-fan { width: 6px; height: 6px; border-radius: 50%; border: 1px solid #2a2c3a; box-sizing: border-box; }
+.club-screen { position: absolute; display: grid; gap: 1px; overflow: hidden; background: transparent; }
+.club-screen.n0 { pointer-events: none; }
+.club-screen:not(.n0) { background: #06080c; cursor: pointer; box-shadow: 0 0 14px 2px rgba(200, 215, 255, 0.45); }
+.club-screen.n2 { grid-template-columns: 1fr 1fr; } .club-screen.n3, .club-screen.n4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+.club-screen .feed { position: relative; overflow: hidden; min-height: 0; }
+.club-screen .feed img, .club-screen .feed video { width: 100%; height: 100%; object-fit: cover; display: block; image-rendering: auto; }
+.club-screen .feed small { position: absolute; left: 2px; bottom: 1px; font-size: 5px; background: rgba(0, 0, 0, 0.65); color: #fff; padding: 0 2px; border-radius: 1px; }
+.actor { position: absolute; left: 0; top: 0; width: 48px; height: 48px; will-change: transform; }
+.actor .sprite { position: absolute; left: 0; top: 0; }
+.actor .tag { position: absolute; left: 50%; bottom: 45px; transform: translateX(-50%); font-size: 6px; line-height: 1; font-weight: 700; white-space: nowrap; padding: 1px 2px; border-radius: 2px; background: rgba(12, 12, 20, 0.72); text-shadow: 0 0 1px #000; image-rendering: auto; }
+.actor .say { position: absolute; left: 50%; bottom: 55px; transform: translateX(-50%); font-size: 5.5px; line-height: 1.1; white-space: nowrap; max-width: 80px; overflow: hidden; text-overflow: ellipsis; padding: 1px 3px; border-radius: 3px; background: #fff; color: #1b1c2a; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35); }
+.actor .fx { position: absolute; display: none; }
+.actor[data-fx="sleep"] .fx { display: block; left: 30px; top: 12px; }
+.actor[data-fx="sleep"] .fx::before { content: 'z z'; font-size: 6px; font-weight: 700; color: #cfd6ff; letter-spacing: 1px; animation: zzz 3s ease-in-out infinite; display: block; }
+@keyframes slide { to { background-position: 200% 0; } }
+/* nodding off where they sit: away, with the call still open or in a seat they chose */
+.actor[data-fx="doze"] .fx { display: block; left: 31px; top: 6px; }
+.actor[data-fx="doze"] .fx::before { content: 'z z'; font-size: 6px; font-weight: 700; color: #cfd6ff; letter-spacing: 1px; animation: zzz 3s ease-in-out infinite; display: block; }
+.actor[data-pose="sleep"] .tag { left: 12px; bottom: 28px; }
+.actor[data-fx="cook"] .fx { display: block; left: 18px; top: 2px; }
+/* each desk is lit in its owner's colour (--c): dim when they are away from it, bright when they sit down */
+.rig .rig-fan { border-color: color-mix(in srgb, var(--c) 40%, #20222d); }
+.rig:not(.off) .rig-fan { border-color: var(--c); box-shadow: 0 0 3px var(--c); }
+
+/* ── more of the clubhouse ── */
+.club-window { position: absolute; overflow: hidden; z-index: 0; }
+.club-window i { position: absolute; inset: 0; background-repeat: no-repeat; }
+.club-window .sky { background-image: url(/clubhouse/sky.png); } .club-window .ground { background-image: url(/clubhouse/ground.png); }
+.club-window .clouds { background: url(/clubhouse/clouds.png) repeat-x 0 2px / 60px 10px; animation: drift 70s linear infinite; }
+@keyframes drift { to { background-position-x: -60px; } }
+.actor[data-fx="cook"] .fx::before { content: '~ ~'; font-size: 7px; color: #f4f1e9; display: block; animation: zzz 2s ease-in-out infinite; }
+
+/* ── everyone, in the left panel ── */
+.shell { grid-template-columns: 260px minmax(0, 1fr); }
+.voice-member { display: block; position: relative; padding: 0 4px 0 20px; }
+.member-row { width: 100%; display: flex; align-items: center; gap: 8px; justify-content: flex-start; text-align: left; background: none; border: none; box-shadow: none; padding: 2px 4px; color: var(--text); }
+.member-row:disabled { opacity: 1; cursor: default; }
+.member-row > span { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.05; overflow: hidden; }
+.member-row b { font-weight: 400; overflow: hidden; text-overflow: ellipsis; } .member-row small { overflow: hidden; text-overflow: ellipsis; }
+.voice-member.out { opacity: 0.55; filter: grayscale(1); } .voice-member.asleep { opacity: 0.3; }
+.voice-member .person-vols { padding: 0 6px 6px 30px; }
+
+/* ── the 8-bit terminal look: one font, hard edges, one colour (--accent) that everything is worked out from ── */
+:root {
+  --radius: 0px; --r-sm: 0px; --wallpaper: none; --font: 'VT323', 'Cascadia Mono', Consolas, monospace;
+  --line: color-mix(in srgb, var(--accent) 34%, #000); --hover: color-mix(in srgb, var(--accent) 16%, transparent);
+  --ok: var(--accent); --warn: #ffb000; --danger: #ff5a4d;
+}
+*, *::before, *::after { border-radius: 0 !important; }
+.rig-fan { border-radius: 50% !important; }
+body { font: 20px/1.2 var(--font); letter-spacing: 0.02em; -webkit-font-smoothing: none; background: var(--bg); }
+/* --scan-holes cuts holes in the lines over videos: see scanlines.ts */
+body::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9999; clip-path: var(--scan-holes, none); background: repeating-linear-gradient(transparent 0 2px, rgba(0, 0, 0, 0.14) 2px 3px); }
+h1, h2, h3 { font-weight: 400; text-transform: uppercase; letter-spacing: 0.06em; }
+h1 { font-size: 26px; } h2 { font-size: 22px; display: flex; align-items: center; gap: 8px; } h3 { font-size: 17px; }
+small, time, label, .hint, .empty, .error, .muted, .vol, .grid2 label, .hotkey, .chan em, .dock small, .tile-bar, code { font-size: 16px !important; }
+b, strong { font-weight: 400; color: color-mix(in srgb, var(--accent) 45%, #fff); }
+a { color: var(--accent); }
+::selection { background: var(--accent); color: var(--accent-text); }
+::-webkit-scrollbar-thumb { background: var(--line); border: 0; }
+.px { display: inline-block; flex: none; background: currentColor; -webkit-mask-image: url(/icons.png); -webkit-mask-repeat: no-repeat; image-rendering: pixelated; vertical-align: -2px; }
+button, .btn { background: var(--panel); border: 2px solid var(--line); padding: 2px 10px; box-shadow: 2px 2px 0 #000; }
+button:hover:not(:disabled), .btn:hover { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+button:hover:not(:disabled) b, button:hover:not(:disabled) small { color: inherit; }
+button:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: none; }
+button.primary, .seg button.active, .stash-tabs button.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+button.icon, label.icon, .chan, .member-row { box-shadow: none; }
+button.icon, label.icon { border: 2px solid transparent; padding: 3px 5px; }
+button:focus-visible, .btn:focus-within, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
+input:not([type]), input[type='text'], select, textarea { background: #000; border: 2px solid var(--line); padding: 3px 8px; caret-color: var(--accent); font-size: 20px; }
+input[type='color'] { border: 2px solid var(--line); }
+.bar { border-bottom: 2px solid var(--line); }
+.sidebar { border-right: 2px solid var(--line); }
+.chan { font-size: 20px; padding: 3px 8px; color: var(--text); border: 2px solid transparent; }
+.chan.active { background: var(--accent); color: var(--accent-text); }
+.chan .glyph { opacity: 1; display: inline-flex; justify-content: center; }
+.mebar, .voicebar, .dock { border-top: 2px solid var(--line); }
+.avatar { background: #000 !important; box-shadow: 0 0 0 2px var(--line); }
+.avatar.speaking { box-shadow: 0 0 0 2px var(--accent), 0 0 8px var(--accent); }
+.banner { background: var(--warn); color: #000; }
+.modal { border: 2px solid var(--accent); box-shadow: 8px 8px 0 #000; }
+.toast { border: 2px solid var(--accent); background: #000; color: var(--accent); box-shadow: 4px 4px 0 #000; }
+.msg .text { font-size: 20px; }
+.swatch-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0; }
+.swatch-row button { width: 44px; height: 32px; padding: 0; } .swatch-row button.active { outline: 2px solid #fff; outline-offset: 2px; }
+.swatch-row label { display: flex; align-items: center; gap: 8px; }
+.colour-chip i { width: 14px; height: 14px; display: inline-block; }
+.reactions button, .quick button { padding: 1px 6px; }
+.quick button { padding: 6px 8px; }
+/* room to miss by: the picker counts as under the pointer for a little way all round it */
+.quick::before { content: ''; position: absolute; inset: -14px; z-index: -1; }
+/* a photo off the clubhouse wall, opened up: as large as fits, even where the file itself is smaller */
+.lightbox.wall img { width: min(92vw, 1200px); height: min(92vh, 1200px); max-width: none; max-height: none; object-fit: contain; }
+.club-screen .feed small { font-size: 6px !important; }
+.club .tag, .club .say { letter-spacing: 0; }
+
+/* ── layout: the room, with chat beside it and streams over it ── */
+.shell { grid-template-columns: 310px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+.shell.framed { grid-template-rows: 30px minmax(0, 1fr); }
+.titlebar { grid-column: 1 / -1; display: flex; align-items: center; gap: 4px; padding-left: 12px; background: var(--accent); color: var(--accent-text); -webkit-app-region: drag; user-select: none; }
+.titlebar b { color: inherit; text-transform: uppercase; letter-spacing: 0.14em; font-size: 22px; }
+.titlebar .grow { flex: 1; }
+.titlebar button { -webkit-app-region: no-drag; height: 30px; width: 40px; padding: 0; background: none; border: none; box-shadow: none; color: inherit; }
+.titlebar button:hover { background: #000; color: var(--accent); } .titlebar button.shut:hover { background: var(--danger); color: #000; }
+main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.main-row { flex: 1; min-height: 0; display: flex; }
+.main-view { flex: 1; min-width: 0; min-height: 0; position: relative; display: flex; flex-direction: column; }
+.hangout { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.hangout.mini .club-wrap { background: #000; }
+.stage .bar { border-bottom: none; background: #000; gap: 8px; }
+.banner { position: fixed; left: 0; right: 0; bottom: 0; z-index: 9000; text-align: center; padding: 4px 16px; }
+
+/* ── the left panel: bigger, and nothing but the two chats and who is where ── */
+.sidebar .channels { padding: 10px 8px; }
+.sidebar .chan { font-size: 26px; padding: 6px 10px; margin-bottom: 4px; border: 2px solid var(--line); }
+.sidebar .chan .glyph { width: 26px; font-size: 26px; }
+.sidebar .chan em { font-size: 16px !important; }
+.sidebar h3 { font-size: 18px; margin: 16px 4px 6px; border-bottom: 2px solid var(--line); padding-bottom: 2px; }
+.voice-member { padding: 0 2px; margin-bottom: 2px; }
+.member-row { gap: 10px; padding: 4px; }
+.member-row b { font-size: 24px; line-height: 1; } .member-row small { font-size: 16px !important; }
+.mebar b { font-size: 24px; }
+
+/* ── a game's name runs across its player's monitor ── */
+@keyframes ticker { to { transform: translateX(-100%); } }
+
+/* a few shapes must stay round even in a square world */
+.main-row section { display: flex; flex-direction: column; min-height: 0; }
+.main-view > section { flex: 1; }
+
+/* ── three columns: people | room + soundboard | chat. The bars between them drag. ── */
+.shell { grid-template-columns: var(--left, 310px) 6px minmax(0, 1fr); }
+main { flex-direction: row; }
+.main-row { flex: 1; min-width: 0; flex-direction: column; }
+.chat-col { flex: none; display: flex; min-height: 0; max-width: 70%; }
+.chat-col > .chat { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+.chat-col section { display: flex; flex-direction: column; min-height: 0; }
+.splitter { width: 6px; flex: none; cursor: col-resize; background: var(--line); }
+.splitter:hover, body.dragging .splitter:hover { background: var(--accent); }
+body.dragging { cursor: col-resize; user-select: none; } body.dragging video, body.dragging iframe { pointer-events: none; }
+.sidebar { border-right: none; }
+.shell { grid-template-columns: minmax(180px, min(var(--left, 310px), 32vw)) 6px minmax(0, 1fr); }
+.chat-col { max-width: 42vw; }
+.actor[data-fx="gone"] { display: none; }
+input[type='password'] { background: #000; border: 2px solid var(--line); padding: 3px 8px; caret-color: var(--accent); font: inherit; font-size: 20px; color: inherit; width: 100%; min-width: 0; }
+.gate-card label { display: flex; flex-direction: column; gap: 3px; text-align: left; margin: 10px 0 0; width: 100%; }
+.gate-card button.primary { margin-top: 14px; width: 100%; }
+.gate-card img { image-rendering: pixelated; }
+
+/* ── talking, live, and leaving: these are always green or red, whatever colour the app is set to ── */
+:root { --live: #38ff5c; }
+.avatar.speaking { box-shadow: 0 0 0 3px var(--live), 0 0 10px 2px var(--live); }
+.live { background: var(--live); box-shadow: 0 0 6px var(--live); }
+.hangup { background: var(--danger); border-color: var(--danger); color: #000; padding: 1px 10px; gap: 6px; }
+.hangup:hover:not(:disabled) { background: #fff; border-color: #fff; color: var(--danger); }
+
+/* ── only the left panel, or the left panel and chat ── */
+/* in the desktop app the window narrows to the panel, so the panel fills it; in a browser tab it keeps its width */
+.shell.solo { grid-template-columns: min(var(--left, 310px), 100vw); background: #000; }
+.shell.solo.framed { grid-template-columns: minmax(0, 1fr); }
+.update { flex: none; display: block; padding: 6px 10px; border-top: 2px solid var(--line); background: var(--accent); color: var(--accent-text); font-size: 16px; text-decoration: none; }
+a.update:hover { background: #fff; color: #000; }
+div.update { position: relative; display: flex; align-items: center; gap: 8px; } div.update span { flex: 1; }
+div.update button { flex: none; background: #000; color: var(--accent); border: 2px solid #000; box-shadow: none; padding: 0 10px; font-size: 16px; }
+div.update button:hover { background: #fff !important; color: #000 !important; }
+div.update i { position: absolute; left: 0; bottom: 0; height: 4px; background: #000; }
+.chat-col.wide { flex: 1; max-width: none; }
+
+/* ── the strip under the room: one button size, which grows with the room (--ui is set from its width) ── */
+.dock { zoom: var(--ui, 1); }
+.sound > button:first-child, .dock-tools > button:not(.icon), .dock-tools > .btn, .dock-draft button {
+  font-size: 18px !important; height: 28px; padding: 0 10px; gap: 6px; line-height: 1;
+}
+
+/* ── desks: screens of any size ── */
+
+/* ── music, in the left panel while you are in voice ── */
+.musicbox { flex: none; border-top: 2px solid var(--line); padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+.music-head { display: flex; align-items: center; gap: 8px; } .music-head b { flex: 1; }
+.music-head label { display: flex; align-items: center; gap: 4px; width: 120px; color: var(--muted); }
+.music-frame { aspect-ratio: 16 / 9; background: #000; border: 2px solid var(--line); overflow: hidden; }
+.music-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
+.music-now { display: flex; align-items: center; gap: 6px; }
+.music-now span { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.05; }
+.music-now b, .music-now small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.music-now button { padding: 4px 7px; }
+.music-queue { margin: 0; padding: 0; list-style: none; max-height: 92px; overflow-y: auto; counter-reset: q; }
+.music-queue li { display: flex; align-items: center; gap: 6px; font-size: 16px; color: var(--muted); counter-increment: q; }
+.music-queue li::before { content: counter(q) '.'; flex: none; }
+.music-queue li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.music-add { display: flex; gap: 6px; } .music-add input { font-size: 18px; } .music-add button { padding: 2px 8px; }
+
+/* ── the wardrobe ── */
+.mirror { display: grid; grid-template-columns: 1fr 1fr; justify-items: center; background: #000; border: 2px solid var(--line); padding: 6px 0; }
+.picks { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.picks button { font-size: 18px; padding: 1px 9px; } .picks button.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.dots { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; margin-bottom: 6px; }
+.dots button { width: 26px; height: 26px; padding: 0; box-shadow: none; border: 2px solid #000; } .dots button.active { outline: 2px solid #fff; outline-offset: 1px; }
+.dots input[type='color'] { width: 34px; height: 28px; }
+
+/* ── status, and what people just said ── */
+.member-row small.status, .status-btn { color: color-mix(in srgb, var(--accent) 60%, #fff); font-style: italic; }
+.status-btn { display: block; width: 100%; text-align: left; justify-content: flex-start; background: none; border: none; box-shadow: none; padding: 0; font-size: 16px; overflow: hidden; text-overflow: ellipsis; }
+.status-btn:hover:not(:disabled) { background: none; color: #fff; text-decoration: underline; }
+.actor .tag { text-align: center; }
+.actor .tag i { display: block; font-style: normal; font-weight: 400; font-size: 5px; line-height: 1.1; margin-top: 1px; color: #dfe3ee; max-width: 76px; overflow: hidden; text-overflow: ellipsis; }
+.actor .say.chat { max-width: 124px; z-index: 5; animation: said 0.2s steps(3); }
+@keyframes said { from { opacity: 0; } }
+
+/* ── the pets (sheets drawn by client/src/draw/pet.ts: 24px frames, four across, seven rows). Not shown until the room places them. ── */
+.pet { display: none; position: absolute; left: 0; top: 0; width: 24px; height: 24px; will-change: transform; cursor: pointer; }
+.hangout.mini .pet { cursor: default; }
+.pet-sprite { position: absolute; inset: 0; background-repeat: no-repeat; background-size: 96px 168px; background-position: 0 calc(-24px * var(--row, 3)); animation: cat-step var(--dur, 4000ms) steps(4) infinite; }
+@keyframes cat-step { to { background-position-x: -96px; } }
+.pet[data-pose="sleep"]::after { content: 'z'; position: absolute; left: 20px; top: 6px; font-size: 6px; color: #cfd6ff; animation: zzz 3s ease-in-out infinite; }
+/* being petted: hearts float up from it */
+.pet[data-pose="petted"]::before { content: ''; position: absolute; left: 8px; top: -3px; width: 1px; height: 1px; box-shadow: 1px 0px #ff6fa8, 2px 0px #ff6fa8, 4px 0px #ff6fa8, 5px 0px #ff6fa8, 0px 1px #ff6fa8, 1px 1px #ff6fa8, 2px 1px #ff6fa8, 3px 1px #ff6fa8, 4px 1px #ff6fa8, 5px 1px #ff6fa8, 6px 1px #ff6fa8, 0px 2px #ff6fa8, 1px 2px #ff6fa8, 2px 2px #ff6fa8, 3px 2px #ff6fa8, 4px 2px #ff6fa8, 5px 2px #ff6fa8, 6px 2px #ff6fa8, 1px 3px #ff6fa8, 2px 3px #ff6fa8, 3px 3px #ff6fa8, 4px 3px #ff6fa8, 5px 3px #ff6fa8, 2px 4px #ff6fa8, 3px 4px #ff6fa8, 4px 4px #ff6fa8, 3px 5px #ff6fa8; animation: zzz 1.3s ease-in-out infinite; }
+
+/* ── the sun or the moon, the dark bunk room, the boombox, and what must not be seen ── */
+.club-window .orb { right: auto; bottom: auto; background-image: url(/clubhouse/orbs.png); }
+.boombox { position: absolute; width: 21px; height: 16px; pointer-events: none; }
+.boombox .cone { position: absolute; width: 7px; height: 7px; border-radius: 50% !important; box-shadow: inset 0 0 0 1px #8d93ab; opacity: 0; }
+.boombox.on .cone { opacity: 1; animation: thump 0.46s steps(2) infinite; }
+@keyframes thump { 50% { transform: scale(1.4); box-shadow: inset 0 0 0 1px var(--accent), 0 0 3px var(--accent); } }
+.boombox span { position: absolute; left: 3px; top: -6px; opacity: 0; color: #fff; line-height: 0; }
+.boombox span.n2 { left: 13px; }
+.boombox.on span { animation: note 2.4s linear infinite; } .boombox.on span.n2 { animation-delay: 1.2s; }
+@keyframes note { 0% { opacity: 0; transform: translate(0, 4px); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(5px, -16px); } }
+@keyframes censor { 33% { background: #cfcfcf; box-shadow: 2px 0px #2b2b2b, 4px 0px #555555, 6px 0px #f0f0f0, 8px 0px #f0f0f0, 0px 2px #cfcfcf, 2px 2px #2b2b2b, 4px 2px #cfcfcf, 6px 2px #cfcfcf, 8px 2px #a8a8a8, 0px 4px #2b2b2b, 2px 4px #555555, 4px 4px #2b2b2b, 6px 4px #cfcfcf, 8px 4px #555555, 0px 6px #7d7d7d, 2px 6px #a8a8a8, 4px 6px #555555, 6px 6px #cfcfcf, 8px 6px #2b2b2b, 0px 8px #cfcfcf, 2px 8px #7d7d7d, 4px 8px #cfcfcf, 6px 8px #f0f0f0, 8px 8px #555555; } 66% { background: #2b2b2b; box-shadow: 2px 0px #2b2b2b, 4px 0px #cfcfcf, 6px 0px #cfcfcf, 8px 0px #f0f0f0, 0px 2px #555555, 2px 2px #7d7d7d, 4px 2px #2b2b2b, 6px 2px #cfcfcf, 8px 2px #f0f0f0, 0px 4px #2b2b2b, 2px 4px #cfcfcf, 4px 4px #2b2b2b, 6px 4px #cfcfcf, 8px 4px #555555, 0px 6px #a8a8a8, 2px 6px #f0f0f0, 4px 6px #cfcfcf, 6px 6px #a8a8a8, 8px 6px #7d7d7d, 0px 8px #a8a8a8, 2px 8px #cfcfcf, 4px 8px #a8a8a8, 6px 8px #7d7d7d, 8px 8px #7d7d7d; } }
+
+/* ── the digital clock on the wall ── */
+.club-clock { position: absolute; display: flex; align-items: center; justify-content: center; gap: 0; font: 400 12px/1 var(--font); letter-spacing: 0; color: var(--accent); text-shadow: 0 0 3px var(--accent); z-index: 1; }
+.club-clock i { font-style: normal; animation: pulse 2s steps(1) infinite; }
+.club-clock small { font-size: 6px !important; margin-left: 1px; color: inherit; align-self: flex-end; padding-bottom: 2px; }
+
+/* ── weather in the window (tiles from scripts/make-clubhouse.py) ── */
+.club-window .overcast { background: #59617a; }
+.club-window .clouds.second { background-position: 30px 7px; animation-duration: 48s; }
+.club-window .wx { background-repeat: repeat; background-size: 16px 16px; }
+.club-window .wx.rain { background-image: url(/clubhouse/rain.png); opacity: 0.75; animation: rain 0.42s linear infinite; }
+.club-window .wx.rain.hard { opacity: 1; animation-duration: 0.26s; }
+@keyframes rain { to { background-position: -16px 32px; } }
+.club-window .wx.snow { background-image: url(/clubhouse/snow.png); animation: snow 5s linear infinite; }
+@keyframes snow { to { background-position: 16px 32px; } }
+.club-window .wx.fog { background: linear-gradient(rgba(214, 220, 232, 0.25), rgba(214, 220, 232, 0.85) 75%); }
+.club-window .wx.flash { background: #fff; opacity: 0; animation: flash 8s steps(1) infinite; }
+@keyframes flash { 0%, 100% { opacity: 0; } 61% { opacity: 0.75; } 62% { opacity: 0; } 63.5% { opacity: 0.5; } 64.5% { opacity: 0; } }
+
+/* ── the wall: weather under the clock, and the days-since calendar ── */
+.club-temp { position: absolute; display: flex; align-items: center; justify-content: center; font: 400 7px/1 var(--font); letter-spacing: 0; white-space: nowrap; overflow: hidden; color: var(--accent); opacity: 0.85; text-transform: uppercase; z-index: 1; }
+
+/* ── the projector screen rolls down out of its housing when somebody shares, and back up after ── */
+.club-roll { position: absolute; height: 0; overflow: hidden; background: #14151c; border-bottom: 2px solid #8d93ab; transition: height 1.1s steps(16); }
+.club-roll.down { height: var(--h); }
+.club-roll i { position: absolute; left: 2px; right: 2px; top: 2px; height: calc(var(--h) - 4px); background: #dfe3ea; }
+.club-screen { opacity: 0; }
+.club-speaker { position: absolute; z-index: 1; pointer-events: none; opacity: 0; background-image: url(/clubhouse/base.png); image-rendering: pixelated; transform-origin: 50% 100%; }
+.club-speaker.on { opacity: 1; animation: speaker-bump 0.52s steps(3) infinite; }
+@keyframes speaker-bump { 0%, 100% { transform: none; } 35% { transform: scale(1.08, 1.035); } }
+.club-screen:not(.n0) { opacity: 1; transition: opacity 0.3s 1.1s; }
+
+/* the photo on the lounge wall, at its full sharpness inside the pixel frame */
+.club-photo { position: absolute; display: block; object-fit: cover; image-rendering: auto; pointer-events: none; }
+
+/* ── the player: the video can be put away; it keeps playing, just out of sight ── */
+.music-head button.icon { padding: 2px 4px; } .music-head button.icon.on { color: var(--accent); border-color: var(--line); }
+.music-frame { position: relative; min-width: 200px; min-height: 200px; }   /* YouTube: its player is never shown smaller than 200 x 200 */
+.music-off { margin: 0; font-size: 12px; color: var(--muted); }
+.music-terms { margin: 2px 0 0; font-size: 11px; color: var(--muted); } .music-terms a { color: inherit; }
+
+
+
+/* ── watching screens: the room as a small live view, at the top of the chat column or in the left panel ── */
+.chat-col { flex-direction: column; }
+.side-room { flex: none; width: 100%; aspect-ratio: 528 / 334; display: flex; overflow: hidden; cursor: pointer; background: #000; border-top: 2px solid var(--line); border-bottom: 2px solid var(--line); }
+.chat-col > .side-room { border-top: none; }
+.side-room:hover { border-color: var(--accent); }
+.side-room .club { pointer-events: none; }
+.side-room .hangout { flex: 1; min-width: 0; }
+
+/* people in the room never glow: who is talking shows as the ring round their picture, and their mouth moving */
+
+/* ── "Sure?": a second click instead of a pop-up window ── */
+button.sure { background: var(--danger) !important; border-color: var(--danger) !important; color: #000 !important; }
+.sound .del.sure { width: auto; height: 18px; padding: 0 5px; font-size: 14px; z-index: 2; }
+
+/* ── doing things in the room: the list you get by clicking somebody, and the little effects ── */
+.hangout:not(.mini) .actor { cursor: pointer; }
+.act-menu { position: absolute; display: flex; flex-direction: column; gap: 1px; padding: 2px; min-width: 56px; background: #000; border: 1px solid var(--accent); box-shadow: 2px 2px 0 #000; }
+.act-menu b { font-size: 7px; line-height: 1; padding: 1px 2px 2px; color: var(--accent); font-weight: 400; letter-spacing: 0; white-space: nowrap; }
+.act-menu button { font-size: 7px; line-height: 1; letter-spacing: 0; padding: 2px 3px; border-width: 1px; box-shadow: none; justify-content: flex-start; }
+.act-menu button:active:not(:disabled) { transform: none; }
+.actor[data-fx="laugh"] .fx { display: block; left: 31px; top: 4px; }
+.actor[data-fx="laugh"] .fx::before, .actor[data-fx="laugh"] .fx::after { content: 'HA'; display: block; font-size: 7px; line-height: 1; color: #fff; text-shadow: 0 0 1px #000, 1px 1px 0 #000; animation: zzz 0.8s linear infinite; }
+.actor[data-fx="laugh"] .fx::after { position: absolute; left: -28px; top: 5px; font-size: 6px; animation-delay: 0.4s; }
+.actor[data-fx="cry"] .fx { display: block; left: 19px; top: 18px; width: 1px; height: 2px; background: #6ec3ff; box-shadow: 9px 0 #6ec3ff, 0 4px #9ad6ff, 9px 4px #9ad6ff; animation: tears 0.55s linear infinite; }
+@keyframes tears { to { transform: translateY(8px); opacity: 0; } }
+.actor[data-fx="stars"] .fx { display: block; left: 2px; top: 20px; }
+.actor[data-fx="stars"][data-flip="1"] .fx { left: 30px; }
+.actor[data-fx="stars"] .fx::before { content: '* * *'; display: block; font-size: 8px; line-height: 1; color: #ffd84a; text-shadow: 0 0 1px #000; animation: pulse 0.45s steps(2) infinite; }
+.actor[data-fx="hearts"] .fx { display: block; left: 6px; top: -4px; width: 1px; height: 1px; box-shadow: 1px 0px #ff6fa8, 2px 0px #ff6fa8, 4px 0px #ff6fa8, 5px 0px #ff6fa8, 0px 1px #ff6fa8, 1px 1px #ff6fa8, 2px 1px #ff6fa8, 3px 1px #ff6fa8, 4px 1px #ff6fa8, 5px 1px #ff6fa8, 6px 1px #ff6fa8, 0px 2px #ff6fa8, 1px 2px #ff6fa8, 2px 2px #ff6fa8, 3px 2px #ff6fa8, 4px 2px #ff6fa8, 5px 2px #ff6fa8, 6px 2px #ff6fa8, 1px 3px #ff6fa8, 2px 3px #ff6fa8, 3px 3px #ff6fa8, 4px 3px #ff6fa8, 5px 3px #ff6fa8, 2px 4px #ff6fa8, 3px 4px #ff6fa8, 4px 4px #ff6fa8, 3px 5px #ff6fa8; animation: zzz 1.6s ease-in-out infinite; }
+.actor[data-fx="hearts"][data-flip="1"] .fx { left: 36px; }
+.actor[data-fx="clap"] .fx { display: block; left: 3px; top: 8px; }
+.actor[data-fx="clap"][data-flip="1"] .fx { left: 39px; }
+.actor[data-fx="clap"] .fx::before { content: '*'; display: block; font-size: 12px; line-height: 1; color: #fff; text-shadow: 0 0 2px #ffd84a; animation: said 0.25s steps(3); }
+
+/* ── big screens: the left panel and the chat are drawn larger (--big is set from the window's size) ── */
+.sidebar, .chat-col > .chat { zoom: var(--big, 1); }
+.lightbox { zoom: calc(1 / var(--big, 1)); }
+/* "Nobody yet." lines up with the pictures under it */
+.sidebar .channels > .empty { padding-left: 6px; }
+
+/* ── microphone test ── */
+.mic-test { margin: 10px 0 14px; }
+.mic-test .meter { position: relative; height: 18px; background: #000; border: 2px solid var(--line); overflow: hidden; }
+.mic-test .meter i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--muted); }
+.mic-test .meter i.talking { background: var(--live); }
+.mic-test .meter b { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #fff; }
+.mic-test input[type='range'] { display: block; width: calc(100% * 40 / 50); margin-left: calc(100% * 5 / 50); }
+input.bday { width: 84px !important; text-align: center; }
+
+/* ── the player: recently played and saved lists ── */
+.music-tabs { display: flex; gap: 6px; } .music-tabs button { flex: 1; font-size: 16px; padding: 0 6px; }
+.music-tabs button.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.music-list { margin: 0; padding: 0; list-style: none; max-height: 150px; overflow-y: auto; }
+.music-list li { display: flex; align-items: center; gap: 4px; }
+.music-list .row { flex: 1; min-width: 0; display: block; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: none; border: none; box-shadow: none; padding: 1px 2px; font-size: 16px; color: var(--text); }
+.music-list .row:hover:not(:disabled) { background: var(--accent); color: var(--accent-text); }
+.music-list select { width: 34px; padding: 0 2px; font-size: 16px; flex: none; }
+.music-list button.icon { padding: 1px 3px; }
+
+/* ── chat: search, link cards ── */
+.chat-search { flex: none; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-bottom: 2px solid var(--line); color: var(--muted); }
+.chat-search input { flex: 1; border: none; background: none; padding: 2px 0; font-size: 18px; outline: none; }
+.search-results { flex: 1; min-height: 0; overflow-y: auto; padding: 6px 8px; display: flex; flex-direction: column; gap: 4px; }
+.search-results button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; white-space: normal; background: none; border: 2px solid transparent; box-shadow: none; padding: 4px 8px; }
+.search-results button span { overflow-wrap: anywhere; }
+.search-results button:hover { border-color: var(--accent); background: var(--hover); color: var(--text); }
+.to-latest { flex: none; margin: 6px 12px 0; font-size: 16px; white-space: normal; }
+.msg.found { background: color-mix(in srgb, var(--accent) 30%, transparent); box-shadow: inset 3px 0 var(--accent); }
+.messages[hidden] { display: none; }
+.link-card { display: flex; gap: 10px; max-width: 520px; margin: 4px 0; padding: 8px 10px; border: 2px solid var(--line); border-left: 4px solid var(--accent); background: #000; text-decoration: none; color: var(--text); }
+.link-card:hover { border-color: var(--accent); }
+.link-card span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.link-card b { overflow-wrap: anywhere; } .link-card i { font-style: normal; color: var(--muted); font-size: 16px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.link-card img { flex: none; width: 96px; height: 72px; object-fit: cover; }
+
+/* ── seasonal things in the room (art from scripts/make-clubhouse.py) ── */
+.club > .deco { background: url(/clubhouse/deco.png) no-repeat; pointer-events: none; }
+.club > .deco-lights { background: url(/clubhouse/lights.png) repeat-x 0 0 / 24px 6px; pointer-events: none; z-index: 2; animation: twinkle 1.6s steps(2) infinite; }
+@keyframes twinkle { 50% { filter: brightness(0.6) hue-rotate(40deg); } }
+
+/* ── the message box: four pieces of one height, in one style ── */
+.composer { align-items: stretch; gap: 6px; padding: 0; background: none; }
+.composer > .icon, .composer > .gif-toggle, .composer > .primary, .composer > textarea { min-height: 40px; border: 2px solid var(--line); box-shadow: none; }
+.composer > .icon, .composer > .gif-toggle { flex: none; width: 44px; padding: 0; display: grid; place-items: center; background: #000; color: var(--accent); font-size: 16px; font-weight: 400; cursor: pointer; }
+.composer > .icon:hover, .composer > .gif-toggle:hover:not(:disabled) { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.composer > textarea { background: #000; padding: 8px 10px; line-height: 1.1; font-size: 20px; }
+.composer > textarea:focus { border-color: var(--accent); outline: none; }
+.composer > .primary { flex: none; padding: 0 16px; border-color: var(--accent); }
+.composer > .primary:disabled { background: #000; color: var(--muted); border-color: var(--line); opacity: 1; }
+.composer > button:active:not(:disabled) { transform: none; }
+
+/* ── theatre: the Player's video in the middle of the window ── */
+.theatre { flex: 1; min-height: 0; display: flex; flex-direction: column; background: #000; }
+.theatre .bar { gap: 12px; } .theatre .bar h2 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.theatre-frame { flex: 1; min-height: 0; display: grid; }
+.theatre-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
+
+/* ── the noise gate holding the mic shut ── */
+.voicebar-buttons button.gated { color: var(--muted); border-style: dashed; }
+
+/* ── the small buttons on a person's row: message, wave ── */
+.member-tools { position: absolute; right: 4px; top: 3px; display: flex; gap: 4px; }
+.member-tools button { padding: 3px; background: var(--panel); border: 2px solid var(--line); box-shadow: none; opacity: 0; }
+.voice-member:hover .member-tools button, .member-tools button.on { opacity: 1; filter: none; }
+.member-tools button.on { border-color: var(--accent); color: var(--accent); }
+.dm-new { margin-left: 6px; background: var(--accent); color: var(--accent-text); font-style: normal; font-size: 14px; padding: 0 5px; vertical-align: 2px; }
+.dm-title { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px; background: var(--accent); color: var(--accent-text); }
+.dm-title b { color: inherit; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .dm-title button { font-size: 16px; padding: 0 8px; flex: none; }
+
+/* ── a notice with a button: somebody started sharing their screen ── */
+.notice { position: fixed; right: 20px; bottom: 64px; z-index: 65; display: flex; align-items: center; gap: 10px; padding: 10px 12px; max-width: min(520px, 90vw); background: #000; border: 2px solid var(--accent); box-shadow: 4px 4px 0 #000; animation: arrive 0.2s steps(3); }
+.notice span { flex: 1; color: var(--accent); }
+
+/* ── ||spoilers||: a hatched block until it is clicked ── */
+.spoiler { padding: 0 3px; color: transparent; cursor: pointer; user-select: none; background: var(--line) repeating-linear-gradient(45deg, #000 0 2px, transparent 2px 4px); }
+.spoiler * { visibility: hidden; }
+.spoiler:hover { outline: 2px solid var(--accent); }
+.spoiler.open { color: inherit; cursor: auto; user-select: text; background: color-mix(in srgb, var(--accent) 14%, transparent); outline: none; }
+.spoiler.open * { visibility: visible; }
+
+/* ── the wall: a tear-off calendar, and the whiteboard ── */
+.club-board { position: absolute; z-index: 1; image-rendering: pixelated; cursor: pointer; }
+.club-board:hover { outline: 1px solid var(--accent); }
+
+/* ── the whiteboard, opened up to draw on ── */
+.board-view { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--bg); }
+.board-view .bar { border-bottom: none; background: #000; gap: 12px; } .board-view .bar h2 { flex: none; } .board-view .bar small { flex: 1; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board-tools { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 8px 16px; background: #000; border-bottom: 2px solid var(--line); }
+.board-tools .set { display: flex; align-items: center; gap: 4px; }
+.board-tools button { padding: 2px 10px; font-size: 18px; }
+.board-tools button.on { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.board-tools .nib { width: 30px; height: 30px; padding: 0; display: grid; place-items: center; } .board-tools .nib i { display: block; background: currentColor; }
+.board-tools .ink { width: 24px; height: 24px; padding: 0; border: 2px solid #000; box-shadow: none; filter: none !important; }
+.board-tools .ink.on { border-color: #fff; outline: 2px solid var(--accent); }
+.board-tools .wipe { margin-left: auto; }
+.board-area { flex: 1; min-height: 0; display: grid; place-items: center; overflow: hidden; }
+.board-frame { line-height: 0; border: 4px solid #b9bfcc; box-shadow: 0 0 0 2px #000, 6px 6px 0 #000; background: #f7f6f0; }
+.board-frame canvas { display: block; image-rendering: pixelated; cursor: crosshair; touch-action: none; }
+
+/* ── who is watching a shared screen ── */
+.tile-bar .eyes { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); }
+.voicebar .watchers { display: flex; align-items: center; gap: 4px; color: var(--live); }
+
+/* ── talking while muted: the mute button flashes ── */
+.voicebar-buttons button.nudge { animation: nudge 0.5s steps(2) infinite; }
+@keyframes nudge { 50% { background: var(--warn); color: #000; border-color: var(--warn); } }
+.voicebar .muted-note { color: var(--warn); }
+.board-tools .undo:disabled { opacity: 0.4; }
+
+/* ── the player: pause for everyone, the bar to drag, and the video over the whole screen ── */
+.music-seek { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.music-seek button { flex: none; padding: 4px 7px; display: grid; place-items: center; min-width: 28px; min-height: 26px; }
+.music-seek small { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; }
+.music-seek input[type=range] { flex: 1; min-width: 0; }
+.music-seek .no-length { flex: 1; color: var(--muted); text-transform: uppercase; }      /* not "live": that name is the green dot's */
+.pause-glyph { display: block; width: 8px; height: 10px; border-left: 3px solid currentColor; border-right: 3px solid currentColor; box-sizing: border-box; }
+.theatre-controls { flex: none; display: flex; align-items: center; gap: 12px; padding: 8px 16px; background: #000; border-top: 2px solid var(--line); }
+.theatre-controls .music-seek { flex: 1; } .theatre-controls > button { flex: none; display: flex; align-items: center; gap: 6px; }
+.music-frame:fullscreen, .theatre-frame:fullscreen { aspect-ratio: auto; border: 0; background: #000; display: block; }
+.music-frame:fullscreen iframe, .theatre-frame:fullscreen iframe { position: static; width: 100%; height: 100%; }
+
+/* ── the message box: one box that grows with what is typed, with its buttons inside it ── */
+.composer { align-items: flex-start; gap: 0; padding: 0; background: #000; border: 2px solid var(--line); }
+.composer:focus-within { border-color: var(--accent); }
+.composer > .icon, .composer > .gif-toggle, .composer > .primary, .composer > textarea { border: none; min-height: 40px; }
+.composer > .icon, .composer > .gif-toggle { width: 40px; height: 40px; background: none; }
+.composer > textarea { background: none; max-height: 50vh; overflow-y: auto; padding: 9px 6px; }
+.composer > textarea:focus { border: none; }
+.composer > textarea::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.composer > .primary { height: 40px; padding: 0 12px; background: none; color: var(--accent); }
+.composer > .primary:hover:not(:disabled) { background: var(--accent); color: var(--accent-text); }
+.composer > .primary:disabled { background: none; color: var(--muted); }
+
+/* ── the small windows of the bunk room: a cross of bars over the view ── */
+.club-window .muntin.v { left: 50%; right: auto; width: 1px; } .club-window .muntin.h { top: 50%; bottom: auto; height: 1px; }
+
+/* ── the yard: one fixed scene round the house. The room is placed in its panel by hand (.club-at), in whole screen
+   dots, and the yard is laid out from that same corner, so the two always line up and nothing outdoors ever moves. ── */
+.club-wrap { position: relative; display: block; background: #4f9e47; }
+.club-at { position: absolute; }
+.club { position: relative; box-shadow: none; border-radius: 0; }
+.club.hot { cursor: pointer; }
+.yard { position: absolute; inset: 0; overflow: hidden; pointer-events: none; background: url(/clubhouse/grass.png) 0 0 / 32px 32px; }
+.yard i { position: absolute; }
+.yard-street { background-image: url(/clubhouse/street.png); background-repeat: repeat-x; }
+.yard-scene { background: url(/clubhouse/yard.png) 0 0 / 100% 100% no-repeat; }
+/* the fire pit after dark: four frames of flame stepped through, and its light on the ground */
+.yard-fire { background: url(/clubhouse/fire.png) 0 0 / 88px 28px no-repeat; animation: yard-fire 0.52s steps(4) infinite; }
+@keyframes yard-fire { to { background-position: -88px 0; } }
+.yard-glow { background: radial-gradient(closest-side, rgba(255, 168, 70, 0.5), rgba(255, 120, 40, 0.2) 55%, transparent); animation: yard-glow 0.9s steps(3) infinite alternate; }
+@keyframes yard-glow { from { opacity: 0.78; } to { opacity: 1; } }
+/* what stands in front of the house's near wall, laid over the bottom of the room and shaded as the yard is */
+.yard-front { background: url(/clubhouse/yardfront.png) 0 0 / 100% 100% no-repeat; pointer-events: none; }
+.yard-front b { position: absolute; inset: 0; background: rgb(6, 10, 34); -webkit-mask: url(/clubhouse/yardfront.png) 0 0 / 100% 100% no-repeat; mask: url(/clubhouse/yardfront.png) 0 0 / 100% 100% no-repeat; transition: opacity 2s linear; }
+.yard-front b.snowed { background: #eef3fa; opacity: 0.55; }
+/* Somebody in the room is clicked on their body, not on the whole square their picture is drawn in: the seat or the
+   floor beside them stays clickable. */
+.actor { pointer-events: none; }
+.actor .hit { position: absolute; left: 11px; top: 3px; width: 26px; height: 43px; }
+.hangout:not(.mini) .actor .hit { pointer-events: auto; cursor: pointer; }
+.yard-cover { inset: 0; }
+.yard-cover.dusk { background: rgb(6, 10, 34); transition: opacity 2s linear; }
+.yard-cover.snowed { background: #eef3fa; opacity: 0.55; }
+/* Rain and snow over the yard are a sheet a little larger than it, slid along by the compositor and wrapping round after
+   one tile. (Moving the tile inside a sheet of the yard's own size, as the small window still does, meant painting the
+   whole panel again on every frame for as long as the weather lasted.) */
+.yard-cover.rain { inset: -32px -16px 0 0; background: url(/clubhouse/rain.png) 0 0 / 16px 16px; opacity: 0.6; will-change: transform; animation: rain-over 0.42s linear infinite; }
+.yard-cover.rain.hard { opacity: 0.9; animation-duration: 0.26s; }
+.yard-cover.snow { inset: -32px 0 0 -16px; background: url(/clubhouse/snow.png) 0 0 / 16px 16px; will-change: transform; animation: snow-over 5s linear infinite; }
+@keyframes rain-over { to { transform: translate(-16px, 32px); } }
+@keyframes snow-over { to { transform: translate(16px, 32px); } }
+.yard-cover.fog { background: rgba(214, 220, 232, 0.45); }
+.yard-cover.flash { background: #fff; opacity: 0; animation: flash 8s steps(1) infinite; }
+
+/* ── the left panel: the two voice chats side by side, and "Where are you?" as one button that opens upwards ── */
+.sidebar .chan-pair { display: flex; gap: 4px; }
+.sidebar .chan-pair .chan { flex: 1; min-width: 0; font-size: 22px; padding: 6px 6px; gap: 6px; white-space: nowrap; overflow: hidden; }
+.where { position: relative; flex: none; padding: 6px 8px; border-top: 2px solid var(--line); }
+.where-now { width: 100%; display: flex; align-items: center; justify-content: flex-start; gap: 8px; padding: 4px 10px; }
+.where-now small { color: var(--muted); flex: none; } .where-now span { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; color: var(--accent); white-space: nowrap; overflow: hidden; }
+/* (hovered, the button fills with the app colour: the place named on it must not stay that colour too) */
+.where-now:hover:not(:disabled) span { color: inherit; }
+.where-list { position: absolute; left: 8px; right: 8px; bottom: calc(100% - 4px); z-index: 30; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 6px; background: #000; border: 2px solid var(--accent); box-shadow: 4px 4px 0 #000; }
+.where-list button { justify-content: flex-start; gap: 6px; padding: 3px 8px; white-space: nowrap; } .where-list button.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+
+/* ── the bar over a private chat is in the accent colour: its button needs its own dark face to be read ── */
+.dm-title button { background: #000; color: var(--accent); border: 2px solid #000; box-shadow: none; }
+.dm-title button:hover { background: #fff !important; color: #000 !important; border-color: #fff; }
+
+/* ── the wardrobe's mirror: four views of 144px each need a column wide enough to hold two side by side ── */
+
+/* ── muted or deafened: a red icon straight after the name, in the list and over the character ── */
+.member-row b { display: flex; align-items: center; gap: 6px; }
+.member-row b .quiet { flex: none; display: inline-flex; gap: 3px; color: var(--danger); font-style: normal; }
+.actor .tag .quiet { display: inline-flex; gap: 1px; margin-left: 2px; color: var(--danger); font-style: normal; vertical-align: -1px; }
+
+/* ── unread badges: a number in a pill, on Text Chat and beside a friend's name; a friend who is away is not dimmed while one shows ── */
+.dm-new { margin-left: 2px; padding: 0 6px; background: var(--accent); color: var(--accent-text); font-style: normal; font-size: 16px; line-height: 1.1; flex: none; }
+.voice-member.out:has(.dm-new) { opacity: 1; filter: none; }
+
+/* ── a thin left panel: nothing is cut off or spills over. The panel measures itself, so this follows its own width ── */
+.sidebar { container: side / inline-size; }
+.music-head { position: relative; min-width: 0; } .music-head b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.music-head .vol-inline { flex: 0 1 120px; min-width: 0; } .music-head .vol-inline input { min-width: 0; width: 100%; }
+.vol-pop { display: none; position: relative; flex: none; }
+.vol-popup { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; display: flex; align-items: center; width: 170px; max-width: 70cqw; padding: 10px; background: #000; border: 2px solid var(--accent); box-shadow: 4px 4px 0 #000; }
+.vol-popup input { width: 100%; min-width: 0; }
+.where-list button { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+@container side (max-width: 300px) {
+  .music-head .vol-inline { display: none; }
+  .vol-pop { display: inline-flex; }
+  .where-list { grid-template-columns: 1fr; }                      /* one column: two would stick out past the panel */
+  .where-now small { display: none; }                              /* room for where you actually are */
+  .chan-pair .chan .glyph { display: none; }
+  .chan-pair .chan { font-size: 20px; justify-content: center; }
+}
+@container side (max-width: 250px) {
+  .chan-pair .rest { display: none; }                              /* "Voice" and "Side" */
+}
+
+/* ── the game's name scrolls across a monitor BEHIND its lit frame: the frame is drawn again on top of the words ── */
+
+
+/* ── a soundboard sound that is playing: its button waits, lit, until it has finished ── */
+.sound > button.playing, .sound > button.playing:disabled { opacity: 1; cursor: default; border-color: var(--accent); color: var(--accent); animation: pulse 0.9s steps(2) infinite; }
+/* ── a desk as the person sitting at it set theirs up: three pictures laid on the room (chair, desk, chair back) ── */
+.rig-art { background-size: 100% 100%; background-repeat: no-repeat; pointer-events: none; }
+/* ── the bathroom: whoever is on the toilet is hidden behind a square of shifting blocks ── */
+.actor[data-fx="loo"]::after { content: ''; position: absolute; left: 20px; top: 27px; width: 2px; height: 2px; z-index: 3; background: #7d7d7d; box-shadow: 2px 0px #7d7d7d, 4px 0px #555555, 6px 0px #a8a8a8, 8px 0px #f0f0f0, 0px 2px #2b2b2b, 2px 2px #2b2b2b, 4px 2px #cfcfcf, 6px 2px #2b2b2b, 8px 2px #7d7d7d, 0px 4px #cfcfcf, 2px 4px #2b2b2b, 4px 4px #cfcfcf, 6px 4px #555555, 8px 4px #2b2b2b, 0px 6px #2b2b2b, 2px 6px #a8a8a8, 4px 6px #a8a8a8, 6px 6px #2b2b2b, 8px 6px #555555, 0px 8px #2b2b2b, 2px 8px #cfcfcf, 4px 8px #a8a8a8, 6px 8px #2b2b2b, 8px 8px #cfcfcf; animation: censor 0.6s steps(1) infinite; }
+/* ── the builders: character, pet and desk. What it looks like on the left (it stays put), the parts on the right ── */
+.builder { display: grid; grid-template-columns: 304px minmax(0, 1fr); gap: 18px; align-items: start; }
+.builder.none { display: block; }
+.builder-view { position: sticky; top: 0; display: flex; flex-direction: column; gap: 10px; }
+.builder-parts h3 { margin: 14px 0 6px; border-bottom: 2px solid var(--line); } .builder-parts h3:first-child { margin-top: 0; }
+.builder-parts .hint { margin: 2px 0 4px; }
+.builder-save { position: sticky; bottom: -24px; display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 10px 0; background: var(--panel); border-top: 2px solid var(--line); }
+.mirror { grid-template-columns: repeat(2, max-content); justify-content: space-evenly; padding-top: 40px; row-gap: 26px; }      /* (room over each head for a party hat: the pictures hang over the top of their squares) */
+.mirror.pets { padding: 14px 0; row-gap: 14px; }
+.pet-view { position: relative; display: block; width: 24px; height: 24px; zoom: 4; }
+.mirror.desk { display: block; padding: 10px 0; }
+.desk-view { position: relative; display: block; margin: 0 auto; zoom: 3; }
+.desk-view i { position: absolute; inset: 0; background-size: 100% 100%; }
+.desk-view .sprite { inset: auto; background-size: calc(var(--u) * 8) calc(var(--v) * var(--rows, 11)); }
+@media (max-width: 760px) { .builder { grid-template-columns: 1fr; } .builder-view { position: static; } }
+/* ── somebody new: make your character, your pet and your desk before you walk in ── */
+.welcome { height: 100%; display: flex; flex-direction: column; max-width: 980px; margin: 0 auto; padding: 14px 20px; gap: 10px; }
+.welcome header h1 { margin: 0 0 8px; font-size: 30px; }
+.welcome header ol { display: flex; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.welcome header li button { background: none; border-color: var(--line); color: var(--muted); box-shadow: none; }
+.welcome header li.now button { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.welcome header li.done button { color: var(--text); }
+.welcome-body { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 4px 12px; border-top: 2px solid var(--line); border-bottom: 2px solid var(--line); }
+.welcome footer { display: flex; gap: 10px; } .welcome footer span { flex: 1; }
+/* ── the admin's pages ── */
+.admin .seg { margin-bottom: 12px; flex-wrap: wrap; }
+.admin .row > input:not(.bday) { flex: 1; min-width: 180px; }
+.admin ol.steps { padding-left: 22px; display: flex; flex-direction: column; gap: 8px; }
+.admin textarea.code { width: 100%; font-family: Consolas, monospace; font-size: 13px !important; background: #000; color: var(--text); border: 2px solid var(--line); padding: 6px; resize: vertical; }
+.photo-thumb { width: 132px; height: 99px; object-fit: cover; border: 3px solid #d9a441; }
+.builder-parts .seg { display: flex; flex-wrap: wrap; margin-bottom: 10px; } .builder-parts .seg button { flex: none; }
+.builder-parts { min-width: 0; }
+
+/* ── the soundboard's top edge can be dragged; the Player folds down to one line; the projector while screens are open ── */
+.dock { position: relative; }
+.dock-grip { position: absolute; left: 0; right: 0; top: 0; height: 9px; cursor: row-resize; z-index: 5; }
+.dock-grip::after { content: ''; position: absolute; left: 50%; top: 2px; width: 56px; height: 3px; margin-left: -28px; background: var(--muted); }      /* something to see and take hold of */
+.dock-grip:hover, body.dragging .dock-grip:hover { background: var(--accent); } .dock-grip:hover::after { background: #000; }
+/* the soundboard shut is a bar, not a button to light up: it looks the same with the pointer over it */
+button.dock.closed:hover:not(:disabled) { background: var(--panel); color: var(--muted); border-color: var(--line); }
+button.dock.closed:active:not(:disabled) { transform: none; }          /* (nor does it jump when it is pressed) */
+.musicbox.folded > :not(.music-head):not(.music-off) { display: none; }
+.musicbox.folded .music-head > :not(.px):not(b):not(.fold) { display: none; }
+.musicbox.folded .music-head b { font-weight: normal; }
+.static.held { animation: none; opacity: 0.55; }
+
+/* Nothing in the app can be selected by dragging across it, or dragged off as a picture: it is an app, not a page (a
+   drag across the room used to highlight the whole of it). The exceptions are the messages in the chat, which are
+   for reading and copying, and anything typed into. */
+body { user-select: none; -webkit-user-select: none; }
+img { -webkit-user-drag: none; }
+.chat .messages { user-select: text; -webkit-user-select: text; }
+.chat .messages img { -webkit-user-drag: auto; }
+input, textarea { user-select: text; -webkit-user-select: text; }
+
+/* the whole app full screen (F11): the title bar goes too, all of it and at once. It slides back down when the mouse
+   reaches the top edge (Shell.tsx sets `down`; not :hover, which kept the bar there after its own button was clicked).
+   It is no handle to drag by here, so the mouse over it is the page's to see. */
+:root:fullscreen .shell.framed { grid-template-rows: minmax(0, 1fr); }
+:root:fullscreen .titlebar { position: fixed; left: 0; right: 0; top: 0; height: 30px; z-index: 5000; transform: translateY(-100%); opacity: 0; pointer-events: none; -webkit-app-region: no-drag; transition: transform 0.12s, opacity 0.12s; }
+:root:fullscreen .titlebar.down { transform: none; opacity: 1; pointer-events: auto; }
+
+/* ── full screen on a monitor turned on its side (Shell.tsx: `tall`) ──
+   Side by side, the room would be a strip between two panels. Here it goes across the top instead, as wide as the
+   window and at its own shape (never more than 58% of the height), and the left panel and the chat share what is
+   under it. `main` steps aside so the room and the chat can each be placed in the window's own grid. */
+.shell.tall { grid-template-columns: minmax(180px, min(var(--left, 310px), 45vw)) 6px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+.shell.tall.framed { grid-template-rows: 30px auto minmax(0, 1fr); }
+.shell.tall > main { display: contents; }
+.shell.tall .main-row { grid-column: 1 / -1; grid-row: 1; border-bottom: 2px solid var(--line); }
+.shell.tall > .sidebar, .shell.tall > .splitter, .shell.tall .chat-col { grid-row: 2; }
+.shell.tall.framed .main-row { grid-row: 2; }
+.shell.tall.framed > .sidebar, .shell.tall.framed > .splitter, .shell.tall.framed .chat-col { grid-row: 3; }
+.shell.tall > .sidebar { grid-column: 1; }
+.shell.tall > .splitter { grid-column: 2; }
+.shell.tall .chat-col { grid-column: 3; max-width: none; min-width: 0; background: var(--bg); }
+.shell.tall .main-view > .hangout > .club-wrap { flex: none; width: 100%; aspect-ratio: 528 / 334; max-height: 58vh; }
+.shell.tall.nochat > .sidebar { grid-column: 1 / -1; }
+.shell.tall.nochat > .splitter { display: none; }
+
+/* ── the room, rearranged (2026-11-13): desks that turn into beds, the shower, cleaning and working out ── */
+.rig.abed { display: none; }
+.club-bed { background: url(/clubhouse/beds.png) no-repeat; z-index: 2; pointer-events: none; }
+/* in bed, seen from above: the name goes over the headboard, and the z z beside the pillow */
+.actor[data-pose="bed"] .tag { bottom: 50px; }
+.actor[data-pose="bed"][data-fx="sleep"] .fx { left: 38px; top: 2px; }
+/* in the shower: the other sheet (nothing on, the middle blocked out), under falling water */
+.actor[data-fx="shower"] .sprite { background-image: var(--nude) !important; }
+.actor[data-fx="shower"] .tag { bottom: 50px; }
+.actor[data-fx="shower"] .fx { display: block; left: 15px; top: 4px; width: 18px; height: 40px; background: repeating-linear-gradient(90deg, rgba(190, 228, 255, 0.95) 0 1px, transparent 1px 3px);
+  -webkit-mask: repeating-linear-gradient(180deg, #000 0 3px, transparent 3px 7px); mask: repeating-linear-gradient(180deg, #000 0 3px, transparent 3px 7px); animation: shower-fall 0.35s linear infinite; }
+@keyframes shower-fall { to { -webkit-mask-position: 0 7px; mask-position: 0 7px; } }
+/* Cleaning: a broom held in the hands and worked to and fro. The stick is one dot wide and turns about the hand that
+   holds it (--bx, --by: where that hand is in each view, and it moves with the arm), eight dots of it above the hand.
+   data-stroke says whether the broom is pushed out or drawn back (Clubhouse.tsx picks the pose to match). Seen from
+   behind, the broom is in front of them, so it is drawn under the body and only its head shows, to one side and the other. */
+.actor[data-fx="sweep"] { --bx: var(--cup-x, 29px); --by: var(--cup-y, 30px); --turn: 33deg; }
+.actor[data-fx="sweep"][data-stroke="out"] { --turn: 6deg; }
+.actor[data-fx="sweep"][data-view="left"] { --bx: 27px; --by: 30px; --turn: 38deg; }
+.actor[data-fx="sweep"][data-view="left"][data-stroke="out"] { --bx: 13px; --turn: 30deg; }
+.actor[data-fx="sweep"][data-view="right"] { --bx: 20px; --by: 30px; --turn: -38deg; }
+.actor[data-fx="sweep"][data-view="right"][data-stroke="out"] { --bx: 34px; --turn: -30deg; }
+.actor[data-fx="sweep"][data-view="back"] { --bx: 24px; --by: 31px; --turn: 58deg; }
+.actor[data-fx="sweep"][data-view="back"][data-stroke="out"] { --turn: -58deg; }
+.actor[data-fx="sweep"] .fx { display: block; left: var(--bx); top: calc(var(--by) - 8px); width: 1px; height: 27px; background: #c59a62; transform-origin: 0.5px 8px; transform: rotate(var(--turn)); }
+.actor[data-fx="sweep"][data-view="back"] .fx { height: 19px; z-index: -1; }
+.actor[data-fx="sweep"][data-view] .drink { display: none; }          /* (both hands are on the broom) */
+.actor[data-fx="sweep"] .fx::after { content: ''; position: absolute; left: -3px; bottom: -4px; width: 7px; height: 4px; background: repeating-linear-gradient(90deg, #e2c36a 0 1px, #b9903c 1px 2px); border-top: 1px solid #b9443c; }
+/* working out: sweat flying */
+.actor[data-fx="sweat"] .fx { display: block; left: 11px; top: 12px; width: 1px; height: 2px; background: #8fd3ff; box-shadow: 25px 1px #8fd3ff, -2px 6px #bfe6ff, 28px 7px #bfe6ff; animation: tears 0.6s linear infinite; }
+
+/* the projector screen comes down in front of the whiteboard */
+.club-roll, .club-screen { z-index: 2; }
+
+/* A drink from the fridge. Standing or sitting facing us, they hold it: their sprite has that arm bent, with the fist
+   in front of the chest (data-hold "cup") or lifted under the chin ("sip"), and the drink stands in the fist (--cup-x/y and
+   --sip-x/y: where the fist is on this person; --sit-dy: how much lower when sitting), tipped towards the mouth for a
+   sip. Walking, or side-on, it is in the hand at their side (--hx, --hy). Its foot is behind their fingers (--skin). */
+.actor .drink { position: absolute; display: none; left: calc(var(--hx, 33px) - 5px); top: calc(var(--hy, 33px) - 14px); width: 10px; height: 14px; background: url(/clubhouse/drinks.png) no-repeat 0 0 / 50px 14px; image-rendering: pixelated; pointer-events: none; transform-origin: 5px 12px; }
+.actor[data-drink] .drink { display: block; }
+.actor[data-drink="coffee"] .drink { background-position: -10px 0; }
+.actor[data-drink="tiki"] .drink { background-position: -20px 0; }
+.actor[data-drink="water"] .drink { background-position: -30px 0; }
+.actor[data-drink="coke"] .drink { background-position: -40px 0; }
+.actor .drink::before { content: ''; position: absolute; left: 3px; top: 11px; width: 5px; height: 3px; background: var(--skin, #f0c2a2); border-bottom: 1px solid color-mix(in srgb, var(--skin, #f0c2a2) 60%, #1a1228); box-sizing: border-box; }
+.actor[data-view="back"] .drink, .actor[data-pose="sleep"] .drink, .actor[data-pose="bed"] .drink { display: none; }
+.actor[data-view="left"] .drink { left: 9px; }
+.actor[data-view="right"] .drink { left: 29px; }
+.actor[data-hold~="cup"] .drink { left: calc(var(--cup-x, 28px) - 5px); top: calc(var(--cup-y, 30px) - 12px); }
+.actor[data-hold~="sip"] .drink { left: calc(var(--sip-x, 29px) - 5px); top: calc(var(--sip-y, 22px) - 12px); rotate: -32deg; }
+.actor[data-hold~="down"] .drink { translate: 0 1px; }
+.actor[data-hold~="sit"] .drink { margin-top: var(--sit-dy, 1px); }
+/* On a bean bag: their phone is out, in the other hand from any drink (the hand on our left: it mirrors --hx). Its
+   screen faces them, so what shows is its black back, with the camera in the corner, and the hand that holds it as a
+   hand does: the fingers lying sideways across the back as one hand, their tips at the far edge; and the heel of the hand down the outside edge. Of the thumb, which is round the front on
+   the screen, only the base shows, at the top of the heel: once every ten seconds it shifts a dot, as they scroll.
+   The phone is small (four dots by seven), with half a dot of outline; the hand has none. The screen's light
+   is on their face (--fy). */
+.actor[data-fx="phone"] .fx { display: block; --sk: var(--skin, #f0c2a2); --sk2: color-mix(in srgb, var(--skin, #f0c2a2) 55%, #1a1228); left: calc(47px - var(--hx, 33px)); top: calc(var(--hy, 33px) + var(--sit-dy, 1px) - 8px); width: 4px; height: 7px; background: #0c0d12 linear-gradient(#6b7080, #6b7080) 0.75px 0.75px / 1px 1px no-repeat; box-shadow: 0 0 0 0.5px rgba(26, 18, 40, 0.9); }
+/* (The hand is ONE shape, with no outline: the heel of it down the outside edge of the phone and the fingers across
+   the back are a single piece, lit from above, rounded at the wrist side and stepped in at the fingertips, with the
+   creases between the fingers only hinted at, and only over the fingers. The base of the thumb is a small bump on
+   top of the heel, touching it.) */
+.actor[data-fx="phone"] .fx::before { content: ''; position: absolute; left: -2.2px; top: 2px; width: 5.4px; height: 4px;
+  background: repeating-linear-gradient(transparent 0 0.86px, rgba(26, 18, 40, 0.13) 0.86px 1px) 2.5px 0 / 100% 100% no-repeat, linear-gradient(180deg, color-mix(in srgb, var(--sk) 90%, #fff) 0, var(--sk) 45%, color-mix(in srgb, var(--sk) 82%, #1a1228) 100%);
+  clip-path: polygon(0 0.5px, 0.5px 0, 5.1px 0, 5.4px 0.3px, 5.4px 1.8px, 5.15px 2.05px, 5.15px 2.85px, 4.75px 3.15px, 4.75px 3.7px, 4.45px 4px, 0.5px 4px, 0 3.5px); }
+.actor[data-fx="phone"] .fx::after { content: ''; position: absolute; left: -2.2px; top: 1.2px; width: 1.3px; height: 1.2px; background: color-mix(in srgb, var(--sk) 88%, #1a1228); clip-path: polygon(0 0.4px, 0.4px 0, 100% 0, 100% 100%, 0 100%); animation: phone-thumb 10s linear infinite; }
+.actor[data-fx="phone"]::before { content: ''; position: absolute; left: 12px; top: calc(var(--fy, 4px) + 7px); width: 24px; height: 18px; z-index: 2; pointer-events: none; background: radial-gradient(closest-side, rgba(236, 244, 255, 0.5), rgba(236, 244, 255, 0.18) 60%, transparent); mix-blend-mode: screen; animation: phone-glow 4.5s ease-in-out infinite; }
+@keyframes phone-thumb { 0%, 93%, 100% { top: 1.2px; height: 1.2px; } 95%, 98% { top: 0.6px; height: 1.8px; } }
+@keyframes phone-glow { 0%, 100% { opacity: 0.85; } 40% { opacity: 1; } 55% { opacity: 0.7; } }
+
+/* ── what is on the monitors (2026-11-13) ──
+   Nothing glows any more, on the screens or the desk: only the fans in the towers are lit. Each screen shows what its
+   owner is doing, drawn here with gradients (a screen is only 7 to 26 dots across, so it is all shapes, no words):
+   working or simply at the computer, every monitor has a different window open: a document, the mail, a spreadsheet,
+   a chat; watching, the main one plays a video (somebody out for a walk); gaming, it runs a platformer. */
+.rig-screen { background: #0c0f17; overflow: hidden; }
+.rig-screen::before, .rig-screen::after { content: none; }
+/* a document: a blue title bar, then lines of writing with gaps between the words */
+.rig.desk .rig-screen { background:
+    linear-gradient(#3b6fd6, #3b6fd6) 0 0 / 100% 2px no-repeat,
+    repeating-linear-gradient(180deg, #f6f7fa 0 1px, transparent 1px 2px) 0 3px / 100% 100% no-repeat,
+    repeating-linear-gradient(90deg, #2a2d3a 0 3px, #f6f7fa 3px 4px, #2a2d3a 4px 6px, #f6f7fa 6px 7px, #2a2d3a 7px 11px, #f6f7fa 11px 13px) 1px 3px / calc(100% - 3px) 100% no-repeat,
+    #f6f7fa; }
+/* the mail: a dark list down the left, a message open on the right */
+.rig.desk .rig-screen:nth-child(2) { background:
+    linear-gradient(#e5484d, #e5484d) 1px 2px / 1px 1px no-repeat,
+    repeating-linear-gradient(180deg, #8d93ab 0 1px, transparent 1px 3px) 1px 2px / 28% 100% no-repeat,
+    linear-gradient(#2a2d3a, #2a2d3a) 0 0 / 34% 100% no-repeat,
+    repeating-linear-gradient(180deg, #f6f7fa 0 1px, transparent 1px 2px) 0 2px / 100% 100% no-repeat,
+    repeating-linear-gradient(90deg, #4a4e5c 0 2px, #f6f7fa 2px 3px, #4a4e5c 3px 7px, #f6f7fa 7px 8px) 40% 2px / 100% 100% no-repeat,
+    #f6f7fa; }
+/* a spreadsheet: a green header, and a grid of cells with a few filled in */
+.rig.desk .rig-screen:nth-child(3) { background:
+    linear-gradient(#2f9e57, #2f9e57) 0 0 / 100% 2px no-repeat,
+    linear-gradient(#bfe6cc, #bfe6cc) 3px 5px / 3px 2px no-repeat,
+    linear-gradient(#ffe7a3, #ffe7a3) 3px 9px / 3px 2px no-repeat,
+    repeating-linear-gradient(90deg, #c9ced9 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(180deg, #c9ced9 0 1px, transparent 1px 3px) 0 2px / 100% 100% no-repeat,
+    #ffffff; }
+/* a chat: dark, with short lines from two people */
+.rig.desk .rig-screen:nth-child(4) { background:
+    repeating-linear-gradient(180deg, transparent 0 1px, #1e2230 1px 3px) 0 1px / 100% 100% no-repeat,
+    repeating-linear-gradient(180deg, #7fd0c9 0 3px, #dfe3ea 3px 6px) 1px 1px / 70% 100% no-repeat,
+    #1e2230; }
+/* watching: sky, hills and a path, with somebody walking across it, and the time bar creeping along the bottom */
+.rig.watching .rig-screen:first-child { background:
+    linear-gradient(#e5484d, #e5484d) 0 100% / 100% 1px no-repeat,
+    linear-gradient(#ffe27a, #ffe27a) 82% 12% / 3px 3px no-repeat,
+    linear-gradient(#c9a268, #c9a268) 0 calc(100% - 3px) / 100% 2px no-repeat,
+    linear-gradient(#4f9e47, #4f9e47) 0 100% / 100% 45% no-repeat,
+    linear-gradient(#bfe0f5, #8fc3ea); animation: video-bar 14s linear infinite; }
+.rig.watching .rig-screen:first-child::after { content: ''; position: absolute; left: 0; bottom: 3px; width: 2px; height: 3px; background: #23242e; box-shadow: 0 -2px 0 0 #f0c2a2, 0 -3px 0 0 #5a3a26; animation: video-walk 6s linear infinite, video-step 0.5s steps(1) infinite; }
+.rig.watching .rig-screen:not(:first-child) { background: #10131c; }
+@keyframes video-walk { from { left: -3px; } to { left: 100%; } }
+@keyframes video-step { 50% { translate: 0 -1px; } }
+@keyframes video-bar { from { background-size: 0% 1px, 3px 3px, 100% 2px, 100% 45%, auto; } to { background-size: 100% 1px, 3px 3px, 100% 2px, 100% 45%, auto; } }
+/* gaming: a platformer. Ground, two ledges, a coin, and a little hero in the owner's colour running and jumping along */
+.rig.gaming .rig-screen:first-child { background:
+    linear-gradient(#ffd84a, #ffd84a) 84% 16% / 1px 1px no-repeat,
+    linear-gradient(#b98a5a, #b98a5a) 34% 58% / 24% 1px no-repeat,
+    linear-gradient(#b98a5a, #b98a5a) 82% 34% / 22% 1px no-repeat,
+    linear-gradient(#4f9e47, #4f9e47) 0 100% / 100% 2px no-repeat,
+    linear-gradient(#1b2350, #2f3f8a); }
+.rig.gaming .rig-screen:first-child::after { content: ''; position: absolute; left: 4%; bottom: 2px; width: 2px; height: 2px; background: var(--c, #ff6fb7); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35); animation: game-run 4.2s linear infinite; }
+.rig.gaming .rig-screen:not(:first-child) { background:
+    repeating-linear-gradient(180deg, transparent 0 1px, #1e2230 1px 3px) 0 1px / 100% 100% no-repeat,
+    repeating-linear-gradient(180deg, #7fd0c9 0 3px, #dfe3ea 3px 6px) 1px 1px / 70% 100% no-repeat,
+    #1e2230; }
+@keyframes game-run {
+  0% { left: 4%; bottom: 2px; } 12% { left: 18%; bottom: 2px; } 17% { left: 26%; bottom: 62%; } 22% { left: 34%; bottom: 44%; }
+  36% { left: 52%; bottom: 44%; } 42% { left: 62%; bottom: 88%; } 48% { left: 72%; bottom: 68%; } 62% { left: 90%; bottom: 68%; }
+  68% { left: 94%; bottom: 90%; } 76% { left: 96%; bottom: 2px; } 100% { left: 4%; bottom: 2px; } }
+/* the towers keep their lights */
+.rig .rig-fan { border-color: color-mix(in srgb, var(--c) 40%, #20222d); }
+.rig:not(.off) .rig-fan { border-color: var(--c); box-shadow: 0 0 3px var(--c); }
+
+/* ── light (2026-11-13) ──
+   The room is shown as it is drawn, the same at every hour: nothing dims it or washes over it. Each lamp lays its own
+   glow over what is round it (.club-glow: --g is its colour; where and how big comes from the room's own list of
+   lamps), and that is all. Nothing indoors gives off blue light: the neon sign, the monitors and the projector are
+   all warm white. */
+.club-glow { z-index: 2982; pointer-events: none; transition: opacity 2s linear; mix-blend-mode: screen; background: radial-gradient(closest-side, var(--g, #ffd08a), color-mix(in srgb, var(--g, #ffd08a) 42%, transparent) 55%, transparent); }
+/* the neon sign: bright glass, a halo close round it and a wider one on the wall. Steady: it does not flicker. */
+.club-neon { z-index: 3; pointer-events: none; background: url(/clubhouse/neon.png) 0 0 / 100% 100% no-repeat; image-rendering: pixelated; filter: drop-shadow(0 0 1px #fff3dc) drop-shadow(0 0 3px rgba(255, 208, 150, 0.95)) drop-shadow(0 0 8px rgba(255, 176, 104, 0.7)); }
+/* the theatre while something is showing: dark (fading out at the foot of the rug), with the screen's light on the front row */
+.club-cinema { z-index: 2984; pointer-events: none; background: linear-gradient(rgb(3, 3, 14) 0 74%, transparent); opacity: 0; transition: opacity 1.4s ease; }
+.club-cinema.on { opacity: 0.66; }
+.club-cinema-glow { z-index: 2985; pointer-events: none; mix-blend-mode: screen; background: radial-gradient(closest-side, rgba(255, 234, 204, 0.6), rgba(255, 234, 204, 0.2) 58%, transparent); opacity: 0; transition: opacity 1.4s ease; }
+.club-cinema-glow.on { opacity: 1; animation: screen-light 3.3s ease-in-out infinite alternate; }
+@keyframes screen-light { 0% { opacity: 0.8; } 35% { opacity: 1; } 60% { opacity: 0.86; } 100% { opacity: 0.96; } }
+.club-screen:not(.n0) { box-shadow: 0 0 10px 2px rgba(255, 236, 208, 0.6), 0 0 30px 8px rgba(255, 214, 170, 0.28); }
+/* a monitor that is on lights the wall behind it, faintly */
+.rig:not(.off) .rig-screen { box-shadow: 0 0 5px 1px rgba(255, 228, 196, 0.24); }
+/* ── out in the yard, in fair weather ── */
+/* a bird: five dots in a shallow V, flapping, crossing from one side of the yard to the other */
+.yard-bird { left: -12px; width: 1px; height: 1px; background: #23242e; box-shadow: -2px -1px #23242e, -1px 0 #23242e, 1px 0 #23242e, 2px -1px #23242e; animation: bird-cross 11s linear infinite, bird-flap 0.34s steps(1) infinite; }
+@keyframes bird-cross { from { left: -12px; translate: 0 0; } 50% { translate: 0 -7px; } to { left: calc(100% + 12px); translate: 0 3px; } }
+@keyframes bird-flap { 50% { box-shadow: -2px 1px #23242e, -1px 0 #23242e, 1px 0 #23242e, 2px 1px #23242e; } }
+/* a butterfly: two dots of wing, opening and shutting, wandering about one patch */
+.yard-butterfly { width: 1px; height: 2px; background: currentColor; box-shadow: 1px 0 currentColor, -1px 0 currentColor; animation: flutter-about 9s ease-in-out infinite alternate, flutter 0.22s steps(1) infinite; }
+@keyframes flutter-about { 0% { translate: 0 0; } 20% { translate: 9px -6px; } 45% { translate: 16px 3px; } 70% { translate: 4px 8px; } 100% { translate: -8px -3px; } }
+@keyframes flutter { 50% { box-shadow: none; } }
+/* a firefly: a dot of yellow-green that drifts, and glows and goes out */
+.yard-firefly { width: 1px; height: 1px; background: #e9ff8a; box-shadow: 0 0 2px 1px rgba(214, 255, 110, 0.75); opacity: 0; animation: firefly 4.6s ease-in-out infinite, flutter-about 13s ease-in-out infinite alternate; }
+@keyframes firefly { 0%, 100% { opacity: 0; } 30% { opacity: 1; } 55% { opacity: 0.25; } 70% { opacity: 0.9; } }
+
+/* ── the yard in its season (the pictures: scripts/make-clubhouse.py, yard_art) ── */
+.yard.s-spring { background-image: url(/clubhouse/grass-spring.png); }
+.yard.s-spring .yard-scene { background-image: url(/clubhouse/yard-spring.png); }
+.yard-front.s-spring { background-image: url(/clubhouse/yardfront-spring.png); }
+.yard-front.s-spring b { -webkit-mask-image: url(/clubhouse/yardfront-spring.png); mask-image: url(/clubhouse/yardfront-spring.png); }
+.yard.s-fall { background-image: url(/clubhouse/grass-fall.png); }
+.yard.s-fall .yard-scene { background-image: url(/clubhouse/yard-fall.png); }
+.yard-front.s-fall { background-image: url(/clubhouse/yardfront-fall.png); }
+.yard-front.s-fall b { -webkit-mask-image: url(/clubhouse/yardfront-fall.png); mask-image: url(/clubhouse/yardfront-fall.png); }
+.yard.s-winter { background-image: url(/clubhouse/grass-winter.png); }
+.yard.s-winter .yard-scene { background-image: url(/clubhouse/yard-winter.png); }
+.yard-front.s-winter { background-image: url(/clubhouse/yardfront-winter.png); }
+.yard-front.s-winter b { -webkit-mask-image: url(/clubhouse/yardfront-winter.png); mask-image: url(/clubhouse/yardfront-winter.png); }
+
+/* ── the football (2026-11-14): one small picture that the room moves about; four turns of it side by side, stepped as it rolls ── */
+.club-ball { position: absolute; left: 0; top: 0; width: 11px; height: 11px; will-change: transform; pointer-events: none; background: url(/clubhouse/ball.png) 0 0 / 44px 11px no-repeat; image-rendering: pixelated; }
+.club-ball::before { content: ''; position: absolute; left: 1px; right: 0; bottom: -2px; height: 3px; border-radius: 50%; background: rgba(20, 14, 40, 0.3); z-index: -1; }
+.hangout:not(.mini) .club-ball { pointer-events: auto; cursor: pointer; }
+
+/* ── the arcade machine's games (2026-11-14): the machine drawn large, with its screen (one small canvas, shown at --k
+   screen dots to each of its own), and beside it the list of games and the best scores ── */
+.arcade-view { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--bg); }
+.arcade-view .bar h2 { flex: none; } .arcade-view .bar small { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.arc-area { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; gap: 28px; padding: 12px; overflow: auto; }
+.arc-cab { flex: none; padding: calc(6px * var(--k)) calc(8px * var(--k)); background: #2c2634; border: solid #e2a93c; border-width: 0 calc(2px * var(--k)); border-radius: calc(3px * var(--k)); box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45); }
+.arc-marquee { height: calc(22px * var(--k)); display: flex; align-items: center; justify-content: center; margin-bottom: calc(6px * var(--k)); border-radius: calc(1px * var(--k)); background: linear-gradient(#fff4d2, #ffdf9a 35%, #f0b85c); color: #b3261e; font: calc(20px * var(--k)) / 1 VT323, monospace; letter-spacing: 0.12em; text-transform: uppercase; }
+.arc-screen { padding: calc(6px * var(--k)); background: #100e16; border-radius: calc(3px * var(--k)); }
+.arc-screen canvas { display: block; width: calc(224px * var(--k)); height: calc(288px * var(--k)); image-rendering: pixelated; border-radius: calc(2px * var(--k)); }
+.arc-deck { display: flex; align-items: center; gap: calc(5px * var(--k)); height: calc(20px * var(--k)); margin-top: calc(6px * var(--k)); padding: 0 calc(8px * var(--k)); background: #4a4257; border-top: calc(1px * var(--k)) solid #6c6280; border-bottom: calc(1px * var(--k)) solid #e2a93c; }
+.arc-deck span { flex: 1; min-width: 0; text-align: center; font-size: calc(4px + 3px * var(--k)); color: #c9c2d6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.arc-deck i { display: block; flex: none; border-radius: 50% !important; width: calc(6px * var(--k)); height: calc(6px * var(--k)); box-shadow: inset calc(-1px * var(--k)) calc(-1px * var(--k)) 0 rgba(0, 0, 0, 0.3); }
+.arc-deck .stick { width: calc(8px * var(--k)); height: calc(8px * var(--k)); background: #e5484d; } .arc-deck .y { background: #f2c230; } .arc-deck .r { background: #e5484d; } .arc-deck .w { background: #f4f1e9; }
+.arc-side { flex: none; width: 260px; display: flex; flex-direction: column; gap: 6px; }
+.arc-side h3 { margin: 8px 0 2px; }
+.arc-game { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; text-align: left; }
+.arc-game small { white-space: normal; }
+.arc-game.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--raised)); }
+.arc-best { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.arc-best li { display: flex; gap: 8px; padding: 3px 8px; border-radius: 6px; background: var(--panel); }
+.arc-best li i { width: 14px; font-style: normal; color: var(--muted); } .arc-best li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.arc-best li.me { outline: 1px solid var(--accent); }
+.arc-none { margin: 0; font-size: 12px; color: var(--muted); }
+@media (max-width: 760px) { .arc-area { flex-direction: column; } }
+
+/* ── paper for the bin (2026-11-14): a wad in the hand, the dotted line while it is aimed, the wad in the air with its
+   shadow, the streamers out of the bin when it goes in, and a word about the shot ── */
+.actor .wad { position: absolute; display: none; left: calc(44px - var(--hx, 33px)); top: calc(var(--hy, 33px) - 6px); width: 7px; height: 7px; z-index: 4; background: url(/clubhouse/wad.png) 0 0 / 7px 7px no-repeat; image-rendering: pixelated; }
+.actor[data-view="left"] .wad { left: 10px; } .actor[data-view="right"] .wad { left: 31px; }
+.hangout:not(.mini) .actor[data-pose="stand"] .wad { display: block; pointer-events: auto; cursor: grab; animation: wad-ready 1.1s ease-in-out infinite; }
+.hangout:not(.mini) .actor .wad.pulled { cursor: grabbing; animation: none; }
+@keyframes wad-ready { 50% { translate: 0 -1px; } }
+.club-aim { position: absolute; left: 0; top: 0; z-index: 3500; pointer-events: none; display: none; }
+.club-aim.on { display: block; }
+.club-aim i { position: absolute; left: 0; top: 0; width: 2px; height: 2px; background: #fff; box-shadow: 0 0 0 1px rgba(20, 14, 40, 0.6); }
+/* (five dots: the first plain to see, each one after it fainter, the fifth at a fifth) */
+.club-aim i:nth-of-type(2) { opacity: 0.8; } .club-aim i:nth-of-type(3) { opacity: 0.6; } .club-aim i:nth-of-type(4) { opacity: 0.4; } .club-aim i:nth-of-type(5) { opacity: 0.2; }
+.club-aim b { position: absolute; left: 0; top: 0; height: 1px; transform-origin: 0 50%; background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.7) 0 2px, transparent 2px 4px); }
+.club-wad { left: 0; top: 0; width: 7px; height: 7px; pointer-events: none; will-change: transform; background: url(/clubhouse/wad.png) 0 0 / 7px 7px no-repeat; image-rendering: pixelated; transition: opacity 0.6s linear; }
+.club-wad-shadow { left: 0; top: 0; width: 5px; height: 2px; pointer-events: none; background: rgba(20, 14, 40, 0.3); transition: opacity 0.6s linear; }
+.club-wad.fade, .club-wad-shadow.fade { opacity: 0; }
+.club-confetti { z-index: 3600; pointer-events: none; background: var(--c, #fff); animation: confetti 1.7s linear both; }
+@keyframes confetti {
+  0% { translate: 0 0; rotate: 0deg; opacity: 1; animation-timing-function: cubic-bezier(0.1, 0.7, 0.4, 1); }
+  38% { translate: var(--dx) var(--up); opacity: 1; animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.6); }
+  100% { translate: calc(var(--dx) * 1.5) var(--down); rotate: var(--rot); opacity: 0; } }
+.club-callout { position: absolute; z-index: 3601; pointer-events: none; transform: translateX(-50%); white-space: nowrap; font: 700 7px/1 var(--font); letter-spacing: 0; color: #ffe08a; text-shadow: 0 1px 0 #1a1228, 1px 0 0 #1a1228, -1px 0 0 #1a1228, 0 -1px 0 #1a1228; animation: callout 1.8s ease-out both; }
+@keyframes callout { 0% { translate: 0 4px; opacity: 0; } 15% { translate: 0 0; opacity: 1; } 70% { opacity: 1; } 100% { translate: 0 -10px; opacity: 0; } }

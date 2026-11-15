@@ -1,0 +1,267 @@
+/* The game table (components/Games.tsx). Everything in it is sized in whole steps: --k is 2 to 6 screen dots to
+   one sprite dot, picked from the room there is, and --u is that as a length. So cards, suits and pieces stay crisp
+   and grow with the window, the way the side panels do. The art is scripts/make-games.py's. */
+.games-view { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; position: relative; background: var(--bg);
+  --u: calc(1px * var(--k, 2)); --face: #f4f1e4; --ink: #1b1c22; --red: #d8342c;
+  --back: repeating-conic-gradient(var(--accent) 0 25%, #000 0 50%) 0 0 / calc(4 * var(--u)) calc(4 * var(--u)); }
+.games-view .bar { border-bottom: none; background: #000; gap: 12px; }
+.games-view .bar h2 { flex: none; }
+.games-view .bar small { flex: 1; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.g-area { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; border-top: 2px solid var(--line); font-size: calc(9 * var(--u)); line-height: 1.1; }
+.games-view .g-area small, .games-view .g-quiet, .games-view .g-small, .games-view .g-log { font-size: max(16px, calc(7 * var(--u))) !important; }
+.g-area h3 { margin: 0; font-size: calc(11 * var(--u)); color: var(--accent); justify-content: center; gap: calc(4 * var(--u)); }
+.g-area p { margin: 0; }
+.g-quiet { color: var(--muted); }
+.g-acts { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: calc(3 * var(--u)); }
+.g-acts.col { flex-direction: column; align-items: stretch; }
+.games-view button.big { font-size: calc(12 * var(--u)); padding: var(--u) calc(10 * var(--u)); }
+.games-view .g-small { padding: 0 calc(2 * var(--u)); }
+.g-note { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 5; max-width: 90%; padding: 4px 14px; background: #000; color: var(--warn); border: 2px solid var(--warn); box-shadow: 4px 4px 0 #000; text-align: center; }
+
+/* ── suits and marks: masks, so they take the colour of the text round them ── */
+.g-suit { --su: var(--u); display: inline-block; flex: none; width: calc(11 * var(--su)); height: calc(11 * var(--su)); background: currentColor; image-rendering: pixelated; vertical-align: calc(-1 * var(--su));
+  -webkit-mask: url(/games/suits.png) no-repeat calc(-11 * var(--i, 0) * var(--su)) 0 / calc(44 * var(--su)) calc(11 * var(--su)); }
+.g-suit.big { --su: calc(1px * (var(--k, 2) + 1)); }
+.g-quiet .g-suit, .g-chip .g-suit { --su: calc(1px * (var(--k, 2) - 1)); }
+.g-mark { --mu: calc(1px * (var(--k, 2) - 1)); display: inline-block; flex: none; width: calc(16 * var(--mu)); height: calc(16 * var(--mu)); background: currentColor; image-rendering: pixelated;
+  -webkit-mask: url(/games/marks.png) no-repeat calc(-16 * var(--i, 0) * var(--mu)) 0 / calc(48 * var(--mu)) calc(16 * var(--mu)); }
+
+/* ── a card ── */
+.g-card, .games-view button.g-card { position: relative; display: block; flex: none; width: calc(30 * var(--u)); height: calc(42 * var(--u)); padding: 0; overflow: hidden; text-align: left;
+  background: var(--face); color: var(--ink); border: var(--u) solid #000; box-shadow: var(--u) var(--u) 0 #000; }
+.g-card.red, .games-view button.g-card.red { color: var(--red); }
+.g-card .g-corner { position: absolute; left: var(--u); top: 0; width: calc(12 * var(--u)); display: flex; flex-direction: column; align-items: center; }
+.g-card .g-corner b { color: inherit; font-size: calc(14 * var(--u)); line-height: calc(12 * var(--u)); letter-spacing: -0.06em; }
+.g-card > .g-suit.big { position: absolute; right: calc(2 * var(--u)); bottom: calc(2 * var(--u)); }
+.g-card.live { cursor: pointer; }
+.games-view button.g-card.live:hover:not(:disabled) { background: #fff; color: var(--ink); border-color: #000; transform: translateY(calc(-2 * var(--u))); }
+.games-view button.g-card.red.live:hover:not(:disabled) { color: var(--red); }
+.g-card.up, .games-view button.g-card.up, .games-view button.g-card.up:hover:not(:disabled) { transform: translateY(calc(-6 * var(--u))); }
+.g-card.dim { filter: brightness(0.5); }
+.g-card.mark::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: calc(2 * var(--u)); background: var(--accent); }
+.g-card.back, .games-view button.g-card.back, .games-view button.g-card.back:hover:not(:disabled) { background: var(--back); display: grid; place-items: center; }
+.games-view button.g-card.back.live:hover:not(:disabled) { border-color: #fff; }
+.g-card.back b { background: #000; color: var(--accent); border: var(--u) solid var(--accent); padding: 0 calc(2 * var(--u)); font-size: calc(10 * var(--u)); }
+.games-view button.g-card.empty { background: none; border: var(--u) dashed var(--line); box-shadow: none; }
+
+/* my hand: the cards squeeze together to fit, and the corner of each one always shows */
+.g-hand { display: flex; justify-content: center; width: 100%; min-width: 0; padding: calc(7 * var(--u)) calc(4 * var(--u)) calc(2 * var(--u)); }
+.g-slot { position: relative; flex: 0 1 calc(32 * var(--u)); min-width: calc(14 * var(--u)); height: calc(42 * var(--u)); }
+.g-slot:last-child { flex: 0 0 calc(31 * var(--u)); }
+.g-slot > .g-card { position: absolute; left: 0; top: 0; }
+
+/* ── a card game: the table, and the scores beside it ── */
+.g-cards, .g-boardgame { flex: 1; min-height: 0; display: flex; }
+.g-felt { flex: 1; min-width: 0; max-height: calc(260 * var(--u)); margin: auto 0; display: grid; align-items: center; justify-items: center; gap: calc(3 * var(--u)); padding: calc(4 * var(--u)) calc(3 * var(--u)) calc(2 * var(--u));
+  grid-template: 'top top top' auto 'left mid right' 1fr 'bottom bottom bottom' auto / minmax(0, 1fr) auto minmax(0, 1fr); }
+.g-felt.rummy { grid-template: 'top' auto 'mid' 1fr 'bottom' auto / minmax(0, 1fr); }
+.g-others { grid-area: top; display: flex; flex-wrap: wrap; justify-content: center; gap: calc(4 * var(--u)); }
+.g-mid { grid-area: mid; position: relative; min-width: calc(100 * var(--u)); min-height: calc(92 * var(--u)); padding-bottom: calc(13 * var(--u)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(5 * var(--u)); }
+.g-bottom { grid-area: bottom; width: 100%; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: calc(2 * var(--u)); }
+.g-status { color: var(--muted); text-align: center; }
+.g-status.go { color: var(--accent); font-size: calc(11 * var(--u)); text-transform: uppercase; }
+.g-status.go::before { content: '> '; }
+
+.g-plate { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: calc(2 * var(--u)) calc(3 * var(--u)); min-width: 0; max-width: 100%; padding: calc(2 * var(--u)) calc(4 * var(--u)); background: #000; border: var(--u) solid var(--line); }
+.g-plate.top { grid-area: top; }
+.g-plate.left { grid-area: left; justify-self: end; }
+.g-plate.right { grid-area: right; justify-self: start; }
+.g-plate.left, .g-plate.right { flex-direction: column; text-align: center; padding: calc(3 * var(--u)); }
+.g-plate.left .g-who, .g-plate.right .g-who { align-items: center; }
+.g-plate .g-who { display: flex; flex-direction: column; min-width: 0; max-width: 100%; }
+.g-plate .g-who b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.g-plate.turn { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.games-view .g-plate.turn b, .games-view .g-plate.turn small { color: var(--accent-text); }
+.g-plate.away { border-style: dashed; }
+.g-tag { background: var(--warn); color: #000; padding: 0 calc(2 * var(--u)); }
+.g-bot { display: grid; place-items: center; flex: none; width: calc(12 * var(--u)); height: calc(12 * var(--u)); color: var(--accent); background: #000; box-shadow: 0 0 0 2px var(--line); }
+.g-bot.empty { box-shadow: none; border: var(--u) dashed var(--line); }
+
+.g-trick { position: relative; flex: none; width: calc(100 * var(--u)); height: calc(92 * var(--u)); }
+.g-spot { position: absolute; }
+.g-spot.top { left: calc(35 * var(--u)); top: 0; }
+.g-spot.bottom { left: calc(35 * var(--u)); bottom: 0; }
+.g-spot.left { left: 0; top: calc(25 * var(--u)); }
+.g-spot.right { right: 0; top: calc(25 * var(--u)); }
+.g-trick.old .g-card { filter: brightness(0.6); }
+.g-trick.old .won .g-card { filter: none; outline: var(--u) solid var(--accent); }
+.g-took { position: absolute; left: 50%; top: calc(100% + 2 * var(--u)); transform: translateX(-50%); white-space: nowrap; padding: 0 calc(3 * var(--u)); background: #000; color: var(--accent); border: var(--u) solid var(--accent); z-index: 1; }
+
+.g-side { flex: none; width: calc(86 * var(--u)); display: flex; flex-direction: column; gap: calc(4 * var(--u)); padding: calc(4 * var(--u)); overflow: auto; background: #000; border-left: 2px solid var(--line); }
+.g-side h3 { justify-content: flex-start; }
+.g-table { width: 100%; border-collapse: collapse; }
+.g-table td { padding: var(--u) calc(2 * var(--u)); border-bottom: 2px solid var(--line); vertical-align: top; text-align: left; }
+.g-table td:not(:first-child) { text-align: right; white-space: nowrap; }
+.g-table td small { display: block; color: var(--muted); }
+.g-table tr.turn td:first-child, .g-table tr.ours td:first-child { color: var(--accent); }
+.g-between { display: flex; flex-direction: column; gap: calc(4 * var(--u)); min-width: calc(110 * var(--u)); max-width: 100%; padding: calc(5 * var(--u)); background: #000; border: var(--u) solid var(--accent); box-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 #000; }
+.g-bids { display: grid; grid-template-columns: repeat(7, auto); gap: calc(2 * var(--u)); }
+.g-bids button { min-width: calc(15 * var(--u)); padding: calc(2 * var(--u)) calc(2 * var(--u)); font-size: calc(11 * var(--u)); }
+
+/* rummy: the two piles, and what has been laid down */
+.g-piles { display: flex; justify-content: center; gap: calc(10 * var(--u)); }
+.g-pile { display: flex; flex-direction: column; align-items: center; gap: calc(2 * var(--u)); }
+.g-melds { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(3 * var(--u)); max-width: 100%; }
+.games-view .g-meld { display: flex; padding: var(--u); gap: 0; background: #000; border: var(--u) solid var(--line); box-shadow: none; }
+.games-view .g-meld:disabled { opacity: 1; cursor: default; }
+.games-view .g-meld.ok { border-color: var(--accent); background: var(--accent); }
+.g-chip { display: inline-flex; align-items: center; gap: var(--u); padding: 0 calc(1.5 * var(--u)); background: var(--face); color: var(--ink); border: var(--u) solid #000; font-size: calc(11 * var(--u)); line-height: 1.1; }
+.g-chip + .g-chip { margin-left: calc(-1 * var(--u)); }
+.g-chip.red { color: var(--red); }
+
+/* ── a board game: the board as large as fits (a whole number of screen dots to each sprite dot), the rest beside it ── */
+.g-boardarea { flex: 1; min-width: 0; min-height: 0; display: grid; place-items: center; overflow: hidden; }
+.g-board { position: relative; display: grid; grid-template-columns: repeat(8, var(--sq)); grid-auto-rows: var(--sq); border: 4px solid #000; outline: 2px solid var(--line); box-shadow: 6px 6px 0 #000; --light: #cfc7a8; --dark: #7d6b53; }
+.g-board.checkers { --dark: #3d5a3a; }
+.games-view .g-sq { position: relative; width: var(--sq); height: var(--sq); padding: 0; border: none; box-shadow: none; transform: none; cursor: default; opacity: 1; }
+.games-view .g-sq.light, .games-view .g-sq.light:hover:not(:disabled) { background: var(--light); }
+.games-view .g-sq.dark, .games-view .g-sq.dark:hover:not(:disabled) { background: var(--dark); }
+.games-view .g-sq.can, .games-view .g-sq.go, .games-view .g-sq.take { cursor: pointer; }
+.g-sq::before, .g-sq::after { content: none; position: absolute; pointer-events: none; }
+.g-sq.last::before { content: ''; inset: 0; background: color-mix(in srgb, var(--accent) 38%, transparent); }
+.g-board.checkers .g-sq.can::before { content: ''; inset: 0; border: calc(var(--sq) / 16) solid var(--accent); }
+.g-sq.sel::before { content: ''; inset: 0; background: color-mix(in srgb, var(--accent) 75%, transparent); border: none; }
+.g-sq.check::before { content: ''; inset: 0; background: rgba(255, 70, 60, 0.8); }
+.g-sq.go::after { content: ''; left: 37.5%; top: 37.5%; width: 25%; height: 25%; background: var(--accent); box-shadow: 0 0 0 calc(var(--sq) / 16) #000; }
+.g-sq.take::after { content: ''; inset: 0; border: calc(var(--sq) / 8) solid var(--accent); }
+.g-piece { position: absolute; inset: 0; background-repeat: no-repeat; image-rendering: pixelated; pointer-events: none; }
+.g-piece.chess { background-image: url(/games/chess.png); background-size: 600% 200%; }
+.g-piece.disc { background-image: url(/games/checkers.png); background-size: 400% 100%; }
+.g-rank, .g-file { position: absolute; font-size: calc(var(--sq) / 4); line-height: 1; color: #000; opacity: 0.55; pointer-events: none; }
+.g-rank { left: 3px; top: 1px; }
+.g-file { right: 3px; bottom: 0; }
+.g-promo { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px; background: #000; border: 2px solid var(--accent); box-shadow: 6px 6px 0 #000; font-size: 22px; }
+.g-promo span { display: flex; gap: 6px; }
+.games-view .g-promo span button { position: relative; width: calc(var(--sq) + 8px); height: calc(var(--sq) + 8px); padding: 0; background: var(--light); }
+.games-view .g-promo span button:hover { background: var(--accent); }
+.g-promo .g-piece { inset: 2px; }
+.g-taken { display: flex; flex-wrap: wrap; min-height: calc(8 * var(--u)); }
+.g-taken .g-piece { position: static; width: calc(8 * var(--u)); height: calc(8 * var(--u)); }
+.g-log { list-style: none; margin: 0; padding: 0; color: var(--text); white-space: pre; }
+.g-log i { font-style: normal; color: var(--accent); }
+.g-side .g-plate { flex-direction: row; text-align: left; }
+
+/* ── picking a game, and the seats ── */
+.g-picker, .g-lobby { margin: auto; max-width: 100%; padding: calc(6 * var(--u)); display: flex; flex-direction: column; align-items: center; gap: calc(5 * var(--u)); text-align: center; }
+.g-tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(5 * var(--u)); }
+.games-view .g-tile { flex-direction: column; justify-content: flex-start; width: calc(62 * var(--u)); min-height: calc(90 * var(--u)); padding: calc(5 * var(--u)) calc(3 * var(--u)); gap: calc(2 * var(--u)); white-space: normal; text-align: center; color: var(--accent); }
+.g-tile b { font-size: calc(13 * var(--u)); text-transform: uppercase; }
+.g-tile span { color: var(--muted); font-size: max(16px, calc(7 * var(--u))); }
+.games-view .g-tile:hover:not(:disabled) span { color: inherit; }
+.g-tile .g-mark { --mu: calc(1px * (var(--k, 2) + 1)); }
+.g-iconbox { position: relative; display: inline-block; flex: none; width: calc(16px * (var(--k, 2) + 1)); height: calc(16px * (var(--k, 2) + 1)); }
+.g-tile .g-suit.big, .g-lobby h3 .g-suit.big { --su: calc(1px * (var(--k, 2) + 2)); }
+.g-tile .g-suit, .g-tile .g-mark, .g-tile .g-iconbox { margin-bottom: calc(2 * var(--u)); }
+.g-lobby h3 { font-size: calc(14 * var(--u)); align-items: center; }
+.g-lobby h3 .g-mark { --mu: calc(1px * (var(--k, 2) + 1)); }
+.g-seats { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(5 * var(--u)); }
+.g-seat { width: calc(66 * var(--u)); display: flex; flex-direction: column; align-items: center; gap: calc(2 * var(--u)); padding: calc(4 * var(--u)) calc(3 * var(--u)); background: #000; border: var(--u) dashed var(--line); }
+.g-seat.taken { border-style: solid; }
+.g-seat.me { border-color: var(--accent); }
+.g-seat b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.g-seat .g-bot { width: calc(16 * var(--u)); height: calc(16 * var(--u)); }
+.g-seat .g-mark { --mu: var(--u); }
+.g-seat .g-acts { min-height: calc(13 * var(--u)); gap: calc(2 * var(--u)); }
+
+.g-result { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: calc(4 * var(--u)); padding: calc(3 * var(--u)); background: var(--accent); color: var(--accent-text); }
+.games-view .g-result b { color: inherit; font-size: calc(12 * var(--u)); text-transform: uppercase; }
+.games-view .g-result .g-quiet { color: inherit; }
+.games-view .g-result button { background: #000; color: var(--accent); border-color: #000; }
+.games-view .g-result button:hover:not(:disabled) { background: #fff; color: #000; border-color: #000; }
+
+/* ── four in a row, go and mancala (components/BoardGames.tsx) ── */
+.g-piece.stone { background-image: url(/games/stones.png); background-size: 400% 100%; }
+.g-piece.stone.dead { opacity: 0.4; }
+.g-four { display: grid; grid-template-columns: repeat(7, var(--sq)); grid-auto-rows: var(--sq); background: #1e50aa; border: 4px solid #000; outline: 2px solid var(--line); box-shadow: 6px 6px 0 #000; }
+.games-view .g-hole, .games-view .g-hole:hover:not(:disabled) { position: relative; width: var(--sq); height: var(--sq); padding: 0; border: none; box-shadow: none; background: none; transform: none; cursor: default; }
+.games-view .g-hole.can { cursor: pointer; }
+.g-hole::before, .g-hole::after { content: ''; position: absolute; pointer-events: none; }
+/* the hole is the shape of a piece, in the dark behind the board */
+.g-hole::before { inset: 0; background: #0b0c12; image-rendering: pixelated; -webkit-mask: url(/games/stones.png) 0 0 / 400% 100% no-repeat; }
+.g-hole::after { content: none; }
+.g-hole.lands::after { content: ''; left: 37.5%; top: 37.5%; width: 25%; height: 25%; background: var(--accent); opacity: 0.5; }
+.g-hole.lands:hover::after { opacity: 1; }
+.g-hole.last::after { content: ''; inset: 0; border: calc(var(--sq) / 16) solid #fff; }
+.g-hole.won::after { content: ''; inset: 0; border: calc(var(--sq) / 8) solid var(--accent); }
+
+.g-goboard { display: grid; grid-template-columns: repeat(var(--n), var(--sq)); grid-auto-rows: var(--sq); background: #d6aa60; border: 4px solid #000; outline: 2px solid var(--line); box-shadow: 6px 6px 0 #000;
+  /* a line is two sprite dots wide, so it runs through the very middle of a 16-dot stone; at an edge it stops there */
+  --ln: calc(var(--sq) / 8); --wood: #5a4326; --hw: 100%; --hx: center; --vh: 100%; --vy: center; }
+.games-view .g-pt, .games-view .g-pt:hover:not(:disabled) { position: relative; width: var(--sq); height: var(--sq); padding: 0; border: none; box-shadow: none; transform: none; cursor: default;
+  background: linear-gradient(var(--wood), var(--wood)) var(--hx) center / var(--hw) var(--ln) no-repeat, linear-gradient(var(--wood), var(--wood)) center var(--vy) / var(--ln) var(--vh) no-repeat; }
+.games-view .g-pt.l { --hw: calc(50% + var(--ln) / 2); --hx: right; }
+.games-view .g-pt.r { --hw: calc(50% + var(--ln) / 2); --hx: left; }
+.games-view .g-pt.t { --vh: calc(50% + var(--ln) / 2); --vy: bottom; }
+.games-view .g-pt.b { --vh: calc(50% + var(--ln) / 2); --vy: top; }
+.games-view .g-pt.can { cursor: pointer; }
+.g-pt::before, .g-pt::after { content: none; position: absolute; pointer-events: none; }
+.g-pt.star::before { content: ''; left: 31.25%; top: 31.25%; width: 37.5%; height: 37.5%; background: var(--wood); }
+.g-pt.last::after { content: ''; left: 37.5%; top: 37.5%; width: 25%; height: 25%; background: var(--accent); }
+.g-own { position: absolute; left: 31.25%; top: 31.25%; width: 37.5%; height: 37.5%; border: calc(var(--sq) / 16) solid #000; pointer-events: none; }
+.g-own.b { background: #1b1c22; border-color: #f4f1e4; }
+.g-own.w { background: #f4f1e4; }
+
+.g-mancala { display: flex; align-items: stretch; gap: calc(3 * var(--u)); padding: calc(4 * var(--u)); background: #7d5a3a; border: var(--u) solid #000; box-shadow: calc(2 * var(--u)) calc(2 * var(--u)) 0 #000; }
+.g-pitrows { display: flex; flex-direction: column; gap: calc(3 * var(--u)); }
+.g-pitrow { display: flex; gap: calc(2 * var(--u)); }
+.g-pitbox { display: flex; flex-direction: column; align-items: center; gap: var(--u); }
+.g-pitbox.top { flex-direction: column-reverse; }
+.g-pitbox b, .g-store b { color: #fff; }
+.games-view .g-pit, .games-view .g-pit:hover:not(:disabled), .g-store { background: #3d2a1a; border: var(--u) solid #000; box-shadow: none; transform: none; }
+.games-view .g-pit { display: flex; align-items: center; justify-content: center; width: calc(22 * var(--u)); height: calc(22 * var(--u)); padding: calc(1.5 * var(--u)); opacity: 1; cursor: default; }
+.games-view .g-pit.can { cursor: pointer; border-color: var(--accent); }
+.games-view .g-pit.can:hover:not(:disabled) { background: #5a4028; border-color: #fff; }
+.g-pit.from, .g-store.from { border-style: dashed; border-color: #fff; }
+.games-view .g-pit.last, .g-store.last { border-color: #fff; }
+.g-store { width: calc(22 * var(--u)); display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: var(--u); padding: calc(1.5 * var(--u)); }
+.g-stones { display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: var(--u); }
+.g-stones i { width: calc(3 * var(--u)); height: calc(3 * var(--u)); background: #e8e2c8; box-shadow: inset calc(-1 * var(--u)) calc(-1 * var(--u)) 0 rgba(0, 0, 0, 0.35); }
+.g-stones i:nth-child(4n + 2) { background: #6fb6e8; }
+.g-stones i:nth-child(4n + 3) { background: #e8c15a; }
+.g-stones i:nth-child(4n) { background: #e07a6a; }
+
+/* ── mahjong (components/Mahjong.tsx): the others and what they have thrown, then my own hand right across the bottom ── */
+.mj { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.mj-top { flex: 1; min-height: 0; display: flex; }
+.mj-table { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: stretch; gap: calc(2 * var(--u)); padding: calc(3 * var(--u)); overflow: auto; }
+.mj-table > .g-between { margin: auto; }
+.mj-table > .mj-strip:first-child { margin-top: auto; }
+.mj-table > .mj-strip:last-child { margin-bottom: auto; }
+/* a tile is 18 by 24 sprite dots; --tu is how many screen dots each gets (small ones a step down, but never under 2) */
+.mj-tile, .games-view button.mj-tile, .games-view button.mj-tile:hover:not(:disabled) { --tu: var(--u); position: relative; display: block; flex: none; width: calc(18 * var(--tu)); height: calc(24 * var(--tu)); padding: 0; border: none; box-shadow: none;
+  background: url(/games/mahjong.png) calc(-18 * var(--i, 34) * var(--tu)) 0 / calc(630 * var(--tu)) calc(24 * var(--tu)) no-repeat; image-rendering: pixelated; }
+.mj-tile.small { --tu: max(2px, calc(1px * (var(--k, 2) - 1))); }
+.games-view button.mj-tile.live { cursor: pointer; }
+.games-view button.mj-tile.live:hover:not(:disabled) { transform: translateY(calc(-2 * var(--u))); }
+.games-view button.mj-tile.up, .games-view button.mj-tile.up:hover:not(:disabled) { transform: translateY(calc(-6 * var(--u))); }
+.mj-tile.mark::after { content: ''; position: absolute; left: 0; right: 0; bottom: calc(-3 * var(--u)); height: calc(2 * var(--u)); background: var(--accent); }
+.mj-tile.drew { margin-left: calc(5 * var(--u)); }
+.mj-tile.fresh { outline: var(--u) solid var(--accent); z-index: 1; }
+.mj-row { display: inline-flex; flex-wrap: wrap; vertical-align: middle; }
+.mj-strip { display: flex; align-items: flex-start; gap: calc(3 * var(--u)); padding: calc(2 * var(--u)); border: var(--u) solid var(--line); }
+.mj-strip.me { border-color: var(--accent); }
+.mj-strip .g-plate { flex: none; width: calc(84 * var(--u)); flex-wrap: nowrap; justify-content: flex-start; border: none; padding: 0 calc(2 * var(--u)); text-align: left; }
+.mj-strip .g-plate.turn { padding: calc(2 * var(--u)); }
+.mj-laid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: calc(2 * var(--u)); }
+.mj-melds, .mj-pool, .mj-won, .mj-example { display: flex; flex-wrap: wrap; align-items: center; }
+.mj-melds, .mj-won, .mj-example { gap: calc(3 * var(--u)); }
+.mj-won { justify-content: center; }
+.mj-meld { display: inline-flex; padding: var(--u); background: #000; border: var(--u) solid var(--line); }
+.mj-table .g-table td small .mj-row { margin-top: var(--u); }
+.mj-mine { flex: none; display: flex; flex-direction: column; align-items: center; gap: calc(2 * var(--u)); padding: calc(3 * var(--u)) calc(3 * var(--u)) calc(5 * var(--u)); background: #000; border-top: 2px solid var(--line); }
+.mj-coach { max-width: calc(290 * var(--u)); text-align: center; font-size: max(16px, calc(7 * var(--u))); line-height: 1.25; }
+.mj-coach > b:first-child { margin-right: calc(2 * var(--u)); padding: 0 calc(2 * var(--u)); background: var(--accent); color: var(--accent-text); text-transform: uppercase; }
+.mj-coach .mj-row { margin: 0 var(--u); }
+.mj-hand { display: flex; justify-content: center; gap: var(--u); min-height: calc(30 * var(--u)); padding-top: calc(6 * var(--u)); }
+.games-view .mj-chow { display: inline-flex; align-items: center; gap: calc(2 * var(--u)); }
+.g-iconbox.tile { width: auto; height: auto; }
+
+/* the guide: one long page over the whole table */
+.mj-guide { position: absolute; inset: 0; z-index: 6; overflow: auto; background: var(--bg); font-size: max(16px, calc(8 * var(--u))); line-height: 1.25; }
+.mj-page { max-width: calc(260 * var(--u)); margin: 0 auto; padding: calc(6 * var(--u)); display: flex; flex-direction: column; gap: calc(3 * var(--u)); }
+.mj-page header { display: flex; align-items: center; justify-content: space-between; gap: calc(4 * var(--u)); }
+.mj-page h3 { margin: 0; font-size: calc(14 * var(--u)); color: var(--accent); }
+.mj-page h4 { margin: calc(4 * var(--u)) 0 0; font-size: calc(11 * var(--u)); color: var(--accent); text-transform: uppercase; }
+.mj-page p, .mj-page ul { margin: 0; }
+.mj-page ul { padding-left: calc(10 * var(--u)); }
+.games-view .mj-example small { flex: 1 1 calc(90 * var(--u)); font-size: inherit !important; color: var(--text); }

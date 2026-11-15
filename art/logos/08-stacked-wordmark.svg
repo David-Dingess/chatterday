@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<title>Chatterday - Stacked wordmark</title>
+<rect width="512" height="512" rx="112" fill="#14161c"/>
+<g font-family="'Arial Black','Segoe UI Black','Segoe UI',system-ui,sans-serif" font-weight="900" font-size="132" text-anchor="middle">
+  <text x="256" y="178" fill="#fff6e8" textLength="372" lengthAdjust="spacingAndGlyphs">CHAT</text>
+  <text x="256" y="304" fill="#7c8cff" textLength="372" lengthAdjust="spacingAndGlyphs">TER</text>
+  <text x="256" y="430" fill="#f0554f" textLength="372" lengthAdjust="spacingAndGlyphs">DAY</text>
+</g>
+</svg>

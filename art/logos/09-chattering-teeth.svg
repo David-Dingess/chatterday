@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<title>Chatterday - Wind-up chattering teeth</title>
+<rect width="512" height="512" rx="112" fill="#7c8cff"/>
+<ellipse cx="196" cy="404" rx="48" ry="20" fill="#f5a623"/>
+<ellipse cx="316" cy="404" rx="48" ry="20" fill="#f5a623"/>
+<rect x="120" y="290" width="276" height="100" rx="50" fill="#c81f55"/>
+<rect x="150" y="270" width="38" height="40" rx="8" fill="#fff"/><rect x="194" y="270" width="38" height="40" rx="8" fill="#fff"/><rect x="238" y="270" width="38" height="40" rx="8" fill="#fff"/><rect x="282" y="270" width="38" height="40" rx="8" fill="#fff"/><rect x="326" y="270" width="38" height="40" rx="8" fill="#fff"/>
+<g transform="rotate(-12 396 232)">
+  <rect x="120" y="126" width="276" height="100" rx="50" fill="#e8336b"/>
+  <rect x="150" y="206" width="38" height="44" rx="8" fill="#fff"/><rect x="194" y="206" width="38" height="44" rx="8" fill="#fff"/><rect x="238" y="206" width="38" height="44" rx="8" fill="#fff"/><rect x="282" y="206" width="38" height="44" rx="8" fill="#fff"/><rect x="326" y="206" width="38" height="44" rx="8" fill="#fff"/>
+</g>
+<rect x="392" y="300" width="40" height="16" rx="6" fill="#14161c"/>
+<circle cx="444" cy="290" r="20" fill="none" stroke="#14161c" stroke-width="12"/>
+<circle cx="444" cy="330" r="20" fill="none" stroke="#14161c" stroke-width="12"/>
+<g stroke="#fff6e8" stroke-width="12" stroke-linecap="round">
+  <line x1="62" y1="200" x2="94" y2="214"/><line x1="56" y1="256" x2="92" y2="256"/><line x1="62" y1="312" x2="94" y2="298"/>
+</g>
+</svg>

@@ -1,0 +1,36 @@
+{
+  "name": "chatterday",
+  "version": "0.1.0",
+  "description": "A private, self-hosted voice and chat hangout for a small group, with a pixel-art house everyone lives in.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "setup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup.ps1",
+    "dev": "vite",
+    "build": "tsc --noEmit -p client && vite build",
+    "start": "node server/index.ts",
+    "invite": "node server/invite.ts",
+    "demo": "node scripts/demo.mjs",
+    "test": "node scripts/test-draw-avatar.mjs && node scripts/test-draw-pets-desks.mjs"
+  },
+  "dependencies": {
+    "@fontsource/vt323": "^5.3.0",
+    "livekit-client": "^2.23.0",
+    "livekit-server-sdk": "^2.19.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "ws": "^8.22.2",
+    "zustand": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/ws": "^8.5.0",
+    "@vitejs/plugin-react": "latest",
+    "typescript": "^5.9.0",
+    "vite": "^8.3.8"
+  }
+}

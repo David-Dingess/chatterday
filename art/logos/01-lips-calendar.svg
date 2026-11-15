@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<title>Chatterday - Lips on a calendar page</title>
+<rect width="512" height="512" rx="112" fill="#7c8cff"/><rect x="96" y="120" width="320" height="300" rx="36" fill="#fff6e8"/>
+<rect x="96" y="120" width="320" height="88" rx="36" fill="#f0554f"/>
+<rect x="96" y="172" width="320" height="36" fill="#f0554f"/>
+<rect x="169.60000000000002" y="88" width="28" height="72" rx="14" fill="#262a36"/>
+<rect x="314.4" y="88" width="28" height="72" rx="14" fill="#262a36"/><g transform="translate(256 318) scale(1.0) translate(-256 -318)">
+  <path d="M146 316 C176 276 214 258 238 272 C248 278 252 284 256 284 C260 284 264 278 274 272 C298 258 336 276 366 316 C330 324 290 326 256 326 C222 326 182 324 146 316 Z" fill="#e8336b"/>
+  <path d="M146 316 C182 324 222 330 256 330 C290 330 330 324 366 316 C344 368 300 392 256 392 C212 392 168 368 146 316 Z" fill="#c81f55"/>
+  <path d="M150 317 C200 330 312 330 362 317" fill="none" stroke="#7a0f33" stroke-width="6" stroke-linecap="round"/>
+  <ellipse cx="292" cy="356" rx="26" ry="8" fill="#fff" opacity="0.35"/>
+</g>
+</svg>

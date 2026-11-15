@@ -1,0 +1,2 @@
+// Written by scripts/make-icons.py. Do not edit by hand.
+export const ICON_NAMES = ['home', 'speaker', 'screen', 'mic', 'micoff', 'phones', 'phonesoff', 'leave', 'gear', 'plus', 'close', 'star', 'play', 'clip', 'smile', 'pencil', 'trash', 'door', 'up', 'down', 'full', 'note', 'here', 'gamepad', 'eye', 'heart', 'drop', 'pan', 'clock', 'thumb', 'lol', 'wow', 'sad', 'skull', 'fire', 'party', 'grid', 'gif', 'min', 'max', 'send', 'hangup', 'next', 'stop', 'wave', 'sleep', 'work', 'search', 'broom', 'dumbbell', 'shower'] as const;

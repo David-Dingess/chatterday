@@ -1,0 +1,23 @@
+node_modules/
+desktop/node_modules/
+# everything personal to one server: the database, uploads, secret keys
+data/
+# fetched by "npm run setup" and by the installer build
+bin/
+desktop/vendor/
+# built
+client/dist/
+desktop/dist/
+desktop/sharesound.exe
+# local settings and secrets
+.env
+desktop/server.txt
+desktop/tailscale-key.txt
+# sounds dropped in for the soundboard
+soundboard/
+*.log
+__pycache__/
+# each person's own entrance clip, dropped in by whoever runs the server
+entrance sounds/
+# the public half of this server's update-signing key (docs/SIGNED-UPDATES.md): every server has its own
+desktop/update-key.txt

@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self'" />
+<title>Chatterday</title>
+<style>
+  html, body { height: 100%; margin: 0; }
+  body { background: #050805; color: #9bffac; font: 18px/1.4 Consolas, 'Cascadia Mono', monospace; display: grid; place-items: center; }
+  header { position: fixed; left: 0; right: 0; top: 0; height: 30px; display: flex; align-items: center; padding-left: 12px; background: #38ff5c; color: #050805;
+    letter-spacing: 0.14em; -webkit-app-region: drag; user-select: none; }
+  header span { flex: 1; }
+  header button { -webkit-app-region: no-drag; width: 40px; height: 30px; margin: 0; padding: 0; background: none; color: inherit; border: 0; font: inherit; cursor: pointer; }
+  header button:hover { background: #000; color: #38ff5c; }
+  main { width: min(520px, 88vw); background: #0a140c; border: 2px solid #38ff5c; box-shadow: 8px 8px 0 #000; padding: 26px 28px; text-align: center; }
+  img { width: 56px; height: 56px; image-rendering: pixelated; }
+  h1 { font-size: 22px; font-weight: 400; text-transform: uppercase; margin: 10px 0 6px; }
+  p { color: #4f9a5c; margin: 0 0 12px; }
+  ol { text-align: left; margin: 14px 0; padding: 0; list-style: none; }
+  li { padding: 4px 0 4px 30px; position: relative; color: #4f9a5c; }
+  li::before { content: '[ ]'; position: absolute; left: 0; color: #4f9a5c; }
+  li.ok { color: #9bffac; } li.ok::before { content: '[x]'; color: #38ff5c; }
+  li.now { color: #fff; } li.now::before { content: '[>]'; color: #fff; }
+  input { width: 100%; box-sizing: border-box; background: #000; color: inherit; border: 2px solid #1f6a2e; padding: 8px 10px; font: inherit; margin-bottom: 4px; }
+  main button { margin-top: 8px; width: 100%; background: #38ff5c; color: #050805; border: 0; padding: 8px; font: inherit; cursor: pointer; box-shadow: 3px 3px 0 #000; }
+  main button.quiet { background: none; color: #4f9a5c; box-shadow: none; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .error { color: #ff5a4d; min-height: 22px; margin-top: 10px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header><span>CHATTERDAY</span><button onclick="chatterdayConnect.windowControl('minimize')" title="Minimise">_</button><button onclick="chatterdayConnect.windowControl('close')" title="Close">X</button></header>
+<main>
+  <img src="icon.png" alt="" />
+
+  <div id="fresh" hidden>
+    <h1>Connect to your friends</h1>
+    <p>Paste the address you were sent.</p>
+    <input id="link" placeholder="http://…:4477" autofocus />
+    <button id="go">Connect</button>
+    <button id="back" class="quiet" hidden>Back</button>
+  </div>
+
+  <div id="setup" hidden>
+    <h1>Getting you connected</h1>
+    <p id="lead"></p>
+    <ol>
+      <li id="s-install">Install Tailscale from Tailscale's own site and sign in with your own free account. In doing so you agree to Tailscale's terms.</li>
+      <li id="s-join">Open the share link your host sent you (it comes from Tailscale), sign in with that same account, and accept it.</li>
+      <li id="s-reach">The host's PC is answering.</li>
+    </ol>
+    <button id="download">Open Tailscale's download page</button>
+    <p id="note" style="margin-top:10px; font-size:15px">Chatterday is not part of Tailscale and is not affiliated with it. Tailscale is a trademark of Tailscale Inc.</p>
+    <button id="again" class="quiet">Check again</button>
+    <p id="where" style="margin:14px 0 0; font-size:15px; overflow-wrap:anywhere"></p>
+    <button id="other" class="quiet">Use a different address</button>
+    <button id="builtin" class="quiet" hidden>Go back to the address that came with the app</button>
+  </div>
+
+  <div class="error" id="error"></div>
+</main>
+<script>
+  const api = window.chatterdayConnect;
+  const $ = (id) => document.getElementById(id);
+  const mark = (id, state) => { $(id).className = state; };
+  let typing = false;             // the address box is open over the setup steps: leave it alone until Back
+
+  // What the app found: is the private network installed, is it on the host's network, does the host's PC answer.
+  async function look() {
+    const s = await api.state();
+    if (!s.serverUrl) { $('fresh').hidden = false; return; }
+    const n = await api.netState();
+    if (n.reachable) { api.retry(); return; }
+    if (typing) return;
+    $('setup').hidden = false;
+    // The address being tried is shown, so it can be read out to whoever runs the server. A typed one can be given up for the one the
+    // app was built with (the app forgets it and starts again).
+    $('where').textContent = 'Looking for it at ' + s.serverUrl;
+    $('builtin').hidden = !(s.typed && s.builtIn);
+    const running = n.installed && n.state === 'Running';
+    mark('s-install', running ? 'ok' : 'now');
+    mark('s-join', running ? 'now' : '');
+    mark('s-reach', '');
+    $('download').hidden = running;
+    $('lead').textContent = !n.installed
+      ? "Chatterday reaches your host's PC over Tailscale, a free private network. Chatterday does not include it: you set it up yourself, once, in three steps."
+      : !running
+        ? 'Tailscale is installed but not signed in. Open Tailscale (its icon is by the clock) and sign in with your account.'
+        : "Tailscale is on. Once you have accepted your host's share link, this connects by itself. If you have, their PC may be off or Chatterday not running there.";
+  }
+
+  async function go() {
+    $('go').disabled = true;
+    $('error').textContent = '';
+    let r;
+    try { r = await api.connect($('link').value); } catch { r = { error: 'That did not work. Try again.' }; }
+    if (r && r.error) { $('error').textContent = r.error; $('go').disabled = false; }
+  }
+  // "Use a different address": the address box, in place of the setup steps. For when the host's PC has moved to a new
+  // address and this copy of the app still carries the old one.
+  function other(open) {
+    typing = open;
+    $('error').textContent = '';
+    $('setup').hidden = open;
+    $('fresh').hidden = !open;
+    $('back').hidden = !open;
+    if (open) $('link').focus(); else look();
+  }
+  $('go').onclick = go;
+  $('link').onkeydown = (e) => { if (e.key === 'Enter') go(); };
+  $('download').onclick = () => api.openTailscaleDownload();
+  $('again').onclick = look;
+  $('other').onclick = () => other(true);
+  $('back').onclick = () => other(false);
+  $('builtin').onclick = () => { $('builtin').disabled = true; api.forget(); };
+  look();
+  setInterval(look, 8000);
+</script>
+</body>
+</html>

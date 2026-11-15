@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<title>Chatterday - Retro club patch</title>
+<rect width="512" height="512" rx="112" fill="#14161c"/>
+<defs><path id="ring10" d="M256 256 m-160 0 a160 160 0 1 1 320 0 a160 160 0 1 1 -320 0"/></defs>
+<circle cx="256" cy="256" r="212" fill="#262a36" stroke="#7c8cff" stroke-width="12"/>
+<circle cx="256" cy="256" r="126" fill="#7c8cff"/>
+<text font-family="'Arial Black','Segoe UI Black','Segoe UI',system-ui,sans-serif" font-weight="900" font-size="34" fill="#fff6e8" letter-spacing="2">
+  <textPath href="#ring10" textLength="990" lengthAdjust="spacing">CHATTERDAY • VOICE &amp; CHAT • FRIENDS ONLY • </textPath>
+</text>
+<path d="M186 280 L186 256 A70 70 0 0 1 326 256 L326 280" fill="none" stroke="#14161c" stroke-width="20" stroke-linecap="round"/>
+<rect x="166" y="258" width="44" height="74" rx="18" fill="#14161c"/>
+<rect x="302" y="258" width="44" height="74" rx="18" fill="#14161c"/>
+<circle cx="256" cy="300" r="14" fill="#f0554f"/>
+</svg>

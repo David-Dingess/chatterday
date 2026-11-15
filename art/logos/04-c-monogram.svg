@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<title>Chatterday - Talking C monogram</title>
+<rect width="512" height="512" rx="112" fill="#7c8cff"/>
+<path d="M363 166 A140 140 0 1 0 363 346" fill="none" stroke="#14161c" stroke-width="84" stroke-linecap="round"/>
+<circle cx="306" cy="256" r="16" fill="#fff6e8"/>
+<circle cx="358" cy="256" r="21" fill="#fff6e8"/>
+<circle cx="420" cy="256" r="27" fill="#fff6e8"/>
+</svg>

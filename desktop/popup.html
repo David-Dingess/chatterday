@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self'" />
+<title>Chatterday</title>
+<style>
+  html, body { height: 100%; margin: 0; background: transparent; overflow: hidden; }
+  body { font: 18px/1.2 Consolas, 'Cascadia Mono', monospace; color: var(--c); cursor: pointer; user-select: none; }
+  .box { position: absolute; inset: 0 6px 6px 0; display: flex; align-items: center; gap: 12px; padding: 0 12px; background: #050805; border: 2px solid var(--c); box-shadow: 6px 6px 0 #000; }
+  img { width: 40px; height: 40px; image-rendering: pixelated; flex: none; }
+  b { display: block; font-weight: 400; text-transform: uppercase; letter-spacing: 0.1em; font-size: 13px; opacity: 0.7; }
+  .count img { width: 20px; height: 20px; } .count .box { gap: 8px; padding: 0 10px; font-size: 16px; }
+  i { width: 8px; height: 8px; background: var(--c); flex: none; animation: blink 1.6s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0.25; } }
+</style>
+</head>
+<body>
+<div class="box"><img src="icon.png" alt="" /><div><b id="head"></b><span id="text"></span></div></div>
+<script>
+  const q = new URLSearchParams(location.search);
+  const colour = /^#[0-9a-f]{6}$/i.test(q.get('accent') || '') ? q.get('accent') : '#38ff5c';
+  document.body.style.setProperty('--c', colour);
+  const n = Number(q.get('online')) || 0;
+  if (q.get('kind') === 'toast') {
+    document.getElementById('head').textContent = 'Chatterday';
+    document.getElementById('text').textContent = q.get('text') || '';
+  } else {
+    document.body.className = 'count';
+    document.getElementById('head').remove();
+    document.getElementById('text').textContent = n + ' online now';
+  }
+  document.body.addEventListener('click', () => window.chatterdayPopup && chatterdayPopup.open());
+</script>
+</body>
+</html>

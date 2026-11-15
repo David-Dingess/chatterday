@@ -1,0 +1,54 @@
+{
+  "name": "chatterday-desktop",
+  "productName": "Chatterday",
+  "version": "0.1.9",
+  "description": "Desktop shell for a private Chatterday server",
+  "author": "Chatterday",
+  "private": true,
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "helper": "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe -nologo -optimize -platform:x64 -out:sharesound.exe sharesound.cs",
+    "dist": "npm run helper && electron-builder --win nsis --publish never"
+  },
+  "devDependencies": {
+    "electron": "^45.3.0",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "app.chatterday.desktop",
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "connect.html",
+      "popup.html",
+      "server.txt",
+      "presence.ps1",
+      "icon.png",
+      "tray.png",
+      "update-key.txt"
+    ],
+    "asarUnpack": [
+      "presence.ps1"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "artifactName": "Chatterday-Setup-${version}.exe"
+    },
+    "extraResources": [
+      {
+        "from": "sharesound.exe",
+        "to": "sharesound.exe"
+      }
+    ],
+    "electronLanguages": [
+      "en-US"
+    ]
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<title>Chatterday - Chatty calendar mascot</title>
+<rect width="512" height="512" rx="112" fill="#f5a623"/><rect x="112" y="136" width="272" height="280" rx="36" fill="#fff6e8"/>
+<rect x="112" y="136" width="272" height="76" rx="36" fill="#7c8cff"/>
+<rect x="112" y="176" width="272" height="36" fill="#7c8cff"/>
+<rect x="174.56" y="104" width="28" height="72" rx="14" fill="#14161c"/>
+<rect x="293.44" y="104" width="28" height="72" rx="14" fill="#14161c"/>
+<circle cx="206" cy="282" r="20" fill="#14161c"/><circle cx="213" cy="275" r="6" fill="#fff"/>
+<circle cx="290" cy="282" r="20" fill="#14161c"/><circle cx="297" cy="275" r="6" fill="#fff"/>
+<ellipse cx="176" cy="322" rx="18" ry="11" fill="#e8336b" opacity="0.45"/>
+<ellipse cx="320" cy="322" rx="18" ry="11" fill="#e8336b" opacity="0.45"/>
+<path d="M216 320 L280 320 Q278 376 248 376 Q218 376 216 320 Z" fill="#14161c"/>
+<ellipse cx="248" cy="362" rx="18" ry="9" fill="#e8336b"/>
+<g stroke="#14161c" stroke-width="14" stroke-linecap="round">
+  <line x1="410" y1="196" x2="444" y2="170"/><line x1="414" y1="246" x2="456" y2="242"/><line x1="408" y1="294" x2="442" y2="316"/>
+</g>
+<rect x="176" y="410" width="30" height="40" rx="12" fill="#14161c"/>
+<rect x="290" y="410" width="30" height="40" rx="12" fill="#14161c"/>
+</svg>
