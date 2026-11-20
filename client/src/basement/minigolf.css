@@ -1,0 +1,44 @@
+/* Mini golf, in the scenes (client/src/basement/minigolf.tsx). Sizes are the scene's own dots. */
+.mg-layer, .mg-cap, .mg-board, .mgs-card, .mg-spray { position: absolute; display: block; }
+.mg-layer { left: 0; top: 0; pointer-events: none; image-rendering: pixelated; }
+.mg-cap { cursor: grab; touch-action: none; }
+.mg-cap:active { cursor: grabbing; }
+
+/* the board at the top: a green painted sign on the trees' edge, the hole and whose putt it is */
+.mg-board { left: 50%; top: 3px; transform: translateX(-50%); max-width: 300px; padding: 2px 6px 3px; background: #1e5a32; color: #f6f0d8;
+  border: 1px solid #0e2a16; box-shadow: inset 0 1px 0 #3a8a52, inset 0 -1px 0 #123a20, 1px 2px 0 rgba(0, 0, 0, 0.5);
+  text-align: center; line-height: 1.05; cursor: pointer; white-space: nowrap; }
+.mg-board b { display: block; font-size: 8px; font-weight: 400; color: #f2d260; }
+.mg-board span { display: block; font-size: 7px; }
+.mg-board em { display: block; font-size: 6px; font-style: normal; color: #c8e8d0; white-space: normal; max-width: 260px; margin: 1px auto 0; }
+
+/* the scorecard: a paper card in the scene */
+.mgs-card { left: 50%; top: 40px; transform: translateX(-50%); padding: 4px 6px 6px; background: #f6f0dc; color: #2a1e14; border: 1px solid #1a1228;
+  box-shadow: inset 0 0 0 1px #c8b48a, 2px 2px 0 rgba(0, 0, 0, 0.6); font-size: 7px; line-height: 1.1; animation: mgs-card 0.25s steps(3); }
+@keyframes mgs-card { from { transform: translate(-50%, -8px); opacity: 0; } }
+.mgs-card-top { text-align: center; font-size: 6px; text-transform: uppercase; letter-spacing: 0.5px; color: #f6f0dc; background: #1e5a32; margin: -1px -2px 3px; padding: 1px 0; }
+.mgs-card table { border-collapse: collapse; }
+.mgs-card th, .mgs-card td { border: 1px solid #c8b48a; padding: 0 2px; min-width: 9px; text-align: center; font-weight: 400; }
+.mgs-card th { background: #e8dcb8; }
+.mgs-card th.now { background: #f2d260; }
+.mgs-card tr.par td { color: #6a5a44; }
+.mgs-card tr.turn td { background: #fff6c8; }
+.mgs-card td.who { text-align: left; white-space: nowrap; max-width: 52px; overflow: hidden; text-overflow: ellipsis; }
+.mgs-card td.who i { display: inline-block; width: 4px; height: 4px; border-radius: 50%; border: 1px solid #1a1228; margin-right: 2px; vertical-align: 0; }
+.mgs-card td.under { color: #1e7a32; }
+.mgs-card td.over { color: #b4322a; }
+.mgs-card p { margin: 3px 0 0; font-size: 6px; color: #5a4a36; text-align: center; }
+.mgs-card-buttons { display: flex; gap: 4px; justify-content: center; margin-top: 4px; }
+.mgs-card-buttons button { font: inherit; font-size: 7px; line-height: 1; padding: 2px 5px; min-height: 0; background: #1e5a32; color: #f6f0dc; border: 1px solid #0e2a16; box-shadow: 1px 1px 0 #000; cursor: pointer; }
+.mgs-card-buttons button:hover { background: #2e7a46; }
+
+/* the fountain's spray: a few drops thrown up and falling back, over and over */
+.mg-spray { width: 16px; height: 10px; pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 30%, #dff4ff 0 1px, transparent 1.2px),
+    radial-gradient(circle at 30% 60%, #bfe8f8 0 0.8px, transparent 1px),
+    radial-gradient(circle at 70% 55%, #bfe8f8 0 0.8px, transparent 1px),
+    radial-gradient(circle at 15% 90%, #9ad8f0 0 0.8px, transparent 1px),
+    radial-gradient(circle at 85% 88%, #9ad8f0 0 0.8px, transparent 1px);
+  animation: mg-spray 0.9s steps(3) infinite; }
+@keyframes mg-spray { 0% { transform: translateY(1px); opacity: 0.9; } 50% { transform: translateY(-1px); opacity: 1; } 100% { transform: translateY(1px); opacity: 0.9; } }

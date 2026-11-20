@@ -20,7 +20,7 @@ const blank = () => new Cv(FW, FH, UP);
 
 // drink: a drink held at the chest x2 (breathing), lifted for a sip x2. The drink itself is laid on by the app (see
 // marksOf for where). drink_sit: the same four, sitting.
-export const SPRITE_ROWS = ['walk_down', 'walk_left', 'walk_right', 'walk_up', 'idle', 'sit_front', 'sit_side', 'sit_back', 'gaming', 'sleep', 'gaming_back', 'dance', 'cheer', 'reach', 'punch', 'floored', 'drink', 'drink_sit'] as const;
+export const SPRITE_ROWS = ['walk_down', 'walk_left', 'walk_right', 'walk_up', 'idle', 'sit_front', 'sit_side', 'sit_back', 'gaming', 'sleep', 'gaming_back', 'dance', 'cheer', 'reach', 'punch', 'floored', 'drink', 'drink_sit', 'sweep', 'call', 'roast', 'roast_side', 'roast_back'] as const;
 export type SpriteRow = (typeof SPRITE_ROWS)[number];
 
 const EYE: RGB = [38, 28, 46];
@@ -92,7 +92,18 @@ export type Person = {
   glasses: string | null;
   top: Mat; arm: Mat; topKind: string; sleeve: number; trim: readonly [RGB, RGB]; top2: RGB; emblem: string | null;
   under?: Mat;                            // the shirt under a vest, cardigan, blazer or overalls
+  body?: Mat;                             // a shirt whose body is not like its sleeves
+  /** Tattoos on bare legs: rows of letters (tones in INK_TONES), one per row of bare skin from the knee down, each letter a dot
+   *  from the leg's left edge. f and b are [their right leg, their left leg] from the front and from behind, s their
+   *  near leg from the side. scripts/make-avatars.py draws the same. */
+  ink?: { f: readonly [readonly string[], readonly string[]]; b: readonly [readonly string[], readonly string[]]; s: readonly string[];
+    /** The same for an arm hanging at the side: 9 rows from the shoulder, 3 dots across; only what is bare is inked. */
+    armF?: readonly [readonly string[], readonly string[]]; armB?: readonly [readonly string[], readonly string[]]; armS?: readonly string[] };
   hatOffInBed?: boolean;                  // stiff hats come off for sleeping
+  shirtNo?: number;                       // a jersey's number, when it is somebody's own (otherwise worked out from their colour)
+  shirtNoCol?: RGB;                       // the colour of that number, when it is not the trim's
+  earring?: RGB;                          // the metal of their earrings, when not gold
+  glassesCol?: RGB;                       // the colour of their glasses' frames, when not the usual for the kind
   turnPattern?: boolean;                  // the top's pattern is lopsided, so it is mirrored on the back
   cuff?: RGB | null;
   pants: Mat; bottom: string;
@@ -236,6 +247,13 @@ const HAIR: Record<string, HairStyle> = {
   short: {
     f: plain([[4, 9, 17], [5, 6, 20], [6, 4, 21], [7, 3, 7], [7, 10, 15], [7, 18, 22], [8, 3, 5], [8, 20, 22], ...SIDES_F], [[5, 9], [5, 10], [6, 8]]),
     s: plain([[4, 9, 18], [5, 7, 20], [6, 6, 21], [7, 7, 22], [8, 9, 22], [9, 11, 22], ...LOWER_S]),
+  },
+  // Short all over but for one thin tail left long at the nape: it shows from the side and from behind.
+  rattail: {
+    f: plain([[4, 9, 17], [5, 6, 20], [6, 4, 21], [7, 3, 7], [7, 10, 15], [7, 18, 22], [8, 3, 5], [8, 20, 22], ...SIDES_F], [[5, 9], [5, 10], [6, 8]]),
+    s: plain([[4, 9, 18], [5, 7, 20], [6, 6, 21], [7, 7, 22], [8, 9, 22], [9, 11, 22], ...LOWER_S]),
+    sx: plain([[18, 21, 21], [19, 21, 21], [20, 21, 21], [21, 21, 21], [22, 22, 22], [23, 22, 22], [24, 22, 22], [25, 22, 22]]),
+    bx: plain([[19, 12, 13], [20, 12, 13], [21, 12, 13], [22, 12, 13], [23, 12, 12], [24, 12, 12], [25, 12, 12], [26, 12, 12]]),
   },
   sidepart: {
     f: plain([[3, 8, 18], [4, 6, 20], [5, 4, 21], [6, 3, 22], [7, 3, 22], [8, 3, 22], [9, 3, 15], [10, 3, 10], [11, 3, 5], ...SIDES_F],
@@ -1073,6 +1091,220 @@ const HAIR: Record<string, HairStyle> = {
     ]),
     tex: { f: texBraid(0, 25, 12), s: texBraid(12, 16, 14), b: texBraid(0, 25, 20) },
   },
+  // Worn down, parted in the middle, cut to the shoulders with choppy ends.
+  lob: {
+    f: art(3, [
+      '.........########.........',
+      '......######gg######......',
+      '....#######gg#########....',
+      '...########gg##########...',
+      '..#########gg###########..',
+      '..#########..###########..',
+      '..#######........#######..',
+      '..#####............#####..',
+      '..####..............####..',
+      '..####..............####..',
+      '..####..............####..',
+      '..####..............####..',
+      '..####..............####..',
+      '..####..............####..',
+      '..####..............####..',
+      '..#####............#####..',
+      '..#####............#####..',
+      '..#####............#####..',
+      '.######............######.',
+      '.#####..............#####.',
+      '.##.##..............##.##.',
+      '.#..#................#..#.',
+    ]),
+    s: art(3, [
+      '........###########.......',
+      '......###############.....',
+      '.....#################....',
+      '....###################...',
+      '....###################...',
+      '....####################..',
+      '.....###.###############..',
+      '.....#....##############..',
+      '...........#############..',
+      '...........#############..',
+      '...........#############..',
+      '...........#############..',
+      '...........#############..',
+      '...........#############..',
+      '...........#############..',
+      '...........##############.',
+      '............#############.',
+      '............#############.',
+      '.............############.',
+      '.............###########..',
+      '.............##.###.##.##.',
+      '.............#...#...#..#.',
+    ]),
+    back: 'fill', tex: { s: texStrands, b: texStrands },
+  },
+  // Long and straight, past the shoulders, parted in the middle and falling either side of the face.
+  longpart: {
+    f: art(3, [
+      '.........########.........',
+      '......######gg######......',
+      '....#######gg#########....',
+      '...########gg##########...',
+      '..#########gg###########..',
+      '..#########..###########..',
+      '..#######........#######..',
+      '..#####............#####..',
+      '..####..............####..',
+      '..####..............####..',
+      '..####..............####..',
+      '..####..............####..',
+      '..####..............####..',
+      '..####..............####..',
+      '..####..............####..',
+      '..#####............#####..',
+      '..#####............#####..',
+      '..#####............#####..',
+      '..#####............#####..',
+      '..#####............#####..',
+      '..#####............#####..',
+      '..#####............#####..',
+      '..####..............####..',
+      '...###..............###...',
+      '...##................##...',
+    ]),
+    s: NONE,                                                                  // the same as long's: set below
+    back: 'fill', tex: { f: texStrands, s: texStrands, b: texStrands },
+  },
+  // Worn down to the shoulders from a side part, more of it swept over to one side, the ends turning in soft waves.
+  sidelob: {
+    f: art(3, [
+      '.........########.........',
+      '......##g###########......',
+      '....###g##############....',
+      '...###g################...',
+      '..###g##################..',
+      '..##g..#################..',
+      '..###.......############..',
+      '..###..............#####..',
+      '..###...............####..',
+      '..###...............####..',
+      '..###................###..',
+      '..###................###..',
+      '..###................####.',
+      '..###................####.',
+      '..####..............####..',
+      '..####..............####..',
+      '..####..............#####.',
+      '.#####..............#####.',
+      '.####................####.',
+      '..####..............####..',
+      '...##.##..........##.##...',
+    ]),
+    s: art(3, [
+      '........###########.......',
+      '......###############.....',
+      '.....#################....',
+      '....###################...',
+      '....###################...',
+      '....####################..',
+      '.....###.###############..',
+      '.....#....##############..',
+      '...........#############..',
+      '...........#############..',
+      '...........#############..',
+      '...........##############.',
+      '...........##############.',
+      '...........#############..',
+      '...........#############..',
+      '...........##############.',
+      '............#############.',
+      '............############..',
+      '.............##.####.###..',
+      '..............#..##...#...',
+    ]),
+    back: 'fill', tex: { s: texStrands, b: texStrands },
+  },
+  // Drawn back from a middle part into a low ponytail that hangs forward over the left shoulder (the right as we look
+  // at them); from behind it starts at the nape and goes over that shoulder.
+  shoulderpony: {
+    f: art(3, [
+      '.........########.........',
+      '......######gg######......',
+      '....#######gg#########....',
+      '...#######gg###########...',
+      '...######....##########...',
+      '...####............####...',
+      '...###..............###...',
+      '...##................##...',
+      '...##................##...',
+      '...##................##...',
+      '...##................##...',
+      '...#..................##..',
+      '......................###.',
+      '......................###.',
+      '......................###.',
+      '.....................###..',
+      '.....................###..',
+      '....................###...',
+      '....................###...',
+      '...................###....',
+      '...................###....',
+      '...................###....',
+      '...................###....',
+      '...................##.....',
+      '....................#.....',
+    ]),
+    s: art(3, [
+      '.......############.......',
+      '.....################.....',
+      '....###################...',
+      '....###################...',
+      '.....##################...',
+      '.......################...',
+      '..........#############...',
+      '............###########...',
+      '.............##########...',
+      '.............##..######...',
+      '.............##..#######..',
+      '.................####.###.',
+      '.................####.###.',
+      '..................##..###.',
+      '......................###.',
+      '......................###.',
+      '......................###.',
+      '......................###.',
+      '.....................###..',
+      '.....................###..',
+      '.....................###..',
+      '.....................###..',
+      '.....................##...',
+      '......................#...',
+    ]),
+    back: art(3, [
+      '.........########.........',
+      '......##############......',
+      '....##################....',
+      '...####################...',
+      '...####################...',
+      '...####################...',
+      '...####################...',
+      '...####################...',
+      '...####################...',
+      '...####################...',
+      '...####################...',
+      '...####################...',
+      '...####################...',
+      '....######gggg########....',
+      '.........######...........',
+      '........#####.............',
+      '.......#####..............',
+      '......#####...............',
+      '.....####.................',
+      '....####..................',
+      '....###...................',
+    ]),
+    tex: { s: texStrands, b: texStrands },
+  },
   ponytail: {
     f: DOME_F,
     s: join(SLICK_S, art(8, [
@@ -1376,6 +1608,35 @@ const HAIR: Record<string, HairStyle> = {
     bx: art(2, ['......##....##....##......', '.....####..####..####.....', '.....####..####..####.....']),
   },
 };
+HAIR.longpart.s = HAIR.long.s;
+/** A shape made longer: the row at y repeated n more times, everything below it moved down to make room. */
+function stretch(sh: Shape, y: number, n: number): Shape {
+  const spans: Span[] = [];
+  for (const [sy, a, b] of sh.spans) {
+    if (sy < y) spans.push([sy, a, b]);
+    else if (sy > y) spans.push([sy + n, a, b]);
+    else for (let i = 0; i <= n; i++) spans.push([sy + i, a, b]);
+  }
+  return { spans, marks: sh.marks.map(([x, my, ch]) => [x, my > y ? my + n : my, ch] as const) };
+}
+// Very long and straight, well past the shoulders, parted in the middle: longpart, a little longer.
+// Below the chin it lies on the chest, inside the arms, so the arms still show.
+HAIR.xlong = {
+  f: join({ spans: HAIR.longpart.f.spans.filter((sp) => sp[0] <= 20), marks: HAIR.longpart.f.marks.filter(([, y]) => y <= 20) }, art(21, [
+    '..######..........######..',
+    '...#####..........#####...',
+    '....#####........#####....',
+    '.....####........####.....',
+    '......####......####......',
+    '......####......####......',
+    '.......###......###.......',
+    '.......###......###.......',
+    '.......###......###.......',
+    '.......##........##.......',
+    '.......#..........#.......',
+  ])),
+  s: stretch(HAIR.long.s, 22, 3), back: 'fill', tex: { f: texStrands, s: texStrands, b: texStrands },
+};
 const styleOf =(p: Person, key = hairKey(p)): HairStyle => HAIR[key] ?? HAIR.crop;
 
 // Beards: the front and the side. `mouth` marks the ones thick enough to sit round the mouth, which is then drawn
@@ -1422,7 +1683,15 @@ const BEARDS: Record<string, Beard> = {
     s: [[14, 13, 14], [15, 12, 14], [16, 11, 14], [17, 10, 14], [18, 9, 14], [19, 9, 13], [20, 10, 12]],
   },
 };
-const BEARDED = ['full', 'heavy', 'long', 'wizard', 'trim', 'medium', 'short', 'scruff', 'goatee'];
+// Short and squared off under the jaw. Above it the cheeks fade: [row, from, to, how much beard shows], the left side
+// here and the right mirrored; on the side view as written.
+BEARDS.boxed = {
+  f: [[17, 4, 7], [17, 18, 21], [17, 9, 16], [18, 4, 21], [19, 5, 20], [20, 5, 20], [21, 6, 19], [22, 7, 18]],
+  s: [[17, 5, 14], [18, 6, 14], [19, 6, 14], [20, 6, 14], [21, 7, 13], [22, 8, 12]],
+};
+const BOXED_FADE_F: (readonly [number, number, number, number])[] = [[14, 4, 4, 0.27], [15, 4, 4, 0.50], [15, 5, 5, 0.27], [16, 4, 4, 0.74], [16, 5, 5, 0.50], [16, 6, 6, 0.27]];
+const BOXED_FADE_S: (readonly [number, number, number, number])[] = [[14, 13, 14, 0.27], [15, 13, 14, 0.50], [15, 12, 12, 0.27], [16, 12, 14, 0.74], [16, 11, 11, 0.50], [16, 10, 10, 0.27]];
+const BEARDED = ['full', 'heavy', 'long', 'wizard', 'trim', 'medium', 'short', 'scruff', 'goatee', 'boxed'];
 
 const HEADSET = new Mat('#34343f', { hi: '#5b5b6c', lo: '#1f1f28' });
 const LAPTOP = new Mat('#aab0c2', { hi: '#d5d9e6', lo: '#787e94' });
@@ -1916,6 +2185,13 @@ function drawBeard(c: Cv, p: Person, view: 'f' | 's', y1 = 99) {
   }
   const beard = BEARDS[kind];
   if (!beard) return;
+  if (kind === 'boxed' && p.beardMat) {
+    const fade = view === 'f' ? [...BOXED_FADE_F, ...BOXED_FADE_F.map(([y, a, b, t]) => [y, 25 - b, 25 - a, t] as const)] : BOXED_FADE_S;
+    for (const [y, a, b, t] of fade) for (let x = a; x <= b; x++) c.tint(x, y, p.beardMat.base, t);
+    c.part(beard[view].filter((s) => s[0] <= y1), p.beardMat, '', 'b');
+    for (let x = view === 'f' ? 9 : 5; x < (view === 'f' ? 17 : 9); x++) c.px(x, 17, p.beardMat.hi);   // the moustache catches the light
+    return;
+  }
   if (kind === 'stubble') {
     for (const [y, x0, x1] of beard[view]) for (let x = x0; x <= x1; x++) c.tint(x, y, p.stubble, 0.30);
   } else if (p.beardMat) {
@@ -2065,7 +2341,7 @@ function glassesFront(c: Cv, p: Person, eyeDots: Set<string>) {
     c.rect(3, 13, 4, 14, FRAME_DARK); c.rect(21, 13, 22, 14, FRAME_DARK);
     return;
   }
-  const sp = SPECS[kind];
+  const sp = p.glassesCol ? { ...SPECS[kind], col: p.glassesCol } : SPECS[kind];
   if (!sp) return;
   const lenses = kind === 'monocle' ? [[14, 19]] : [[6, 11], [14, 19]];
   for (const [x0, x1] of lenses) {
@@ -2103,7 +2379,7 @@ function glassesSide(c: Cv, p: Person) {
     c.px(7, 13, WHITE);
     return;
   }
-  const sp = SPECS[kind];
+  const sp = p.glassesCol ? { ...SPECS[kind], col: p.glassesCol } : SPECS[kind];
   if (!sp) return;
   const square = kind === 'wire' || sp.corners;
   for (let x = 6; x < 12; x++) if (square || (x !== 6 && x !== 11)) { c.px(x, 12, sp.col); c.px(x, sp.y1, sp.col); }
@@ -2269,7 +2545,7 @@ function headFront(p0: Person, eyes = 'open', headset = false, awake = true): Cv
   }
   if (p.glasses && awake) glassesFront(c, p, eyeDots);
   hairFront(c, p, !awake);
-  if (has(p, 'earrings')) for (const x of [3, 22]) { c.px(x, 16, GOLD); c.px(x, 17, mix(GOLD, WHITE, 0.4)); }
+  if (has(p, 'earrings')) for (const x of [3, 22]) { c.px(x, 16, p.earring ?? GOLD); c.px(x, 17, mix(p.earring ?? GOLD, WHITE, 0.4)); }
   if (has(p, 'flower')) flower(c, p, 20, 7);
   if (headset) {
     headsetBand(c, p);
@@ -2313,7 +2589,7 @@ function headSide(p0: Person, eyes = 'open', headset = false): Cv {
   }
   if (p.glasses) glassesSide(c, p);
   hairSide(c, p);
-  if (has(p, 'earrings')) { c.px(15, 16, GOLD); c.px(15, 17, mix(GOLD, WHITE, 0.4)); }
+  if (has(p, 'earrings')) { c.px(15, 16, p.earring ?? GOLD); c.px(15, 17, mix(p.earring ?? GOLD, WHITE, 0.4)); }
   if (has(p, 'flower')) flower(c, p, 13, 7);
   if (headset) {
     const st = styleOf(p);
@@ -2411,16 +2687,41 @@ const SKIRTS = ['skirt', 'longskirt'];
 const bareLegs = (p: Person) => p.bottom === 'shorts' || p.bottom === 'bermuda' || p.bottom === 'skirt';
 const shortsCut = (p: Person, rows: number) => (p.bottom === 'bermuda' ? Math.min(Math.max(rows - 1, 3), 5) : Math.min(rows, 3));
 const narrow = (rows: Span[]): Span[] => rows.map(([y, a, b]) => [y, a + 1, b - 1] as Span);
+const INK_TONES: Record<string, RGB> = { b: rgb('#3b6fc4'), o: rgb('#e8902a'), k: rgb('#26222a'), w: rgb('#f4e3b0'), y: rgb('#f2c230'), r: rgb('#c8382c'), g: rgb('#3f8f5a'), t: rgb('#2fa3a8'), n: rgb('#7a4a2a') };
+/** How much of the ink shows: mixed into the skin under it (and its light and shade), so it reads as skin, not stickers. */
+const INK_STRENGTH = 0.5;
+/** Inks the rows of a bare leg (the knee first) from rows of letters. */
+function inkOn(c: Cv, rws: readonly Span[], art: readonly string[] | null | undefined) {
+  if (!art) return;
+  rws.forEach(([y, a, b], i) => {
+    if (i >= art.length) return;
+    for (let x = a; x <= b; x++) { const t = INK_TONES[art[i][x - a] ?? '.']; if (t) c.tint(x, y, t, INK_STRENGTH); }
+  });
+}
+/** Inks the bare part (below the sleeve, row sl on) of an arm hanging at the side: rows from the shoulder down. */
+function inkArm(c: Cv, rws: readonly Span[], sl: number, art: readonly string[] | null | undefined) {
+  if (art) inkOn(c, rws.slice(sl), art.slice(sl));
+}
+/** Single inked dots: [x, y, letter]. */
+function inkSpots(c: Cv, spots: readonly (readonly [number, number, string])[]) {
+  for (const [x, y, ch] of spots) { const t = INK_TONES[ch]; if (t) c.tint(x, y, t, INK_STRENGTH); }
+}
+/** The ink for one arm hanging at the side, from the front or behind: side 0 is the arm on the left of the picture. */
+const armInkOf = (p: Person, back: boolean, side: number) => (!p.ink?.armF || !p.ink.armB ? null : back ? p.ink.armB[1 - side] : p.ink.armF[side]);
+/** The ink for one leg from the front or behind: side 0 is the leg on the left of the picture. */
+const inkOf = (p: Person, back: boolean, side: number) => (!p.ink ? null : back ? p.ink.b[1 - side] : p.ink.f[side]);
 
 /** One straight leg from ytop to ybot, seen from the front or the back. `outer` is the x of its outside edge. */
-function legSpans(c: Cv, p: Person, x0: number, x1: number, ytop: number, ybot: number, outer = x0) {
+function legSpans(c: Cv, p: Person, x0: number, x1: number, ytop: number, ybot: number, outer = x0, art: readonly string[] | null = null) {
   const rws = span(x0, ytop, ybot + 1, x1), b = p.bottom;
   if (b === 'shorts' || b === 'bermuda') {                                    // shorts over bare skin
     const cut = shortsCut(p, rws.length);
     c.part(rws.slice(0, cut), p.pants, '', 'rb');
     c.part(narrow(rws.slice(cut)), p.skin, '', 'r');
+    inkOn(c, narrow(rws.slice(cut)), art);
   } else if (SKIRTS.includes(b)) {                                            // bare legs; the skirt goes on top afterwards
     c.part(narrow(rws), p.skin, '', 'r');
+    inkOn(c, narrow(rws), art);
   } else if (b === 'leggings') {
     c.part([...rws.slice(0, 1), ...narrow(rws.slice(1))], p.pants, '', 'r');
   } else if (b === 'joggers') {                                               // a stripe down the outside, gathered in at the ankle
@@ -2501,7 +2802,7 @@ function numberAt(c: Cv, n: number, x: number, y: number, col: RGB) {
   }
 }
 /** A shirt number that is always the same for the same person: worked out from their colour. */
-const shirtNumber = (p: Person) => 1 + pm(p.accent[0] * 3 + p.accent[1] * 5 + p.accent[2] * 7, 99);
+const shirtNumber = (p: Person) => p.shirtNo ?? 1 + pm(p.accent[0] * 3 + p.accent[1] * 5 + p.accent[2] * 7, 99);
 
 function drawEmblem(c: Cv, p: Person, top: number) {
   const two = p.top2;
@@ -2521,7 +2822,7 @@ function torsoFront(c: Cv, p: Person, top: number, hip: number, back: boolean, s
   const t = new Cv(FW, FH);                                                     // on a layer of its own, so the waist can be shaped afterwards
   const tw = p.tw, x0 = CX - tw, x1 = CX + tw - 1;
   const kind = p.topKind, sk = p.skin, under = p.under ?? p.top;
-  const worn = kind === 'overalls' ? under : p.top;
+  const worn = kind === 'overalls' ? under : (p.body ?? p.top);
   // From behind, a lopsided pattern is the other way round: what was on the left is on the right.
   const pat = worn.pat;
   const mat = back && pat && p.turnPattern ? new Mat(worn.base, { hi: worn.hi, lo: worn.lo, pat: (dx, dy, c, m) => pat(-1 - dx, dy, c, m) }) : worn;
@@ -2604,7 +2905,7 @@ function torsoFront(c: Cv, p: Person, top: number, hip: number, back: boolean, s
     t.px(CX - 3, top, two); t.px(CX + 2, top, two);
     t.rect(CX - 2, top + (back ? 0 : 1), CX + 1, top + (back ? 0 : 1), two);
     for (let y = top + 2; y <= hip; y++) { t.px(x0 + 1, y, two); t.px(x1 - 1, y, two); }
-    numberAt(t, shirtNumber(p), CX, top + (back ? 3 : 4), two);
+    numberAt(t, shirtNumber(p), CX, top + (back ? 3 : 4), p.shirtNoCol ?? two);
   } else if (kind === 'overalls') {                                           // a bib and straps over the shirt
     const o = p.top;
     if (!back) t.rect(CX - 2, top, CX + 1, top, sk.lo);
@@ -2693,12 +2994,13 @@ function torsoFront(c: Cv, p: Person, top: number, hip: number, back: boolean, s
   c.paste(t, 0, 0);
 }
 
-function armDown(c: Cv, p: Person, x0: number, top: number, dy = 0, watch = false) {
+function armDown(c: Cv, p: Person, x0: number, top: number, dy = 0, watch = false, art: readonly string[] | null = null) {
   const ys = top + 1 + dy, sl = p.sleeve;
   c.part(span(x0, ys, ys + sl, x0 + 2), p.arm, 'tl', 'rb', [x0, ys]);
   if (p.cuff && sl > 0) c.rect(x0, ys + sl - 1, x0 + 2, ys + sl - 1, p.cuff);
   if (sl >= 7) c.part(span(x0, ys + sl, ys + 9, x0 + 2), p.skin, '', 'rb');
   else c.part(span(x0, ys + sl, ys + 9, x0 + 2), p.skin, 'l', 'rb');
+  inkArm(c, span(x0, ys, ys + 9, x0 + 2), sl, art);
   if (watch) {                                                              // on the wrist, just past a long sleeve
     const y = sl >= 7 ? ys + 7 : ys + 6;
     c.rect(x0, y, x0 + 2, y, rgb('#d43b3b'));
@@ -2707,14 +3009,19 @@ function armDown(c: Cv, p: Person, x0: number, top: number, dy = 0, watch = fals
 }
 
 /** An arm raised straight up from the shoulder, hand open at the top. */
-function armUp(c: Cv, p: Person, x0: number, top: number) {
+function armUp(c: Cv, p: Person, x0: number, top: number, art: readonly string[] | null = null) {
   const sl = p.sleeve;
   const sp: Span[] = [];
-  for (let y = top + 2; y > top - 7; y--) sp.push([y, x0, x0 + 2]);          // from the shoulder upwards
+  // On somebody narrow the shoulder is under the face, so the arm leans out as it rises, to come up beside the head
+  // (the face is CX - 9 to CX + 8) rather than across the cheek.
+  const dir = x0 < CX ? -1 : 1, out = x0 < CX ? Math.max(0, x0 - (CX - 12)) : Math.max(0, CX + 9 - x0);
+  for (let i = 0, y = top + 2; y > top - 7; y--, i++) { const dx = dir * Math.min(out, Math.max(0, i - 1)); sp.push([y, x0 + dx, x0 + dx + 2]); }   // from the shoulder upwards
   c.part(sp.slice(0, Math.min(sl, 5)), p.arm, 'tl', 'rb', [x0, top + 1]);
   c.part(sp.slice(Math.min(sl, 5)), sl >= 7 ? p.arm : p.skin, 'l', 'r');
-  c.part([[top - 8, x0, x0 + 2], [top - 7, x0, x0 + 2]], p.skin, 't', 'r');
-  c.px(x0 < CX ? x0 - 1 : x0 + 3, top - 8, p.skin.base);                      // a thumb
+  if (sl < 7) inkArm(c, sp, Math.min(sl, 5), art);
+  const hx = x0 + dir * out;
+  c.part([[top - 8, hx, hx + 2], [top - 7, hx, hx + 2]], p.skin, 't', 'r');
+  c.px(hx < CX ? hx - 1 : hx + 3, top - 8, p.skin.base);                      // a thumb
 }
 
 type Arm = 'down' | 'up' | 'wave' | 'type' | 'hold' | 'drink';      // (drink: nothing here; frameDrink draws that arm itself, over the head)
@@ -2776,6 +3083,31 @@ function onBack(c: Cv, p: Person, top: number, hip: number, sit: boolean) {
   }
 }
 
+/** Sitting with their back to us: the seat of their trousers (or skirt, or dress) over the seat, and their lower legs
+ *  hanging down either side of a stool's post. A chair with a back hides all of this (the room draws the chair's back
+ *  over them); a bar stool, a bucket or a stool at the table does not, and without it they had no bottom or legs. */
+function seatBack(c: Cv, p: Person, hip: number, seat: number, legX: [number, number][]) {
+  const hw = p.hw ?? p.tw, xa = CX - hw, xb = CX + hw - 1;
+  const cloth = p.topKind === 'dress' ? (p.body ?? p.top) : p.pants;
+  const bare = bareLegs(p) || p.topKind === 'dress';
+  legX.forEach(([lx0, lx1], side) => {
+    const [tx0, tx1] = side === 0 ? [lx0 - 1, lx1] : [lx0, lx1 + 1];
+    if (bare) { c.part(span(lx0 + 1, seat + 1, FEET - 1, lx1 - 1), p.skin, '', 'r'); inkOn(c, span(lx0 + 1, seat + 1, FEET - 1, lx1 - 1), inkOf(p, true, side)); }
+    else if (p.bottom === 'leggings') c.part(span(lx0 + 1, seat + 1, FEET - 1, lx1 - 1), p.pants, '', 'r');
+    else {
+      c.part(span(lx0, seat + 1, FEET - 1, lx1), p.pants, '', 'r');
+      if (p.bottom === 'jeans') c.rect(lx0, FEET - 2, lx1, FEET - 2, mix(p.pants.base, WHITE, 0.42));
+      if (p.bottom === 'joggers') c.rect(lx0, FEET - 2, lx1, FEET - 2, p.pants.lo);
+    }
+    shoeFront(c, p, tx0, tx1, lx0, lx1, 0);
+  });
+  if (p.bottom === 'longskirt') c.part(span(xa + 1, seat + 1, FEET - 1, xb - 1), p.pants, '', 'rb');
+  // the seat: as wide as the hips, a dot wider where it spreads on the stool, rounded at the bottom, parted down the middle
+  c.part([[hip + 1, xa, xb], ...span(xa - 1, hip + 2, seat + 1, xb + 1), [seat + 1, xa, xb]], cloth, '', 'rb');
+  for (let y = hip + 2; y <= seat; y++) c.px(CX - 1, y, cloth.lo);
+  c.rect(xa, seat + 1, xb, seat + 1, cloth.lo);
+}
+
 /** Front or back view. Returns the y of the torso's top row. */
 function bodyFront(c: Cv, p: Person, o: FrontOpts): number {
   const { lift = [0, 0], arms = ['down', 'down'], armDy = [0, 0], sit = false, back = false, legs = true } = o;
@@ -2784,12 +3116,13 @@ function bodyFront(c: Cv, p: Person, o: FrontOpts): number {
   const [top, hip] = frontLevels(p, o);
   if (sit) {
     const [, seat] = seatOf(p);
-    if (legs) {
+    if (back) { if (legs) seatBack(c, p, hip, seat, legX); }
+    else if (legs) {
       legX.forEach(([lx0, lx1], side) => {
         const thigh = new Mat(p.pants.hi, { lo: p.pants.base });
         const [tx0, tx1] = side === 0 ? [lx0 - 1, lx1] : [lx0, lx1 + 1];
         c.part(span(tx0, hip + 1, seat + 1, tx1), thigh, '', 'rb');
-        if (bareLegs(p)) c.part(span(lx0 + 1, seat + 1, FEET - 1, lx1 - 1), sk, '', 'r');
+        if (bareLegs(p)) { c.part(span(lx0 + 1, seat + 1, FEET - 1, lx1 - 1), sk, '', 'r'); inkOn(c, span(lx0 + 1, seat + 1, FEET - 1, lx1 - 1), inkOf(p, back, side)); }
         else if (p.bottom === 'leggings') c.part(span(lx0 + 1, seat + 1, FEET - 1, lx1 - 1), p.pants, '', 'r');
         else {
           c.part(span(lx0, seat + 1, FEET - 1, lx1), p.pants, '', 'r');
@@ -2803,19 +3136,26 @@ function bodyFront(c: Cv, p: Person, o: FrontOpts): number {
   } else {
     legX.forEach(([lx0, lx1], side) => {
       const up = lift[side];
-      legSpans(c, p, lx0, lx1, hip + 1, FEET - 2 - up, side === 0 ? lx0 : lx1);
+      legSpans(c, p, lx0, lx1, hip + 1, FEET - 2 - up, side === 0 ? lx0 : lx1, inkOf(p, back, side));
       const [sx0, sx1] = side === 0 ? [lx0 - 1, lx1] : [lx0, lx1 + 1];
       shoeFront(c, p, sx0, sx1, lx0, lx1, up);
     });
+    if ((p.bottom === 'shorts' || p.bottom === 'bermuda') && !lift[0] && !lift[1]) {
+      // Shorts are one piece at the top: joined across, a crease down the middle, and only the hem split into legs (left
+      // as two legs, the gap ran dark right up to the waistband, which shows on anything lighter than black).
+      const a = legX[0][1], b = legX[1][0], cut = shortsCut(p, FEET - 2 - hip);
+      c.rect(a, hip + 1, b, hip + 1, p.pants.base);
+      for (let y = hip + 2; y < hip + cut; y++) { c.rect(a, y, b, y, p.pants.base); c.rect(CX - 1, y, CX - 1, y, p.pants.lo); }
+    }
     if (SKIRTS.includes(p.bottom)) skirtFront(c, p, hip, false);
   }
   // arms that hang go behind the torso edge; drawn first
   for (const side of [0, 1]) {
     const ax = side === 0 ? CX - tw - 3 : CX + tw;
-    if (arms[side] === 'down') armDown(c, p, ax, top, armDy[side], has(p, 'watch') && side === (back ? 0 : 1));
-    else if (arms[side] === 'up') armUp(c, p, ax, top);
+    if (arms[side] === 'down') armDown(c, p, ax, top, armDy[side], has(p, 'watch') && side === (back ? 0 : 1), armInkOf(p, back, side));
+    else if (arms[side] === 'up') armUp(c, p, ax, top, armInkOf(p, back, side));
   }
-  torsoFront(c, p, top, hip, back, sit && back && !legs);
+  torsoFront(c, p, top, hip, back, sit && back);
   if (back) onBack(c, p, top, hip, sit);
   if (arms.includes('type') && !back) {                                        // a laptop on the lap, lid towards us
     c.part(span(CX - 6, top + 3, top + 10, CX + 5), LAPTOP, 't', 'rb');
@@ -2827,31 +3167,43 @@ function bodyFront(c: Cv, p: Person, o: FrontOpts): number {
     const ax = side === 0 ? CX - tw - 3 : CX + tw;
     const mode = arms[side];
     if (mode === 'wave') {                                                    // upper arm out, forearm straight up, open hand
-      c.part(span(ax, top + 1, top + 4, ax + 5), bare ? sk : p.arm, 't', 'b', [ax, top + 1]);
+      c.part(span(ax, top + 1, top + 4, ax + 5), bare ? sk : p.arm, 't', 'b', p.arm.trim ? undefined : [ax, top + 1]);   // no cuff along an arm held out sideways
       const fore = p.sleeve >= 7 ? p.arm : sk;
       c.part(span(ax + 3, top - 4, top + 3, ax + 5), fore, 'l', 'r');
       if (!bare) c.rect(ax + 4, top + 1, ax + 4, top + 3, p.sleeve < 7 ? p.arm.base : fore.base);
+      const art = armInkOf(p, back, side);
+      if (art && p.sleeve < 7) {                                              // the forearm stands up from the elbow: its ink the other way up
+        const spots: [number, number, string][] = [];
+        for (let k = 0; k < 3; k++) for (let j = 0; j < 3; j++) spots.push([ax + 3 + j, top - k, art[4 + k][j]]);
+        inkSpots(c, spots);
+      }
       c.part(span(ax + 3, top - 7, top - 4, ax + 7), sk, 't', 'rb');
     } else if (mode === 'type' || mode === 'hold') {
       const dy = armDy[side];
       c.part(span(ax, top + 1, top + 1 + Math.min(p.sleeve, 5), ax + 2), p.arm, 'tl', 'rb', [ax, top + 1]);
-      if (p.sleeve < 5) c.part(span(ax, top + 1 + p.sleeve, top + 6, ax + 2), sk, 'l', 'rb');
-      if (back) continue;
-      if (mode === 'type') {
-        const hx = side === 0 ? CX - 8 : CX + 6;
-        c.rect(hx, top + 8 + dy, hx + 1, top + 9 + dy, sk.base);
-        c.rect(hx, top + 9 + dy, hx + 1, top + 9 + dy, sk.lo);
+      if (p.sleeve < 5) {
+        c.part(span(ax, top + 1 + p.sleeve, top + 6, ax + 2), sk, 'l', 'rb');
+        inkArm(c, span(ax, top + 1, top + 6, ax + 2), p.sleeve, armInkOf(p, back, side));
       }
-      if (mode === 'hold') {
-        // The forearm, in across the body from the elbow to the hand on the controller. (Without it the upper arm
-        // stops at the elbow and the hand is by itself on the controller: armless, with a ball where each hand should be.)
-        const hx = side === 0 ? CX - 8 : CX + 5;                              // the hand's left-hand column
+      if (back) continue;
+      {
+        // The forearm, in across the body from the elbow to the hand on the controller or the laptop. (Without it the
+        // upper arm stops at the elbow and the hand is by itself: armless, with a ball where each hand should be. The
+        // typing hands were drawn that way until 2026-11-18.)
+        const hx = side === 0 ? CX - 8 : CX + 5;                              // the forearm's left-hand column where it reaches the hand
         const fore = p.sleeve >= 7 ? p.arm : sk;
         for (let i = 0; i < 3; i++) {
           const fx = round(ax + (hx - ax) * (i + 1) / 3);
           c.part([[top + 6 + i + dy, fx, fx + 2]], fore, i === 0 ? 't' : '', i === 2 ? 'b' : '');
+          const art = armInkOf(p, false, side);
+          if (art && fore === sk) inkSpots(c, [0, 1, 2].map((j) => [fx + j, top + 6 + i + dy, art[4 + i][j]] as const));   // inked, a step at a time from the elbow
           if (fore !== sk) c.px(fx + (side === 0 ? 2 : 0), top + 6 + i + dy, fore.lo);   // a sleeve the colour of the shirt: its lower edge, so it shows against the body
         }
+      }
+      if (mode === 'type') {                                                  // the hand on the keyboard's edge, at the end of the forearm
+        const hx = side === 0 ? CX - 8 : CX + 6;
+        c.rect(hx, top + 8 + dy, hx + 1, top + 9 + dy, sk.base);
+        c.rect(hx, top + 9 + dy, hx + 1, top + 9 + dy, sk.lo);
       }
     }
   }
@@ -2877,7 +3229,7 @@ const slanted = (x0: number, x1: number, ytop: number, ybot: number, shift: numb
   return range(0, n + 1).map((i) => { const d = round(shift * i / Math.max(1, n)); return [ytop + i, x0 + d, x1 + d] as Span; });
 };
 
-type SideArm = 'down' | 'back' | 'high' | 'punch' | 'rest' | 'type' | 'hold';
+type SideArm = 'down' | 'back' | 'high' | 'punch' | 'rest' | 'type' | 'hold' | 'none';
 type SideOpts = { y0?: number; stride?: number; sit?: boolean; arm?: SideArm; armDy?: number };
 
 /** How deep the body is from the side. */
@@ -2927,7 +3279,8 @@ function bodySide(c: Cv, p: Person, o: SideOpts): number {
       const cut = b === 'shorts' ? 3 : shortsCut(p, rws.length);
       c.part(rws.slice(0, cut), pmat, '', 'rb');
       c.part(narrow(rws.slice(cut)), smat, '', 'r');
-    } else if (skirt) c.part(narrow(rws), smat, '', 'r');
+      if (near) inkOn(c, narrow(rws.slice(cut)), p.ink?.s);
+    } else if (skirt) { c.part(narrow(rws), smat, '', 'r'); if (near) inkOn(c, narrow(rws), p.ink?.s); }
     else if (b === 'leggings') c.part([...rws.slice(0, 1), ...narrow(rws.slice(1))], pmat, '', 'r');
     else if (b === 'joggers') {
       c.part([...rws.slice(0, -1), ...narrow(rws.slice(-1))], pmat, '', 'r');
@@ -2950,7 +3303,7 @@ function bodySide(c: Cv, p: Person, o: SideOpts): number {
     top = seat - 3 - 10 + y0;
     const kx = x0 - 5;                                                        // knee
     c.part(span(kx, seat - 4, seat + 1, x1), p.pants, 't', 'b');
-    if (bareLegs(p)) c.part(span(kx + 1, seat + 1, FEET - 1, kx + 4), sk, '', 'r');
+    if (bareLegs(p)) { c.part(span(kx + 1, seat + 1, FEET - 1, kx + 4), sk, '', 'r'); inkOn(c, span(kx + 1, seat + 1, FEET - 1, kx + 4), p.ink?.s); }
     else if (p.bottom === 'leggings') c.part(span(kx + 1, seat + 1, FEET - 1, kx + 4), p.pants, '', 'r');
     else {
       c.part(span(kx, seat + 1, FEET - 1, kx + 4), p.pants, '', 'r');
@@ -2974,7 +3327,7 @@ function bodySide(c: Cv, p: Person, o: SideOpts): number {
     }
     tb = hip;
   }
-  const mat = kind === 'overalls' ? under : p.top;
+  const mat = kind === 'overalls' ? under : (p.body ?? p.top);
   c.part([[top, x0 + 1, x1 - 1], ...span(x0, top + 1, tb + 1, x1)], mat, 't', 'rb', [CX, top]);
   c.rect(CX - 3, top - 1, CX + 1, top - 1, sk.lo);
   if (kind === 'jacket') for (let y = top; y <= tb; y++) c.px(x0, y, p.trim[(y - top) % 2 === 1 ? 0 : 1]);
@@ -3024,31 +3377,51 @@ function bodySide(c: Cv, p: Person, o: SideOpts): number {
     c.part(rws.slice(0, sl), p.arm, 'tl', 'rb', [ax0, top + 1]);
     if (p.cuff && sl > 0) { const [y, a, b] = rws[sl - 1]; c.rect(a, y, b, y, p.cuff); }
     c.part(rws.slice(sl), sk, sl < 7 ? 'l' : '', 'rb');
+    inkArm(c, rws, sl, p.ink?.armS);
   } else if (arm === 'back') {                                                // drawn back, ready to swing
     const rws = slanted(ax0, ax1, top + 1, top + 8, 4);
     c.part(rws.slice(0, sl), p.arm, 'tl', 'rb', [ax0, top + 1]);
     c.part(rws.slice(sl), sk, sl < 7 ? 'l' : '', 'rb');
-  } else if (arm === 'high') {
-    // hand up and forward, for a high five: frameSide draws it, over the head
+    inkArm(c, rws, sl, p.ink?.armS);
+  } else if (arm === 'high' || arm === 'none') {
+    // hand up and forward, for a high five, or on a broom or a phone: the frame draws it, over the head
   } else if (arm === 'punch') {                                               // straight out at shoulder height, fist first
     c.part(span(ax0, top + 1, top + 4, ax1), sl < 3 ? sk : p.arm, 'tl', 'rb', [ax0, top + 1]);
     const fore = sl >= 7 ? p.arm : sk;
     c.part([[top + 3, ax0 - 8, ax1], [top + 4, ax0 - 8, ax1]], fore, 't', 'b');
+    const art = p.ink?.armS;
+    if (art && fore === sk) {                                                 // inked outward from the elbow, the length of the forearm
+      const spots: [number, number, string][] = [];
+      for (let k = 0; k < 6; k++) for (let j = 0; j < 2; j++) spots.push([ax0 - 1 - k, top + 3 + j, art[4 + Math.floor(k / 2)][j]]);
+      inkSpots(c, spots);
+    }
     c.rect(ax0 - 11, top + 2, ax0 - 9, top + 5, sk.base);
     c.rect(ax0 - 11, top + 5, ax0 - 9, top + 5, sk.lo);
   } else if (arm === 'rest') {
     c.part(span(ax0, top + 1, top + 1 + Math.min(sl, 6), ax1), p.arm, 'tl', 'rb', [ax0, top + 1]);
-    if (sl < 6) c.part(span(ax0, top + 1 + sl, top + 7, ax1), sk, 'l', 'rb');
+    if (sl < 6) { c.part(span(ax0, top + 1 + sl, top + 7, ax1), sk, 'l', 'rb'); inkArm(c, span(ax0, top + 1, top + 7, ax1), sl, p.ink?.armS); }
     const fore = sl >= 7 ? p.arm : sk;
     c.part([[top + 7, ax0 - 3, ax1], [top + 8, ax0 - 4, ax1]], fore, 't', 'b');
+    const art = p.ink?.armS;
+    if (art && fore === sk) {
+      const spots: [number, number, string][] = [];
+      for (let k = 0; k < 3; k++) for (let j = 0; j < 2; j++) spots.push([ax0 - 1 - k, top + 7 + j, art[4 + k][j]]);
+      inkSpots(c, spots);
+    }
     c.rect(ax0 - 5, top + 7, ax0 - 4, top + 8, sk.base); c.px(ax0 - 5, top + 8, sk.lo);
   } else {                                                                    // type / hold: forearm reaches forward
     c.part(span(ax0, top + 1, top + 1 + Math.min(sl, 5), ax1), p.arm, 'tl', 'rb', [ax0, top + 1]);
-    if (sl < 5) c.part(span(ax0, top + 1 + sl, top + 6, ax1), sk, 'l', 'rb');
+    if (sl < 5) { c.part(span(ax0, top + 1 + sl, top + 6, ax1), sk, 'l', 'rb'); inkArm(c, span(ax0, top + 1, top + 6, ax1), sl, p.ink?.armS); }
     const fy = top + 5 + armDy;
     const fore = sl >= 7 ? p.arm : sk;
     const reach = arm === 'type' ? 8 : 7;
     c.part([[fy, ax0 - reach + 2, ax1], [fy + 1, ax0 - reach + 2, ax1]], fore, 't', 'b');
+    const art = p.ink?.armS;
+    if (art && fore === sk) {                                                 // the forearm reaching forward: inked outward from the elbow
+      const spots: [number, number, string][] = [];
+      for (let k = 0; k < 3; k++) for (let j = 0; j < 2; j++) spots.push([ax0 - 1 - k, fy + j, art[4 + k][j]]);
+      inkSpots(c, spots);
+    }
     c.rect(ax0 - reach, fy, ax0 - reach + 1, fy + 1, sk.base); c.px(ax0 - reach, fy + 1, sk.lo);
     if (arm === 'hold') {
       c.part([[fy - 1, ax0 - reach - 2, ax0 - reach], [fy, ax0 - reach - 3, ax0 - reach - 1], [fy + 1, ax0 - reach - 3, ax0 - reach - 1], [fy + 2, ax0 - reach - 2, ax0 - reach - 1]], HEADSET, 't', 'b');
@@ -3077,6 +3450,8 @@ function frameFront(p: Person, o: FrontOpts & { eyes?: string; headset?: boolean
   bodyFront(c, p, o);
   const eyes = o.eyes ?? 'open', headset = o.headset ?? false;
   c.paste(head(p, `f${eyes}${headset}`, () => headFront(p, eyes, headset)), CX - 13, top - 23);
+  // Arms raised beside the head come in front of hair that hangs past it (long hair would hide all but the hands).
+  if (!o.back) (o.arms ?? []).forEach((arm, side) => { if (arm === 'up') armUp(c, p, side === 0 ? CX - p.tw - 3 : CX + p.tw, top, armInkOf(p, false, side)); });
   return c;
 }
 
@@ -3096,16 +3471,20 @@ function armDrink(c: Cv, p: Person, top: number, sip: boolean): [number, number]
   const upper = span(ax, top + 1, top + 6, ax + 2);                           // shoulder to elbow, as an arm at rest
   c.part(upper.slice(0, Math.min(sl, 5)), p.arm, 'tl', 'rb', [ax, top + 1]);
   if (p.cuff && sl > 0 && sl <= 5) c.rect(ax, top + sl, ax + 2, top + sl, p.cuff);      // (where armDown puts it, so the two sleeves match)
-  if (sl < 5) c.part(upper.slice(sl), sk, 'l', 'rb');
+  const art = p.ink?.armF?.[1] ?? null;                                      // the arm on our right is their left
+  if (sl < 5) { c.part(upper.slice(sl), sk, 'l', 'rb'); inkArm(c, upper, sl, art); }
   const fore = sl >= 7 ? p.arm : sk;
-  let fx: number, fy: number;
+  let fx: number, fy: number, rws: Span[];
   if (sip) {                                                                  // the forearm up from the elbow, the fist under the chin
-    c.part([[top + 5, ax, ax + 2], [top + 4, ax - 1, ax + 1], [top + 3, ax - 1, ax + 1]], fore, 'l', 'rb');
+    rws = [[top + 5, ax, ax + 2], [top + 4, ax - 1, ax + 1], [top + 3, ax - 1, ax + 1]];
+    c.part(rws, fore, 'l', 'rb');
     fx = ax - 3; fy = top + 1;
   } else {                                                                    // the forearm across, the fist in front of the chest
-    c.part([[top + 6, ax - 1, ax + 2], [top + 7, ax - 3, ax + 2], [top + 8, ax - 3, ax + 1]], fore, 't', 'b');
+    rws = [[top + 6, ax - 1, ax + 2], [top + 7, ax - 3, ax + 2], [top + 8, ax - 3, ax + 1]];
+    c.part(rws, fore, 't', 'b');
     fx = ax - 5; fy = top + 5;
   }
+  if (art && fore === sk) inkOn(c, rws, art.slice(4, 7));                     // the forearm's ink, from the elbow
   c.part(span(fx, fy, fy + 3, fx + 2), sk, 'tl', 'rb');
   return [fx + 1, fy + 1];
 }
@@ -3126,6 +3505,7 @@ function armHigh(c: Cv, p: Person, top: number) {
   const cut = Math.min(sl, 6);
   c.part(rws.slice(0, cut), p.arm, 'tl', 'rb', [CX - 2, top + 1]);
   c.part(rws.slice(cut), sl >= 7 ? p.arm : sk, 'l', 'rb');
+  if (sl < 7) inkArm(c, rws, cut, p.ink?.armS);
   const [y, x0] = rws[rws.length - 1];
   c.part([[y - 3, x0 - 1, x0 + 2], [y - 2, x0 - 2, x0 + 2], [y - 1, x0 - 2, x0 + 2]], sk, 'tl', 'r');             // the open hand
 }
@@ -3136,6 +3516,107 @@ function frameSide(p: Person, o: SideOpts & { eyes?: string; headset?: boolean }
   const eyes = o.eyes ?? 'open', headset = o.headset ?? false;
   c.paste(head(p, `s${eyes}${headset}`, () => headSide(p, eyes, headset)), CX - 14, top - 23);
   if (o.arm === 'high') armHigh(c, p, top);
+  return c;
+}
+
+// ───────────────────────── chores: a broom, and a phone at the ear ─────────────────────────
+const STICK: RGB = [214, 172, 112], STICK_LO: RGB = [150, 106, 60];
+const STRAW = new Mat([226, 195, 106], { hi: [242, 216, 138], lo: [176, 136, 56] });
+const BAND: RGB = [185, 68, 60];
+const BRICK = new Mat([34, 35, 42], { hi: [84, 86, 100], lo: [14, 14, 18] });
+
+/** A broom, drawn into the frame so it stands on the floor where the feet do (and goes behind whatever they are behind):
+ *  the stick from (tx, ty) down to (bx, FEET - 4), a red band, then the straw fanning out to the floor. wide: seen
+ *  face on (from the front) rather than edge on. lean: the straw dragged back a dot (+1: to the right), as it is pushed.
+ *  Returns where the stick is on a given row, for the hands. */
+function broom(c: Cv, tx: number, ty: number, bx: number, wide: boolean, lean: number): (y: number) => number {
+  const by = FEET - 4, w = wide ? 1 : 0;
+  const at = (y: number) => bx + round((tx - bx) * (by - y) / (by - ty));
+  for (let y = ty; y <= by; y++) {                                            // a solid line, however steep: each row reaches the next
+    const x = at(y), nx = y < by ? at(y + 1) : x, a = Math.min(x, nx + (nx < x ? 1 : 0)), b = Math.max(x, nx - (nx > x ? 1 : 0));
+    c.rect(a, y, b, y, STICK);
+    c.px(b + 1, y, STICK_LO);                                                 // two dots thick, shaded on the right
+  }
+  c.rect(bx - 1 - w, by + 1, bx + 1 + w, by + 1, BAND);
+  const straw: Span[] = [[by + 2, bx - 2 - w, bx + 1 + w], [by + 3, bx - 2 - w + lean, bx + 2 + w + lean], [by + 4, bx - 3 - w + lean, bx + 2 + w + lean]];
+  c.part(straw, STRAW, 't', 'b');
+  for (const [y, a, b] of straw.slice(1)) for (let x = a + 1; x < b; x += 2) c.px(x, y, STRAW.lo);      // the straws
+  return at;
+}
+
+/** Sweeping, side on (facing left): the far hand high on the stick in front of the chest, the near arm reaching down
+ *  it. out: the broom pushed out ahead, stepping into it (the near leg forward, a dot lower: bent to it); otherwise
+ *  drawn back to the toes, standing straight. */
+function frameSweepSide(p: Person, out: boolean): Cv {
+  const c = blank(), sk = p.skin, sl = p.sleeve;
+  const top = bodySide(c, p, { arm: 'none', stride: out ? 1 : 0, y0: out ? 1 : 0 });
+  c.paste(head(p, 'sopenfalse', () => headSide(p, 'open', false)), CX - 14, top - 23);
+  const at = out ? broom(c, CX - 6, top + 2, CX - 15, false, 1) : broom(c, CX - 4, top + 1, CX - 10, false, 0);
+  const fy = top + 3, fx = at(fy);
+  c.rect(fx - 1, fy, fx, fy + 1, sk.lo);                                      // the far hand, round the top of the stick
+  const ax0 = CX - 2, hy = top + 9;
+  const rws = slanted(ax0, CX + 1, top + 1, hy, at(hy) - 1 - ax0);           // the near arm, shoulder to the hand on the stick
+  c.part(rws.slice(0, sl), p.arm, 'tl', 'rb', [ax0, top + 1]);
+  if (p.cuff && sl > 0) { const [y, a, b] = rws[sl - 1]; c.rect(a, y, b, y, p.cuff); }
+  c.part(rws.slice(sl), sk, sl < 7 ? 'l' : '', 'rb');
+  inkArm(c, rws, sl, p.ink?.armS);
+  return c;
+}
+
+/** Sweeping, facing us: the broom across the body, its top in the fist at the chest (the arm that holds a drink), the
+ *  other hand lower down the stick, the straw on the floor to our left: out to the side (out), or back by the foot. */
+function frameSweepFront(p: Person, out: boolean): Cv {
+  const o: FrontOpts = { arms: ['drink', 'drink'], y0: out ? 1 : 0 };
+  const c = frameFront(p, o), top = frontLevels(p, o)[0], sk = p.skin, sl = p.sleeve;
+  const at = broom(c, CX + p.tw - 3, top + 4, out ? CX - 12 : CX - 7, true, 0);
+  armDrink(c, p, top, false);
+  // The other arm: the upper arm down at the side to the elbow, then the forearm in across the waist to the hand on the
+  // stick, a solid band (each row reaching the next) with its edges shaded, so it shows against a top of its own colour.
+  const ax = CX - p.tw - 3, ey = top + 6, hy = top + 9, hx = at(hy);
+  const upper = span(ax, top + 1, ey + 1, ax + 2);
+  const cut = Math.min(sl, upper.length);
+  c.part(upper.slice(0, cut), p.arm, 'tl', 'rb', [ax, top + 1]);
+  if (p.cuff && cut > 0 && cut < 7) c.rect(ax, top + cut, ax + 2, top + cut, p.cuff);
+  c.part(upper.slice(cut), sk, 'l', 'rb');
+  inkArm(c, upper, cut, armInkOf(p, false, 0));
+  const mid = (y: number) => ax + 1 + round((hx - ax - 1) * (y - ey) / (hy - ey));
+  const fore = sl >= 7 ? p.arm : sk;
+  c.part(range(ey, hy + 1).map((y) => [y, mid(y) - 1, (y < hy ? mid(y + 1) : mid(y)) + 1] as Span), fore, fore === sk ? 't' : '', fore === sk ? 'b' : 'tb');
+  c.part(span(hx - 1, hy - 1, hy + 2, hx + 1), sk, 'tl', 'rb');                // the hand round the stick
+  return c;
+}
+
+/** On the phone, facing us: a black brick of a phone pressed to the ear on our right, the elbow out and the hand
+ *  round the bottom of it. y0: 1 is the same a dot lower, breathing. */
+function frameCallFront(p: Person, y0: number): Cv {
+  const o: FrontOpts = { arms: ['down', 'drink'], y0 };
+  const c = frameFront(p, o), top = frontLevels(p, o)[0], sk = p.skin, sl = p.sleeve, ax = CX + p.tw;
+  const upper = slanted(ax, ax + 2, top + 1, top + 5, 2);                    // shoulder to elbow, out a little
+  c.part(upper.slice(0, Math.min(sl, 5)), p.arm, 'tl', 'rb', [ax, top + 1]);
+  const art = p.ink?.armF?.[1] ?? null;
+  if (sl < 5) { c.part(upper.slice(sl), sk, 'l', 'rb'); inkArm(c, upper, sl, art); }
+  const fore = sl >= 7 ? p.arm : sk, hx = CX + 8;
+  const rws = range(0, 7).map((i) => [top + 4 - i, ax + 2 + round((hx - ax - 2) * i / 6), ax + 4 + round((hx - ax - 2) * i / 6)] as Span);   // the forearm, up from the elbow to the ear
+  c.part(rws, fore, 'l', 'rb');
+  if (art && fore === sk) inkOn(c, rws.slice(0, 3), art.slice(4, 7));
+  c.part(span(hx - 1, top - 14, top - 2, hx + 1), BRICK, 'tl', 'rb');        // the phone, a brick over the ear
+  c.rect(hx, top - 16, hx, top - 15, BRICK.lo);                               // its aerial
+  c.part(span(hx - 1, top - 6, top - 2, hx + 2), sk, 'tl', 'rb');             // the hand round it
+  return c;
+}
+
+/** On the phone, side on (facing left): the brick along the cheek from the ear towards the mouth, the near hand round it. */
+function frameCallSide(p: Person, y0: number): Cv {
+  const c = blank(), sk = p.skin, sl = p.sleeve;
+  const top = bodySide(c, p, { arm: 'none', y0 });
+  c.paste(head(p, 'sopenfalse', () => headSide(p, 'open', false)), CX - 14, top - 23);
+  const upper = slanted(CX - 2, CX + 1, top + 1, top + 5, -1);
+  c.part(upper.slice(0, Math.min(sl, 5)), p.arm, 'tl', 'rb', [CX - 2, top + 1]);
+  if (sl < 5) { c.part(upper.slice(sl), sk, 'l', 'rb'); inkArm(c, upper, sl, p.ink?.armS); }
+  c.part(span(CX - 2, top - 3, top + 4, CX), sl >= 7 ? p.arm : sk, 'l', 'rb');            // the forearm, up in front of the chest
+  c.part(slanted(CX + 1, CX + 3, top - 14, top - 3, -2), BRICK, 'tl', 'rb');            // the phone, over the ear, tipped to the mouth
+  c.rect(CX + 2, top - 16, CX + 2, top - 15, BRICK.lo);
+  c.part(span(CX - 2, top - 7, top - 2, CX + 1), sk, 'tl', 'rb');
   return c;
 }
 
@@ -3176,6 +3657,81 @@ function frameSleepTop(p: Person, breathe = 0): Cv {
   return c;
 }
 
+// ───────────────────────── at the campfire: a toasting stick ─────────────────────────
+// The stick and the marshmallow on it are laid on by the app (client/src/basement/outside.tsx), from the fist these
+// frames draw. The arm is the one a drink is held in (on our right facing us; the near arm side on). As in
+// scripts/make-avatars.py, dot for dot.
+
+/** Facing us: the upper arm out from the side a little, the forearm reaching forward and down to the fire, the fist out
+ *  past the knee. */
+function armRoastFront(c: Cv, p: Person, top: number) {
+  const sk = p.skin, sl = p.sleeve, ax = CX + p.tw;
+  const upper = slanted(ax, ax + 2, top + 1, top + 5, 1);
+  c.part(upper.slice(0, Math.min(sl, 5)), p.arm, 'tl', 'rb', [ax, top + 1]);
+  const art = p.ink?.armF?.[1] ?? null;
+  if (sl < 5) { c.part(upper.slice(sl), sk, 'l', 'rb'); inkArm(c, upper, sl, art); }
+  const fore = sl >= 7 ? p.arm : sk;
+  const rws = range(0, 5).map((i) => [top + 5 + i, ax + 1 + round((3 * i) / 4), ax + 3 + round((3 * i) / 4)] as Span);
+  c.part(rws, fore, 'l', 'rb');
+  if (art && fore === sk) inkOn(c, rws.slice(0, 3), art.slice(4, 7));
+  c.part(span(ax + 4, top + 9, top + 12, ax + 6), sk, 'tl', 'rb');
+}
+
+/** Side on (facing left): the forearm reaching forward and a little down to the fire, the fist out over the knees; or
+ *  (eat) bent up from the elbow, the fist at the mouth. */
+function armRoastSide(c: Cv, p: Person, top: number, eat: boolean) {
+  const sk = p.skin, sl = p.sleeve;
+  const upper = slanted(CX - 2, CX + 1, top + 1, top + 5, -1);
+  c.part(upper.slice(0, Math.min(sl, 5)), p.arm, 'tl', 'rb', [CX - 2, top + 1]);
+  if (sl < 5) { c.part(upper.slice(sl), sk, 'l', 'rb'); inkArm(c, upper, sl, p.ink?.armS); }
+  const fore = sl >= 7 ? p.arm : sk;
+  if (eat) {
+    c.part(range(0, 7).map((i) => [top + 4 - i, CX - 3 - round((4 * i) / 6), CX - 1 - round((4 * i) / 6)] as Span), fore, 'l', 'rb');
+    c.part(span(CX - 9, top - 5, top - 1, CX - 6), sk, 'tl', 'rb');
+  } else {
+    c.part([[top + 5, CX - 6, CX - 1], [top + 6, CX - 10, CX - 3], [top + 7, CX - 12, CX - 7]], fore, 't', 'b');
+    c.part(span(CX - 15, top + 6, top + 9, CX - 13), sk, 'tl', 'rb');
+  }
+}
+
+/** From behind, the arm on our right: reaching forward to the fire, so only the shoulder and the top of the arm show,
+ *  going in front of the body; or (eat) the elbow out and up, the forearm going in to the face behind the head. */
+function armRoastBack(c: Cv, p: Person, top: number, eat: boolean) {
+  const sk = p.skin, sl = p.sleeve, ax = CX + p.tw;
+  if (eat) {
+    const rws: Span[] = [[top + 2, ax, ax + 2], [top + 1, ax, ax + 3], [top, ax + 1, ax + 4], [top - 1, ax + 2, ax + 4], [top - 2, ax + 1, ax + 3], [top - 3, ax, ax + 2], [top - 4, ax - 1, ax + 1]];
+    c.part(rws.slice(0, Math.min(sl, 4)), p.arm, 'tl', 'rb', [ax, top + 1]);
+    c.part(rws.slice(Math.min(sl, 4)), sl >= 7 ? p.arm : sk, 'l', 'rb');
+  } else {
+    const rws = range(0, 4).map((i) => [top + 1 + i, ax - round(i / 2), ax + 2 - round(i / 2)] as Span);
+    c.part(rws.slice(0, Math.min(sl, 4)), p.arm, 'tl', 'rb', [ax, top + 1]);
+    c.part(rws.slice(Math.min(sl, 4)), sk, 'l', 'rb');
+  }
+}
+
+/** Sat at the campfire: facing us, side on (facing left) or from behind; eat: the marshmallow brought to the mouth
+ *  (facing us, the drink's sip, eyes shut to savour it). y0: 1 is the same a dot lower, breathing. */
+function frameRoast(p: Person, view: 'front' | 'side' | 'back', eat = false, y0 = 0): Cv {
+  if (view === 'front') {
+    if (eat) return frameDrink(p, { sip: true, sit: true, y0 });
+    const c = frameFront(p, { arms: ['down', 'drink'], sit: true, y0 });
+    armRoastFront(c, p, seatOf(p)[1] - 13 + y0);
+    return c;
+  }
+  const c = blank();
+  if (view === 'side') {
+    const top = bodySide(c, p, { sit: true, arm: 'none', y0 });
+    const eyes = eat ? 'closed' : 'open';
+    c.paste(head(p, `s${eyes}false`, () => headSide(p, eyes, false)), CX - 14, top - 23);
+    armRoastSide(c, p, top, eat);
+    return c;
+  }
+  const top = bodyFront(c, p, { back: true, sit: true, arms: ['down', 'drink'], y0 });
+  armRoastBack(c, p, top, eat);
+  c.paste(head(p, 'bfalse', () => headBack(p, false)), CX - 13, top - 23);
+  return c;
+}
+
 /** Every frame of every row, before the outline goes on. What each frame means is fixed: other code counts on it. */
 const FRAMES: Record<SpriteRow, ((p: Person) => Cv)[]> = {
   walk_down: [(p) => frameFront(p, { lift: [2, 0], armDy: [1, -1] }), (p) => frameFront(p, { y0: -1 }), (p) => frameFront(p, { lift: [0, 2], armDy: [-1, 1] }), (p) => frameFront(p, { y0: -1 })],
@@ -3185,11 +3741,11 @@ const FRAMES: Record<SpriteRow, ((p: Person) => Cv)[]> = {
   idle: [(p) => frameFront(p), (p) => frameFront(p, { y0: 1 }), (p) => frameFront(p, { eyes: 'closed' }), (p) => frameFront(p, { arms: ['down', 'wave'] })],
   sit_front: [(p) => frameFront(p, { sit: true }), (p) => frameFront(p, { sit: true, y0: 1 }), (p) => frameFront(p, { sit: true, arms: ['type', 'type'], armDy: [0, 1] }), (p) => frameFront(p, { sit: true, arms: ['type', 'type'], armDy: [1, 0] })],
   sit_side: [(p) => frameSide(p, { sit: true, arm: 'rest' }), (p) => frameSide(p, { sit: true, arm: 'rest', y0: 1 }), (p) => frameSide(p, { sit: true, arm: 'type', armDy: 0 }), (p) => frameSide(p, { sit: true, arm: 'type', armDy: 1 })],
-  sit_back: [(p) => frameBack(p, { sit: true, legs: false }), (p) => frameBack(p, { sit: true, legs: false, y0: 1 }), (p) => frameBack(p, { sit: true, legs: false, arms: ['type', 'type'] }), (p) => frameBack(p, { sit: true, legs: false, arms: ['type', 'type'], y0: 1 })],
+  sit_back: [(p) => frameBack(p, { sit: true }), (p) => frameBack(p, { sit: true, y0: 1 }), (p) => frameBack(p, { sit: true, arms: ['type', 'type'] }), (p) => frameBack(p, { sit: true, arms: ['type', 'type'], y0: 1 })],
   gaming: [(p) => frameFront(p, { sit: true, headset: true, arms: ['hold', 'hold'], armDy: [0, 0] }), (p) => frameFront(p, { sit: true, headset: true, arms: ['hold', 'hold'], armDy: [1, 0] }),
     (p) => frameSide(p, { sit: true, headset: true, arm: 'hold', armDy: 0 }), (p) => frameSide(p, { sit: true, headset: true, arm: 'hold', armDy: 1 })],
   sleep: [(p) => frameSleepSide(p, 0), (p) => frameSleepSide(p, 1), (p) => frameSleepTop(p, 0), (p) => frameSleepTop(p, 1)],
-  gaming_back: [0, 1, 0, 1].map((y0) => (p: Person) => frameBack(p, { headset: true, sit: true, legs: false, arms: ['type', 'type'], y0 })),
+  gaming_back: [0, 1, 0, 1].map((y0) => (p: Person) => frameBack(p, { headset: true, sit: true, arms: ['type', 'type'], y0 })),
   dance: [(p) => frameFront(p, { arms: ['down', 'up'], lift: [2, 0] }), (p) => frameFront(p, { arms: ['up', 'up'], y0: -1 }), (p) => frameFront(p, { arms: ['up', 'down'], lift: [0, 2] }), (p) => frameFront(p, { arms: ['up', 'up'], y0: -1 })],
   cheer: [(p) => frameFront(p, { y0: 1 }), (p) => frameFront(p, { arms: ['up', 'up'] }).shifted(-3), (p) => frameFront(p, { arms: ['up', 'up'] }).shifted(-6), (p) => frameFront(p, { arms: ['up', 'up'] }).shifted(-3)],
   reach: [(p) => frameSide(p, { arm: 'back' }), (p) => frameSide(p, { arm: 'high' }), (p) => frameSide(p, { arm: 'type' }), (p) => frameSide(p, { arm: 'type', y0: 1 })],
@@ -3197,6 +3753,11 @@ const FRAMES: Record<SpriteRow, ((p: Person) => Cv)[]> = {
   floored: [(p) => frameFloored(p), (p) => frameFloored(p), (p) => frameFloored(p, 1), (p) => frameFloored(p)],
   drink: [(p) => frameDrink(p), (p) => frameDrink(p, { y0: 1 }), (p) => frameDrink(p, { sip: true }), (p) => frameDrink(p, { sip: true, y0: 1 })],
   drink_sit: [(p) => frameDrink(p, { sit: true }), (p) => frameDrink(p, { sit: true, y0: 1 }), (p) => frameDrink(p, { sip: true, sit: true }), (p) => frameDrink(p, { sip: true, sit: true, y0: 1 })],
+  sweep: [(p) => frameSweepFront(p, true), (p) => frameSweepFront(p, false), (p) => frameSweepSide(p, true), (p) => frameSweepSide(p, false)],
+  call: [(p) => frameCallFront(p, 0), (p) => frameCallFront(p, 1), (p) => frameCallSide(p, 0), (p) => frameCallSide(p, 1)],
+  roast: [(p) => frameRoast(p, 'front'), (p) => frameRoast(p, 'front', false, 1), (p) => frameRoast(p, 'front', true), (p) => frameRoast(p, 'front', true, 1)],
+  roast_side: [(p) => frameRoast(p, 'side'), (p) => frameRoast(p, 'side', false, 1), (p) => frameRoast(p, 'side', true), (p) => frameRoast(p, 'side', true, 1)],
+  roast_back: [(p) => frameRoast(p, 'back'), (p) => frameRoast(p, 'back', false, 1), (p) => frameRoast(p, 'back', true), (p) => frameRoast(p, 'back', true, 1)],
 };
 
 /** All 144 frames of somebody, outlined: each row's four frames, then the same four talking. */
@@ -3261,6 +3822,28 @@ const TOPS: Record<string, readonly [string, number]> = {
 };
 const EMBLEMS = ['logo', 'heart', 'star', 'bars'];
 
+/** What somebody wears on top, from the kind, colour and pattern picked (and a second colour, if one was): the top
+ *  itself, its sleeves, the shirt under it, and the trims. Used for a guest's look and for the house's wardrobe. */
+export function topOf(o: { kind: string; color: string; pattern: string; color2?: string }) {
+  const [topKind, sleeve] = TOPS[o.kind] ?? TOPS.tee;
+  const one = rgb(o.color);
+  const given = o.color2 ? rgb(o.color2) : null;
+  const two = given ?? (lum(one) > 140 ? mix(one, SHADE, 0.5) : mix(one, WHITE, 0.7));
+  const pattern = o.pattern;
+  const pat: Pattern | undefined =
+    pattern === 'stripes' ? patStripes : pattern === 'hoops' ? patHoops(two) : pattern === 'vstripes' ? patPins : pattern === 'check' ? patCheck
+    : pattern === 'plaid' ? patPlaid(two) : pattern === 'dots' ? patDots(given ?? mix(one, SHADE, 0.6)) : pattern === 'quilt' ? patQuilt
+    : pattern === 'block' ? patBlock(two) : pattern === 'split' ? patSplit(two) : pattern === 'tiedye' ? patTieDye(two) : pattern === 'camo' ? patCamo(two) : undefined;
+  const top = new Mat(one, { pat });
+  const under = new Mat(two);
+  // Sleeves: the shirt's under a vest or overalls, the second colour on a colour-block top, plain where a pattern is only for the chest.
+  const arm = topKind === 'vest' || topKind === 'overalls' || pattern === 'block' || o.kind === 'varsity' ? under : pattern === 'split' ? new Mat(one) : top;
+  return {
+    top, arm, topKind, sleeve, trim: [given ?? rgb('#d8473f'), rgb('#f4f1ea')] as const, top2: two, emblem: EMBLEMS.includes(pattern) ? pattern : null,
+    under, cuff: topKind === 'jersey' ? two : null, turnPattern: pattern === 'split' || pattern === 'tiedye', body: undefined as Mat | undefined,
+  };
+}
+
 /** Turns a look into what the drawing works from. Anything it does not recognise is drawn as the plainest choice. */
 export function personOf(look: Look, accent: string): Person {
   const acc = /^#[0-9a-f]{6}$/i.test(accent) ? rgb(accent) : rgb('#7d8597');
@@ -3270,19 +3853,7 @@ export function personOf(look: Look, accent: string): Person {
   const hairBase = rgb(look.hair.color);
   const hair = new Mat(hairBase);
   const body = BODIES[look.body] ?? BODIES.medium;
-  const [topKind, sleeve] = TOPS[look.top.kind] ?? TOPS.tee;
-  const one = rgb(look.top.color);
-  const given = look.top.color2 ? rgb(look.top.color2) : null;
-  const two = given ?? (lum(one) > 140 ? mix(one, SHADE, 0.5) : mix(one, WHITE, 0.7));
-  const pattern = look.top.pattern;
-  const pat: Pattern | undefined =
-    pattern === 'stripes' ? patStripes : pattern === 'hoops' ? patHoops(two) : pattern === 'vstripes' ? patPins : pattern === 'check' ? patCheck
-    : pattern === 'plaid' ? patPlaid(two) : pattern === 'dots' ? patDots(given ?? mix(one, SHADE, 0.6)) : pattern === 'quilt' ? patQuilt
-    : pattern === 'block' ? patBlock(two) : pattern === 'split' ? patSplit(two) : pattern === 'tiedye' ? patTieDye(two) : pattern === 'camo' ? patCamo(two) : undefined;
-  const top = new Mat(one, { pat });
-  const under = new Mat(two);
-  // Sleeves: the shirt's under a vest or overalls, the second colour on a colour-block top, plain where a pattern is only for the chest.
-  const arm = topKind === 'vest' || topKind === 'overalls' || pattern === 'block' || look.top.kind === 'varsity' ? under : pattern === 'split' ? new Mat(one) : top;
+  const shirt = topOf(look.top);
   const facial = look.facial.style, facialBase = rgb(look.facial.color);
   const scruff = facial === 'scruff' ? { mask: 'full', tint: 0.5, stache: true } : facial === 'shadow' ? { mask: 'short', tint: 0.44, stache: false } : undefined;
   const beard = facial === 'none' ? null : scruff ? 'scruff' : facial;
@@ -3290,19 +3861,19 @@ export function personOf(look: Look, accent: string): Person {
   return {
     skin, hair, hair2: new Mat(mix(hairBase, SHADE, 0.16), { hi: hairBase, lo: mix(hairBase, SHADE, 0.4) }),
     hairStyle: HAIR[look.hair.style] ? look.hair.style : 'crop', hairShine: true,
-    brow: mix(hairBase, [22, 14, 18], 0.3), brows: look.brows,
+    brow: look.browColor ? rgb(look.browColor) : mix(hairBase, [22, 14, 18], 0.3), brows: look.brows,
     eyes: look.eyes, eyeCol: mix(rgb(look.eyeColor), EYE, 0.2),
     mouth: look.mouth, marks: look.marks,
     beard, scruff, beardMat: beard ? new Mat(facialBase) : null, stubble: mix(facialBase, skin.lo, 0.3),
     glasses: look.glasses === 'none' ? null : look.glasses,
-    top, arm, topKind, sleeve, trim: [given ?? rgb('#d8473f'), rgb('#f4f1ea')], top2: two, emblem: EMBLEMS.includes(pattern) ? pattern : null,
-    under, cuff: topKind === 'jersey' ? two : null, turnPattern: pattern === 'split' || pattern === 'tiedye',
+    ...shirt,
     pants: new Mat(rgb(look.bottom.color)), bottom: look.bottom.kind,
     shoes: new Mat(rgb(look.shoes.color)), shoeKind: look.shoes.kind,
     tw: body.tw, hw: body.hw, shape: body.shape, leg: HEIGHTS[look.height] ?? 7,
     accent: acc, extras: look.extras,
     hat: hatKind, hatMat: new Mat(rgb(look.hat.color)), capPatch: false, hatOffInBed: true,
     talk: false,
+    ...(look.ink ? { ink: look.ink } : {}),
   };
 }
 
@@ -3337,7 +3908,10 @@ export function faceY(look: Look): number {
  *  lower all of it is in the sitting frames. skin: the colour of their skin. */
 export type Marks = { faceY: number; hand: [number, number]; drink: { hold: [number, number]; sip: [number, number]; sit: number }; skin: string };
 export function marksOf(look: Look): Marks {
-  const p = personOf(look, '');
+  return marksOfPerson(personOf(look, ''));
+}
+/** The same for somebody already described for the drawing (one of the house, or a partner). */
+export function marksOfPerson(p: Person): Marks {
   const scratch = blank();
   const stand = FEET - 2 - p.leg - 10, sat = seatOf(p)[1] - 3 - 10;           // the top of the torso, standing and sitting
   return {

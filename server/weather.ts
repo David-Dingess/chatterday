@@ -11,6 +11,9 @@ export type Weather = {
   /** In the unit the admin chose. */
   temp: number | null;
   unit: 'F' | 'C';
+  /** The wind, in miles an hour, and the way it blows from (degrees: 0 north, 90 east); null when not reported. */
+  windMph?: number | null;
+  windFrom?: number | null;
   at: number;
 };
 /** Where the house is: what the weather is read for, and whose clock the house keeps. */
@@ -26,14 +29,19 @@ const CODES: [number[], Weather['kind'], string][] = [
 export async function fetchWeather(town: Town, unit: 'F' | 'C'): Promise<Weather | null> {
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${town.lat.toFixed(3)}&longitude=${town.lon.toFixed(3)}` +
-      `&current=temperature_2m,weather_code,cloud_cover&temperature_unit=${unit === 'F' ? 'fahrenheit' : 'celsius'}`;
+      `&current=temperature_2m,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m` +
+      `&temperature_unit=${unit === 'F' ? 'fahrenheit' : 'celsius'}&wind_speed_unit=mph`;
     const r = await fetch(url, { signal: AbortSignal.timeout(12_000) });
     if (!r.ok) throw new Error(`Open-Meteo said ${r.status}`);
     const cur = (await r.json() as any).current ?? {};
     const [, kind, text] = CODES.find(([codes]) => codes.includes(Number(cur.weather_code))) ?? [[], 'clear', 'Clear'];
     const clouds = typeof cur.cloud_cover === 'number' ? Math.max(0, Math.min(1, cur.cloud_cover / 100)) : 0.4;
     const cover = kind === 'clear' ? Math.min(clouds, 0.3) : kind === 'clouds' ? Math.max(clouds, 0.5) : kind === 'fog' ? 0.7 : 1;
-    return { kind, cover, text, temp: typeof cur.temperature_2m === 'number' ? Math.round(cur.temperature_2m) : null, unit, at: Date.now() };
+    return {
+      kind, cover, text, temp: typeof cur.temperature_2m === 'number' ? Math.round(cur.temperature_2m) : null, unit,
+      windMph: typeof cur.wind_speed_10m === 'number' ? Math.round(cur.wind_speed_10m) : null,
+      windFrom: typeof cur.wind_direction_10m === 'number' ? Math.round(cur.wind_direction_10m) : null, at: Date.now(),
+    };
   } catch (e: any) {
     console.error('[weather]', e.message);
     return null;

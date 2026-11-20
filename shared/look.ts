@@ -24,7 +24,16 @@ export type Look = {
   glasses: string;
   /** Accessories, several at once (up to LOOK_OPTIONS.maxExtras). They take the person's own colour. */
   extras: string[];
+  /** Eyebrows of their own colour (bleached hair over dark brows, or the other way). Left out, they follow the hair. */
+  browColor?: string;
+  /** Tattoos, drawn as the house's are (see Person.ink in client/src/draw/avatar.ts). Not in the builder: set from a file. */
+  ink?: Ink;
 };
+
+/** Rows of letters, one letter a dot of ink ('.' none; the tones are INK_TONES in avatar.ts). f and b: [their right
+ *  leg, their left leg] from the front and from behind, from the knee down; s their near leg from the side. The arms:
+ *  9 rows from the shoulder, 3 dots across. */
+export type Ink = { f: [string[], string[]]; b: [string[], string[]]; s: string[]; armF?: [string[], string[]]; armB?: [string[], string[]]; armS?: string[] };
 
 export type LookOption = { readonly id: string; readonly label: string };
 
@@ -42,9 +51,10 @@ export const LOOK_OPTIONS = {
     o('bald', 'Bald'), o('buzz', 'Buzz cut'), o('fade', 'Fade with waves'), o('balding', 'Bald on top'), o('crop', 'Crop'), o('short', 'Short'), o('neat', 'Neat'), o('sidepart', 'Side part'),
     o('quiff', 'Quiff'), o('pixie', 'Pixie'), o('bowl', 'Bowl cut'), o('flattop', 'Flat top'), o('spiky', 'Spiky'), o('messy', 'Messy'), o('slick', 'Slicked back'),
     o('undercut', 'Undercut'), o('mohawk', 'Mohawk'), o('fringe', 'Long fringe'), o('curly', 'Curly'), o('curlytop', 'Curly top'), o('twists', 'Twists'), o('afro', 'Afro'), o('afro_big', 'Big afro'), o('puffs', 'Puffs'),
-    o('bantu', 'Bantu knots'), o('cornrows', 'Cornrows'), o('bob', 'Bob'), o('mullet', 'Mullet'), o('long', 'Long straight'), o('long_wavy', 'Long wavy'), o('long_curly', 'Long curly'), o('dreads', 'Locs'),
+    o('bantu', 'Bantu knots'), o('cornrows', 'Cornrows'), o('bob', 'Bob'), o('lob', 'Lob'), o('sidelob', 'Side-parted lob'), o('mullet', 'Mullet'), o('rattail', 'Rat tail'), o('long', 'Long straight'), o('longpart', 'Long, parted'),
+    o('xlong', 'Very long'), o('long_wavy', 'Long wavy'), o('long_curly', 'Long curly'), o('dreads', 'Locs'),
     o('boxbraids', 'Box braids'), o('braids', 'Two braids'),
-    o('ponytail', 'Ponytail'), o('high_pony', 'High ponytail'), o('pigtails', 'Pigtails'), o('bun', 'Bun'), o('topknot', 'Top knot'), o('buns', 'Two buns'),
+    o('ponytail', 'Ponytail'), o('shoulderpony', 'Low ponytail'), o('high_pony', 'High ponytail'), o('pigtails', 'Pigtails'), o('bun', 'Bun'), o('topknot', 'Top knot'), o('buns', 'Two buns'),
   ],
   facial: [
     o('none', 'None'), o('stubble', 'Stubble'), o('shadow', 'Shadow'), o('scruff', 'Scruff'), o('pencil', 'Pencil moustache'), o('moustache', 'Moustache'), o('handlebar', 'Handlebar'),
@@ -101,6 +111,17 @@ const bag = (v: unknown): Bag => (v && typeof v === 'object' && !Array.isArray(v
 const idOf = (list: readonly LookOption[], v: unknown, fallback: string): string => (typeof v === 'string' && list.some((x) => x.id === v) ? v : fallback);
 const colorOf = (v: unknown, fallback: string): string => (typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v) ? v.toLowerCase() : fallback);
 
+const inkRows = (v: unknown, max: number): string[] => (Array.isArray(v) ? v.slice(0, max).map((r) => (typeof r === 'string' && /^[.bokwyrgtn]{0,6}$/.test(r) ? r : '')) : []);
+const inkPair = (v: unknown, max: number): [string[], string[]] => { const a = Array.isArray(v) ? v : []; return [inkRows(a[0], max), inkRows(a[1], max)]; };
+/** Tattoos as they are stored: only rows of ink letters, a few of them; anything else is dropped. */
+function inkOf(v: unknown): Ink | null {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  const i = v as Bag;
+  const ink: Ink = { f: inkPair(i.f, 12), b: inkPair(i.b, 12), s: inkRows(i.s, 12) };
+  if (i.armF || i.armB || i.armS) { ink.armF = inkPair(i.armF, 9); ink.armB = inkPair(i.armB, 9); ink.armS = inkRows(i.armS, 9); }
+  return ink;
+}
+
 /** Makes anything into a look that is safe to store and draw: unknown ids and bad colours fall back to the default
  *  look's. Never throws, whatever it is given. */
 export function cleanLook(input: unknown): Look {
@@ -129,6 +150,10 @@ export function cleanLook(input: unknown): Look {
     };
     const second = colorOf(top.color2, '');
     if (second) look.top.color2 = second;
+    const brow = colorOf(i.browColor, '');
+    if (brow) look.browColor = brow;
+    const ink = inkOf(i.ink);
+    if (ink) look.ink = ink;
     return look;
   } catch {
     return { ...D, hair: { ...D.hair }, facial: { ...D.facial }, top: { ...D.top }, bottom: { ...D.bottom }, shoes: { ...D.shoes }, hat: { ...D.hat }, extras: [] };

@@ -1,0 +1,14 @@
+/* The holidays out of doors (client/src/holidays/outdoor.tsx). */
+.od, .od-glow, .od-fireworks { position: absolute; display: block; pointer-events: none; }
+.od { background-repeat: no-repeat; background-position: 0 0; image-rendering: pixelated; }
+/* frames side by side in the picture, stepped through */
+.od.anim { animation: od-frames var(--d) steps(var(--n)) infinite; }
+@keyframes od-frames { to { background-position-x: var(--to); } }
+/* a small warm halo on the ground round a jack-o'-lantern (or the tree's lights), at night */
+.od-glow { border-radius: 50%; mix-blend-mode: screen; background: radial-gradient(closest-side, rgba(255, 170, 70, 0.5), rgba(255, 120, 40, 0.16) 60%, transparent); animation: od-flicker 0.9s steps(3) infinite alternate; }
+.od-glow.tree { background: radial-gradient(closest-side, rgba(255, 230, 160, 0.4), rgba(160, 200, 255, 0.12) 60%, transparent); }
+@keyframes od-flicker { from { filter: brightness(0.85); } to { filter: brightness(1.1); } }
+.od-fireworks { left: 0; top: 0; image-rendering: pixelated; }
+@media (prefers-reduced-motion: reduce) {
+  .od.anim, .od-glow { animation: none; }
+}

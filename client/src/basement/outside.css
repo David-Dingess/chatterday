@@ -1,0 +1,63 @@
+/* Outside: the campfire (outside.tsx), and the door out to it in the room upstairs (Clubhouse.tsx). */
+.club-door { background: 0 0 / 100% 100% no-repeat; pointer-events: none; z-index: 1; }
+/* the daylight let in by the open door, falling across the carpet and fading as it spreads (only by day: Clubhouse.tsx EastDoor) */
+.club-door-sun { position: absolute; display: block; pointer-events: none; z-index: 1; mix-blend-mode: screen;
+  background: radial-gradient(ellipse 100% 60% at 100% 50%, rgba(255, 236, 190, 0.8), rgba(255, 220, 160, 0.25) 55%, transparent 80%); }
+/* (the west door's, out to the backyard, falls the other way) */
+.club-door-sun.west { background: radial-gradient(ellipse 100% 60% at 0% 50%, rgba(255, 236, 190, 0.8), rgba(255, 220, 160, 0.25) 55%, transparent 80%); }
+
+.cf-logs, .cf-fire, .cf-smoke, .cf-toss, .cf-dusk, .cf-glow, .cf-hot, .cf-stick, .cf-say, .cf-last { position: absolute; display: block; }
+.cf-logs { background: url(/basement/outside/logs.png) no-repeat; pointer-events: none; }
+.cf-fire { background: url(/basement/outside/fire.png) 0 0 no-repeat; pointer-events: none; animation: cf-fire 0.52s steps(4) infinite; }
+.cf-fire.embers { animation-duration: 2.4s; }
+@keyframes cf-fire { to { background-position-x: var(--to); } }
+/* smoke: grey puffs drifting up and away, growing as they go */
+.cf-smoke { width: 4px; height: 4px; background: #8c8a86; border-radius: 1px; pointer-events: none; animation: cf-smoke 3.2s linear infinite; }
+@keyframes cf-smoke {
+  0% { transform: translate(0, 0) scale(0.6); opacity: 0; }
+  15% { opacity: 0.7; }
+  100% { transform: translate(9px, -46px) scale(2.4); opacity: 0; }
+}
+/* a log thrown from the woodpile, in an arc onto the fire */
+.cf-toss { background: url(/basement/outside/toss.png) 0 0 / 100% 100% no-repeat; pointer-events: none; animation: cf-toss 0.6s linear forwards; }
+/* (an arc, tumbling end over end, and gone into the flames) */
+@keyframes cf-toss {
+  0% { transform: translate(0, 0) rotate(0); }
+  25% { transform: translate(calc(var(--dx) * 0.25), calc(var(--dy) * 0.25 - 16px)) rotate(-160deg); }
+  50% { transform: translate(calc(var(--dx) * 0.5), calc(var(--dy) * 0.5 - 22px)) rotate(-330deg); }
+  75% { transform: translate(calc(var(--dx) * 0.75), calc(var(--dy) * 0.75 - 16px)) rotate(-500deg); }
+  92% { opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(-650deg) scale(0.8); opacity: 0; }
+}
+/* the sparks where it lands: bright dots flying up and out, fading */
+.cf-spark { position: absolute; display: block; width: 1.5px; height: 1.5px; margin: -0.75px 0 0 -0.75px; background: #fff6c8; box-shadow: 0 0 1.5px 1px rgba(255, 150, 50, 0.95); pointer-events: none; opacity: 0; animation: cf-spark 0.7s ease-out forwards; }
+@keyframes cf-spark { 0% { transform: translate(0, 0); opacity: 1; } 60% { opacity: 1; background: #ffd060; } 100% { transform: translate(var(--sx), calc(var(--sy) + 6px)); opacity: 0; background: #f2701e; } }
+.cf-hot.idle { cursor: default; }
+.cf-stick { left: 0; top: 0; pointer-events: none; overflow: visible; }
+.cf-alight { animation: cf-alight 0.2s steps(2) infinite; }
+@keyframes cf-alight { 50% { fill: #f2701e; transform: translateY(-0.5px); } }
+.cf-dusk { inset: 0; background: rgb(6, 10, 34); pointer-events: none; transition: opacity 2s linear; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; mask-composite: intersect; -webkit-mask-composite: source-in; }
+.cf-glow { pointer-events: none; mix-blend-mode: screen; background: radial-gradient(closest-side, rgba(255, 168, 70, 0.55), rgba(255, 120, 40, 0.22) 55%, transparent); animation: cf-glow 0.9s steps(3) infinite alternate; }
+.cf-glow.low { background: radial-gradient(closest-side, rgba(220, 70, 30, 0.5), rgba(160, 40, 20, 0.15) 55%, transparent); animation-duration: 2.6s; }
+.cf-glow.lamp { background: radial-gradient(closest-side, rgba(255, 226, 150, 0.5), rgba(255, 200, 120, 0.15) 55%, transparent); animation: none; }
+@keyframes cf-glow { from { filter: brightness(0.82); } to { filter: brightness(1.08); } }
+.cf-hot { cursor: pointer; }
+.cf-say { transform: translateX(-50%); font-size: 6px; line-height: 1; padding: 1px 2px; background: #000; color: #ffd890; border: 1px solid #a8641a; white-space: nowrap; pointer-events: none; animation: cf-say 4s linear forwards; }
+@keyframes cf-say { 0% { transform: translate(-50%, 2px); opacity: 0; } 8% { transform: translate(-50%, 0); opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+.cf-last { left: 50%; bottom: 6px; transform: translateX(-50%); font-size: 6px; font-weight: 400; line-height: 1; padding: 2px 4px; background: rgba(0, 0, 0, 0.72); color: #f2e6cc; border-radius: 2px; white-space: nowrap; pointer-events: none; }
+/* a burnt marshmallow's smoke: a grey wisp rising off it and fading */
+.cf-wisp { animation: cf-wisp 1.4s linear infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes cf-wisp { 0% { transform: translate(0, 0) scale(0.6); opacity: 0.7; } 100% { transform: translate(1.5px, -7px) scale(2); opacity: 0; } }
+/* torches: a small flame (fire.png's smallest row, at half size), flickering */
+.cf-torch { position: absolute; display: block; background: url(/basement/outside/fire.png) 0 0 no-repeat; pointer-events: none; animation: cf-fire 0.44s steps(4) infinite; }
+.cf-glow.lamp.torch { background: radial-gradient(closest-side, rgba(255, 170, 80, 0.55), rgba(255, 120, 40, 0.18) 55%, transparent); animation: cf-glow 0.6s steps(3) infinite alternate; }
+/* the radio's music: notes floating up off it and drifting, fading */
+.cf-note { position: absolute; display: block; font-size: 6px; line-height: 1; color: #fff2c0; text-shadow: 0 0 1px #000; pointer-events: none; animation: cf-note 2.7s linear infinite; }
+@keyframes cf-note { 0% { transform: translate(0, 0); opacity: 0; } 15% { opacity: 0.95; } 100% { transform: translate(6px, -16px) rotate(12deg); opacity: 0; } }
+/* cornhole: the bags (6 inches: 4 dots), on the boards and the grass and in the air */
+.ch-bags { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; }
+.ch-bag { position: absolute; display: block; width: 4px; height: 4px; border-radius: 1px; box-shadow: inset -1px -1px 0 rgba(0, 0, 0, 0.35), inset 1px 1px 0 rgba(255, 255, 255, 0.25), 0 0 0 0.5px #1a1008; pointer-events: none; }
+.ch-bag.grass { box-shadow: inset -1px -1px 0 rgba(0, 0, 0, 0.35), 0 0 0 0.5px #1a1008, 1px 1px 0 rgba(0, 0, 0, 0.25); }
+.ch-shadow { position: absolute; display: block; width: 4px; height: 2px; border-radius: 50%; background: rgba(0, 0, 0, 0.3); pointer-events: none; }
+.ch-left { letter-spacing: -1px; font-size: 0.8em; }
+.sky-view { cursor: grab; }

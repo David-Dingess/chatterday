@@ -17,6 +17,12 @@ export { SPRITE_ROWS, SPRITE_UP };
 export type { Marks };
 export type SpriteRow = (typeof SPRITE_ROWS)[number];
 export const rowIndex = (row: SpriteRow) => SPRITE_ROWS.indexOf(row);
+/** Talking: the mouth opens and shuts every MOUTH_MS, open on the odd steps (the frames four on in a row have it
+ *  open). The room and the portraits both ask this of the same clock (an animation frame's time), so they move together. */
+export const MOUTH_MS = 130;
+export const mouthOpen = (t: number) => Math.floor(t / MOUTH_MS) % 2 === 1;
+
+
 export const SPRITE_ROW_COUNT = SPRITE_ROWS.length;
 
 /** The art is drawn at its own size and published four times bigger, so it stays even at any zoom, like the room. */

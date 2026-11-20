@@ -8,6 +8,9 @@ desktop/vendor/
 # built
 client/dist/
 desktop/dist/
+# a clip of your own for the basement TV (see client/src/basement/unfinished.tsx)
+client/public/basement/unfinished/tv.gif
+# built from desktop/sharesound.cs by "npm run helper"
 desktop/sharesound.exe
 # local settings and secrets
 .env

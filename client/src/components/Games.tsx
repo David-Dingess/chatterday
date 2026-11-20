@@ -11,6 +11,44 @@ import { Four, Go, Mancala } from './BoardGames';
 import { Between, Mark, Plate, POS, Scale, Side, useNames, useSquare } from './GameParts';
 import { Mahjong, MahjongGuide, Tile } from './Mahjong';
 import { Avatar, Icon, SureButton } from './ui';
+import { goFloor } from '../basement';
+import { openTable } from '../basement/gameroom.tsx';
+import { setOpen as openLane } from '../basement/bowling.tsx';
+import { setOpen as openGolf } from '../basement/minigolf.tsx';
+import { setOpen as openShuffle } from '../basement/shuffle.tsx';
+import { setOpen as openHoldem } from '../basement/holdem.tsx';
+import { setOpen as openCornhole } from '../basement/cornhole.tsx';
+import { setOpen as openPong } from '../basement/pong.tsx';
+import { setOpen as openShoes } from '../basement/shoes.tsx';
+import { setOpen as openBocce } from '../basement/bocce.tsx';
+import { useWatching } from '../basement/sound';
+import { openSudoku } from './Sudoku';
+
+/** The games that are not at the card table: the game room's (in the basement), cornhole (at the campsite) and the
+ *  backyard's (beer pong, horseshoes, bocce). Picking
+ *  one goes there and opens it large. */
+type Away = { id: string; name: string; where: string; who: string; blurb: string; mark: Parameters<typeof Mark>[0]['name']; floor: string; open: () => void };
+const AWAY: Away[] = [
+  { id: 'pool', name: 'Pool', where: 'Game room', who: '2 players, or against the house', blurb: 'Eight-ball. Sink your suit, then the eight.', mark: 'pool', floor: 'gameroom', open: () => openTable('pool') },
+  { id: 'darts', name: 'Darts', where: 'Game room', who: 'Up to 4 players', blurb: '301, 501, cricket or round the clock.', mark: 'darts', floor: 'gameroom', open: () => openTable('darts') },
+  { id: 'shuffle', name: 'Shuffleboard', where: 'Game room', who: '2 players', blurb: 'Slide the weights down the long table. Hang one off the end for four.', mark: 'shuffle', floor: 'gameroom', open: () => openShuffle(true) },
+  { id: 'bowling', name: 'Bowling', where: 'Game room', who: 'Up to 4 players', blurb: 'Ten frames down the lane. Strikes, spares and splits.', mark: 'bowling', floor: 'gameroom', open: () => openLane(true) },
+  { id: 'holdem', name: "Texas Hold'em", where: 'Game room', who: 'Up to 6 players', blurb: 'No-limit poker for play chips.', mark: 'chips', floor: 'gameroom', open: () => openHoldem(true) },
+  { id: 'cornhole', name: 'Cornhole', where: 'Campsite', who: '1 or 2 a side', blurb: 'Bags at the boards. Cancellation scoring, first to 21.', mark: 'cornhole', floor: 'outside', open: () => openCornhole(true) },
+  { id: 'beerpong', name: 'Beer Pong', where: 'Backyard', who: '1 or 2 a side', blurb: 'Ten cups racked at each end. Clear theirs first; balls back if both go in.', mark: 'pong', floor: 'backyard', open: () => openPong(true) },
+  { id: 'horseshoes', name: 'Horseshoes', where: 'Backyard', who: '1 or 2 a side', blurb: 'Two stakes forty feet apart. Ringers 3, leaners 1, first to 21.', mark: 'shoes', floor: 'backyard', open: () => openShoes(true) },
+  { id: 'golf', name: 'Mini golf', where: 'Past the backyard', who: 'Up to 6 players', blurb: 'Nine holes up the path through the backyard gate. Walk up to your ball, drag back and putt.', mark: 'golf', floor: 'minigolf', open: () => openGolf(true) },
+  { id: 'fishing', name: 'Fishing', where: 'The lake', who: 'Up to 6 on the dock', blurb: 'Down the path past the campsite. Click a spot on the dock, then cast.', mark: 'fish', floor: 'lake', open: () => {} },
+  { id: 'sudoku', name: 'Sudoku', where: 'Bathroom', who: 'Just you', blurb: 'The puzzle book by the toilet. Four difficulties, your own book.', mark: 'sudoku', floor: '', open: () => openSudoku() },
+  { id: 'bocce', name: 'Bocce', where: 'Backyard', who: '1 or 2 a side', blurb: 'The pallino, then four balls a side. Nearest scores; first to 12.', mark: 'bocce', floor: 'backyard', open: () => openBocce(true) },
+];
+function playAway(g: Away) {
+  // only the one picked is open large; then back to the room, and down (or out) there if not there already
+  openTable(''); openLane(false); openGolf(false); openShuffle(false); openHoldem(false); openCornhole(false); openPong(false); openShoes(false); openBocce(false);
+  g.open();
+  goFloor.setState({ to: g.floor });
+  useStore.setState({ view: { kind: 'hangout' } });
+}
 
 const KINDS: GameKind[] = ['hearts', 'spades', 'rummy', 'mahjong', 'chess', 'checkers', 'go', 'four', 'mancala'];
 const BLURB: Record<GameKind, [string, string]> = {
@@ -404,25 +442,35 @@ function GameIcon({ kind }: { kind: GameKind }) {
   if (kind === 'spades') return <Suit s="S" big />;
   if (kind === 'rummy') return <Mark name="cards" />;
   if (kind === 'mancala') return <Mark name="pits" />;
-  if (kind === 'mahjong') return <span className="g-iconbox tile"><Tile t={31} /></span>;
-  if (kind === 'go' || kind === 'four') return <span className="g-iconbox"><i className="g-piece stone" style={{ backgroundPosition: kind === 'go' ? '66.667% 0' : '0 0' }} /></span>;
-  return <span className="g-iconbox">{kind === 'chess' ? <ChessPiece p="N" /> : <i className="g-piece disc" style={{ backgroundPosition: '33.333% 0' }} />}</span>;
+  return <Mark name={kind} />;      // (chess, checkers, go, four, mahjong: plain grey marks like the rest of the list)
 }
-function Picker() {
+/** Every game, in one list: the card table's (picked here, played here), then the game room's and cornhole (picking one
+ *  goes there). While the card table has a game on it, that one says so and opens it, and the others wait for it. */
+function Picker({ onTable }: { onTable: () => void }) {
+  const t = useStore((s) => s.table);
+  const busy = t?.kind && t.phase !== 'over' ? t.kind : null;
   return (
     <div className="g-picker">
-      <h3>Pick a game</h3>
       <div className="g-tiles">
         {KINDS.map((k) => (
-          <button key={k} className="g-tile" onClick={() => gameOp('pick', { kind: k })}>
+          <button key={k} className={`g-tile${busy === k ? ' on' : ''}`} disabled={!!busy && busy !== k} title={busy && busy !== k ? `The card table has ${GAME_NAMES[busy]} on it` : undefined}
+            onClick={() => (busy === k ? onTable() : (gameOp('pick', { kind: k }), onTable()))}>
             <GameIcon kind={k} />
             <b>{GAME_NAMES[k]}</b>
-            <small>{BLURB[k][0]}</small>
-            <span>{BLURB[k][1]}</span>
+            <small>Card table · {BLURB[k][0]}</small>
+            {busy === k ? <em>{t?.phase === 'lobby' ? 'Taking seats: join in' : 'On now: watch or play'}</em> : <span>{BLURB[k][1]}</span>}
+          </button>
+        ))}
+        {AWAY.map((g) => (
+          <button key={g.id} className="g-tile" onClick={() => playAway(g)}>
+            <Mark name={g.mark} />
+            <b className={g.name.split(' ').some((w) => w.length > 10) ? 'long' : undefined}>{g.name}</b>
+            <small>{g.where} · {g.who}</small>
+            <span>{g.blurb}</span>
           </button>
         ))}
       </div>
-      <p className="g-quiet">One table, one game at a time. Anybody can sit down; everybody else can watch.</p>
+      <p className="g-quiet">The card table plays one game at a time, here. The game room's are down in the basement, cornhole out at the campsite, fishing at the lake, beer pong, horseshoes and bocce in the backyard, sudoku in the bathroom: picking one takes you there.</p>
     </div>
   );
 }
@@ -488,6 +536,10 @@ export function Games() {
   const users = useStore((s) => s.users);
   const [k, setK] = useState(2);
   const [guide, setGuide] = useState(false);
+  // the list of games, or the card table's game (shown to begin with if one is set up or going)
+  const [atTable, setAtTable] = useState(() => !!useStore.getState().table?.kind);
+  const table = atTable && !!t?.kind;
+  useWatching(table ? 'table' : null);       // (watching a game at the card table: "Spectating Chess")
   const area = useRef<HTMLDivElement>(null);
   useEffect(() => { gameOp('sync'); }, []);         // in case a change was missed while this was shut
   // Everything here is sized in whole steps (2 to 6 screen dots to a sprite dot, as many as fit), so the pixel art stays
@@ -508,17 +560,18 @@ export function Games() {
   return (
     <section className="games-view" style={{ '--k': k } as CSSProperties}>
       <header className="bar">
-        <h2><Icon name="gamepad" /> Game Table</h2>
-        <small>{about}</small>
-        {t?.kind === 'mahjong' && <button onClick={() => setGuide(!guide)} title="The tiles, the sets, a turn, claiming, winning and the points">How to play</button>}
-        {playing && t.you >= 0 && t.bots && <SureButton onSure={() => gameOp('stand')} title="Get up from the table. The computer plays your cards on, and you can take the seat back.">Leave my seat</SureButton>}
-        {playing && (t.you >= 0 || noneHere) && <SureButton onSure={() => gameOp('end')} title="Stop this game for everyone and go back to the seats">End the game</SureButton>}
+        <h2><Icon name="gamepad" /> Play Games</h2>
+        {table && <nav className="g-tabs"><button onClick={() => setAtTable(false)}>All games</button></nav>}
+        <small>{table ? about : 'Cards and board games at the table, the game room downstairs, and the games outside'}</small>
+        {table && t?.kind === 'mahjong' && <button onClick={() => setGuide(!guide)} title="The tiles, the sets, a turn, claiming, winning and the points">How to play</button>}
+        {table && playing && t.you >= 0 && t.bots && <SureButton onSure={() => gameOp('stand')} title="Get up from the table. The computer plays your cards on, and you can take the seat back.">Leave my seat</SureButton>}
+        {table && playing && (t.you >= 0 || noneHere) && <SureButton onSure={() => gameOp('end')} title="Stop this game for everyone and go back to the seats">End the game</SureButton>}
         <button onClick={() => useStore.setState({ view: { kind: 'hangout' } })}>Back to the room</button>
       </header>
       <div className="g-area" ref={area}>
         <Scale.Provider value={k}>
-        {!t ? <p className="g-quiet">Setting the table…</p>
-          : !t.kind ? <Picker />
+        {!table ? <Picker onTable={() => setAtTable(true)} />
+          : !t ? <p className="g-quiet">Setting the table…</p>
           : t.phase === 'lobby' || !g ? <Lobby t={t} />
           : (
             <>

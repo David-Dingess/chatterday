@@ -44,7 +44,7 @@ before(async () => {
   server.stdout.on('data', (d) => (log += d));
   server.stderr.on('data', (d) => (log += d));
   const t0 = Date.now();
-  while (!log.includes(`127.0.0.1:${PORT}`)) {
+  while (!log.includes(`listening on http://127.0.0.1:${PORT}`)) {      // (the "set it up" hint names the address before the server is listening on it)
     if (server.exitCode !== null || Date.now() - t0 > 20000) throw new Error('server did not start:\n' + log);
     await new Promise((r) => setTimeout(r, 100));
   }

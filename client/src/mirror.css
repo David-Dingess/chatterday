@@ -1,0 +1,15 @@
+/* ── the bathroom mirror (components/Mirror.tsx): steamed up after a shower, written on with a finger ── */
+/* in the room: over the mirror's glass in the room's picture, unseen until it fogs */
+.club-mirror { position: absolute; z-index: 1; image-rendering: pixelated; pointer-events: none; opacity: 0; transition: opacity 1s linear; }
+.club-mirror.fogged { pointer-events: auto; cursor: pointer; }
+.club-mirror.fogged:hover { outline: 1px solid var(--accent); }
+
+/* up close: the mirror in its wooden frame, big in the middle of the window */
+.mirror-box { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; background: rgba(0, 0, 0, 0.82); }
+.mirror-frame { position: relative; display: grid; justify-items: center; padding: 16px; background: #8a5a3c; border: 4px solid #2a1c14;
+  box-shadow: inset 4px 4px 0 #a8744f, inset -4px -4px 0 #6b4429, 8px 8px 0 rgba(0, 0, 0, 0.55); }
+.mirror-glass { display: block; width: min(84vw, calc((100vh - 150px) * 1.5), 960px); aspect-ratio: 3 / 2; height: auto;
+  image-rendering: pixelated; border: 4px solid #2a1c14; cursor: crosshair; touch-action: none; }
+.mirror-shelf { position: absolute; left: 10%; right: 10%; bottom: -16px; height: 8px; background: #c9d6e2; border: 3px solid #2a1c14; box-shadow: inset 0 -3px 0 #9fb0c0; }
+.mirror-x { position: absolute; top: -18px; right: -18px; width: 32px; height: 32px; padding: 0; display: grid; place-items: center;
+  background: #f2f6f8; color: #2a1c14; border: 3px solid #2a1c14; border-radius: 0; font-weight: 800; }

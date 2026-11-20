@@ -7,7 +7,9 @@ import { setPrefs, toast, useStore } from '../store';
 import '../devices';
 import { applyTheme, DEFAULT_ACCENT, sanitizeTheme, SWATCHES } from '../theme';
 import type { Me } from '../types';
-import { restartMic, TALK_LEVEL } from '../voice';
+import { callMic, canPickOutput, restartMic, TALK_LEVEL } from '../voice';
+import { isAppleTouch } from '../device';
+import { chime } from '../sfx';
 import { Admin } from './Admin';
 import { CharacterBuilder, DeskBuilder, PetBuilder, PERSON_COLORS } from './Builders';
 import { Modal, Toggle } from './ui';
@@ -61,9 +63,21 @@ function MicTest() {
   const line = useRef(db);
   line.current = db;
   const save = useRef(0);
+  const inCall = useStore((s) => s.voice.channelId != null);
   useEffect(() => {
     let stream: MediaStream | null = null, ctx: AudioContext | null = null, raf = 0, gone = false;
-    navigator.mediaDevices.getUserMedia({ audio: { deviceId: prefs.micId || undefined, echoCancellation: prefs.echo, noiseSuppression: prefs.noise, autoGainControl: prefs.agc } }).then((s) => {
+    // On an iPad or an iPhone, in a call: the call's own microphone is measured (a copy of it). Opening a second one
+    // there mutes the first, so opening Settings in a call cut you off from everybody (seen on an iPad).
+    // (a moment's wait first: a change of microphone restarts the call's one, and the new one is the one to measure)
+    const open = isAppleTouch() && inCall
+      ? new Promise<number>((r) => window.setTimeout(r, 700)).then(() => {
+          const t = callMic()?.clone();
+          if (!t) throw new Error('no call microphone');
+          t.enabled = true;
+          return new MediaStream([t]);
+        })
+      : navigator.mediaDevices.getUserMedia({ audio: { deviceId: prefs.micId || undefined, echoCancellation: prefs.echo, noiseSuppression: prefs.noise, autoGainControl: prefs.agc } });
+    open.then((s) => {
       if (gone) { s.getTracks().forEach((t) => t.stop()); return; }
       stream = s;
       ctx = new AudioContext();
@@ -85,7 +99,7 @@ function MicTest() {
       draw();
     }).catch(() => setState('none'));
     return () => { gone = true; cancelAnimationFrame(raf); stream?.getTracks().forEach((t) => t.stop()); void ctx?.close(); };
-  }, [prefs.micId, prefs.echo, prefs.noise, prefs.agc]);
+  }, [prefs.micId, prefs.echo, prefs.noise, prefs.agc, inCall]);
   const change = (v: number) => {
     setDb(v);
     window.clearTimeout(save.current);
@@ -111,7 +125,19 @@ function Voice() {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [capturing, setCapturing] = useState(false);
   const [perm, setPerm] = useState(typeof Notification === 'undefined' ? 'denied' : Notification.permission);
-  useEffect(() => { navigator.mediaDevices.enumerateDevices().then(setDevices).catch(() => {}); }, []);
+  // Listed again whenever a device comes or goes (AirPods connecting), and on joining a call (a browser names its
+  // devices only once the microphone has been allowed)
+  const inCall = useStore((s) => s.voice.channelId != null);
+  useEffect(() => {
+    const md = navigator.mediaDevices;
+    if (!md) return;
+    const again = () => void md.enumerateDevices().then(setDevices).catch(() => {});
+    again();
+    md.addEventListener('devicechange', again);
+    return () => md.removeEventListener('devicechange', again);
+  }, [inCall]);
+  const pickOut = canPickOutput();
+  const using = inCall ? callMic()?.label : undefined;
   const set = (p: Partial<typeof prefs>, restart = true) => { setPrefs(p); if (restart) void restartMic(); };
   const named = devices.some((d) => d.label);
 
@@ -124,13 +150,25 @@ function Voice() {
             {devices.filter((d) => d.kind === 'audioinput' && d.deviceId !== 'default').map((d) => <option key={d.deviceId} value={d.deviceId}>{d.label || 'Microphone'}</option>)}
           </select>
         </label>
-        <label>Speakers / headphones
-          <select value={prefs.outId} onChange={(e) => set({ outId: e.target.value })}>
-            <option value="">System default</option>
-            {devices.filter((d) => d.kind === 'audiooutput' && d.deviceId !== 'default').map((d) => <option key={d.deviceId} value={d.deviceId}>{d.label || 'Output'}</option>)}
-          </select>
-        </label>
+        {pickOut ? (
+          <label>Speakers / headphones
+            <select value={prefs.outId} onChange={(e) => set({ outId: e.target.value })}>
+              <option value="">System default</option>
+              {devices.filter((d) => d.kind === 'audiooutput' && d.deviceId !== 'default').map((d) => <option key={d.deviceId} value={d.deviceId}>{d.label || 'Output'}</option>)}
+            </select>
+          </label>
+        ) : (
+          <div className="out-here">
+            <b>Speakers / headphones</b>
+            <p className="hint">{isAppleTouch()
+              ? 'Your iPad picks where the sound goes, not Chatterday. Open Control Center (swipe down from the top right corner), press and hold the music box, and tap the AirPlay button (the triangle with rings) to choose AirPods, headphones or the iPad itself.'
+              : 'This browser always plays through the sound output your computer is set to (on a Mac: System Settings, Sound). The desktop app or Chrome can pick one here.'}</p>
+            <button onClick={() => chime('join')}>Play a test sound</button>
+          </div>
+        )}
       </div>
+      {using && <p className="hint">The call is using: {using}</p>}
+      {isAppleTouch() && <p className="hint">AirPods or a headset that connects during a call can take over the microphone on its own: check the line above, and pick again if it is wrong.</p>}
       <Toggle label="Even out everyone's loudness" hint="Louder voices are turned down to match the quietest one you are hearing. Nobody is made louder than they arrive." checked={prefs.levelVoices} onChange={(v) => set({ levelVoices: v }, false)} />
       {native && <Toggle label="Mute my microphone when I lock my PC" hint="Unlocking turns it back on, unless you had muted it yourself. Needs desktop app 0.1.4 or newer." checked={prefs.lockMute} onChange={(v) => set({ lockMute: v }, false)} />}
       <Toggle label="Tell me when I talk while muted" hint="After a second or so of talking into a muted microphone, the mute button flashes. Not with push-to-talk." checked={prefs.mutedNudge} onChange={(v) => set({ mutedNudge: v }, false)} />
@@ -162,6 +200,7 @@ function Voice() {
       <h3>Sounds and notifications</h3>
       <Toggle label="Join, leave and mute tones, and the doorbell" hint="The doorbell rings when somebody signs on." checked={prefs.chimes} onChange={(v) => set({ chimes: v }, false)} />
       <Toggle label="Turn the player and sounds down while someone is talking" hint="They come back up a moment after the talking stops." checked={prefs.duck} onChange={(v) => set({ duck: v }, false)} />
+      <Toggle label="Tell me when a friend starts a game" hint="A quiet notice in the corner, such as “Sam started Kart Racing”, with a button to join their voice chat (or wave them over). Once per person per game in three hours; not while you are in their voice chat, asleep, or have a game in front of you. Only for games their desktop app spots." checked={prefs.gameAlerts} onChange={(v) => set({ gameAlerts: v }, false)} />
       <div className="grid2">
         <label>My entrance sound
           <select value={me.entrance ?? ''} onChange={(e) => void saveProfile({ entrance: e.target.value ? Number(e.target.value) : null })}>

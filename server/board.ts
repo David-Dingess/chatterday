@@ -17,10 +17,35 @@ try {
   if (saved.length === px.length) for (let i = 0; i < px.length; i++) px[i] = saved[i] % INKS;
 } catch { /* a clean board */ }
 
+// ── a game of Draw & Guess (server/drawguess.ts) borrows the board ──
+// The picture that was there is put aside (and it is what goes on saving to the file, so a restart in the middle of a
+// game brings it back), only the drawer may draw, and once the game is over the picture is put back.
+let kept: Uint8Array | null = null;
+let gate: ((userId: string) => boolean) | null = null;
+/** Puts the picture aside, and lets only those `mayDraw` says draw until it is given back. */
+export function borrowBoard(mayDraw: (userId: string) => boolean) {
+  if (!kept) kept = px.slice();
+  gate = mayDraw;
+  done.clear();
+}
+/** Gives the board back as it was before the game. */
+export function returnBoard() {
+  if (kept) px.set(kept);
+  kept = null;
+  gate = null;
+  done.clear();
+  touched();
+}
+/** Wipes the board for the next turn of a game (nobody can undo back past it). */
+export function wipeForTurn() {
+  px.fill(0);
+  done.clear();
+}
+
 let timer: ReturnType<typeof setTimeout> | null = null;
 function save() {
   timer = null;
-  try { fs.writeFileSync(file + '.tmp', px); fs.renameSync(file + '.tmp', file); } catch (e: any) { console.log('[board] could not save:', e.message); }
+  try { fs.writeFileSync(file + '.tmp', kept ?? px); fs.renameSync(file + '.tmp', file); } catch (e: any) { console.log('[board] could not save:', e.message); }
 }
 const touched = () => { timer ??= setTimeout(save, 2000); };
 process.on('exit', () => { if (timer) save(); });
@@ -89,6 +114,7 @@ const whole = (v: unknown, min: number, max: number): v is number => Number.isIn
  *  one who sent it as well, which undo needs); null if it made no sense or changed nothing. */
 export function drawOn(d: any, userId: string): { step: Record<string, unknown>; everyone: boolean } | null {
   try {
+    if (gate && !gate(userId)) return null;        // a game is on and it is not their turn to draw
     if (d?.op === 'undo') {
       const last = done.get(userId)?.pop();
       if (!last) return null;

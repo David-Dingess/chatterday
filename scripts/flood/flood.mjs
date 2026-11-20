@@ -158,7 +158,7 @@ if (want('fuzz')) {
   }
   await sleep(1500);
   const r = w(), said = logSince(from);
-  const errors = said.split('\n').filter((l) => /^\[(ws|games|http)\]/.test(l) && !/^\[ws\] \S+ (Max payload|Invalid)/.test(l));
+  const errors = said.split('\n').filter((l) => /^\[(ws|games|http)\]/.test(l) && !/^\[ws\] \S+ (Max payload|Invalid)/.test(l) && !/^\[ws\] [\d:]+ .+ sent \d+ messages in 10 s; past the first \d+ were ignored/.test(l));      // (the rate limit's own notice is not a handler throwing)
   note('sent', `${sent} nonsense messages over 150 connections; ${lat(r)}`);
   check('server alive', (await health()) >= 0);
   check('nothing threw inside a handler', errors.length === 0, `${errors.length} error lines`);

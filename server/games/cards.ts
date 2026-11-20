@@ -50,6 +50,8 @@ export interface Rules<S> {
   start(players: number, rng: Rng): S;
   /** The seats that may do something now (none once it is over). */
   turn(s: S): number[];
+  /** Whether who may act now is a secret (who could claim a thrown tile): each seat is then told only about itself. */
+  secretTurn?(s: S): boolean;
   /** Does one thing for one seat. Gives back a short line saying why not, or null when it was done. Never trusts `m`. */
   move(s: S, seat: number, m: any, rng: Rng): string | null;
   /** What one seat may see; -1 is somebody watching, who sees no hand at all. */

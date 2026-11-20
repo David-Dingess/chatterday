@@ -25,6 +25,15 @@ if (-not (Test-Path (Join-Path $desktop 'node_modules\electron\dist\electron.exe
 Write-Host 'Building the installer ...'
 npm run dist
 if ($LASTEXITCODE -ne 0) { throw 'The build failed.' }
+# An ffmpeg packed with the app must carry its licence (LGPL) and its build notes: scripts\pack-ffmpeg.mjs puts them
+# beside it, and the installer must hold all three.
+$ff = Join-Path $desktop 'vendor\ffmpeg-packed'
+if (Test-Path (Join-Path $ff 'ffmpeg.exe')) {
+  if (-not (Get-ChildItem $ff -Filter 'LICENSE-ffmpeg*') -or -not (Test-Path (Join-Path $ff 'FFMPEG-BUILD.txt'))) { throw 'ffmpeg was packed without its licence. Run node scripts\pack-ffmpeg.mjs again.' }
+  $unpacked = Join-Path $desktop 'dist\win-unpacked\resources\ffmpeg'
+  if ((Test-Path $unpacked) -and -not (Get-ChildItem $unpacked -Filter 'LICENSE-ffmpeg*')) { throw 'The installer has ffmpeg but not its licence.' }
+  Write-Host "ffmpeg packed, with its licence: $((Get-Content (Join-Path $ff 'FFMPEG-BUILD.txt') | Select-String '^Version').Line)"
+} else { Write-Host 'No ffmpeg packed: shared screens use the browser capture unless a PC has its own ffmpeg.' }
 $made = Get-ChildItem (Join-Path $desktop 'dist') -Filter 'Chatterday-Setup-*.exe' | Sort-Object LastWriteTime | Select-Object -Last 1
 if (-not $made) { throw 'The build finished but no installer was made.' }
 Write-Host "Done: $($made.FullName)"

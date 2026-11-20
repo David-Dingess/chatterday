@@ -1,0 +1,53 @@
+/* The DnD room's additions (./tracker.tsx, ./tower.tsx, ./ink.tsx): the initiative board on the wall, the dice tower,
+   the drawing on the map. In the room everything is in the room's dots (the room is zoomed whole), with hard edges. */
+
+/* ── the initiative board: a slate in an oak frame, hung on a nail; chalk writing (the heading is a little wider than
+   the slate inside the frame: align-self keeps it centred, spilling evenly into the padding either side) ── */
+.dnd-wallboard { position: absolute; box-sizing: border-box; padding: 3px 3px 2px; background: #26282a; border: 2px solid #7a4a28;
+  box-shadow: inset 1px 1px 0 #3a3e40, 0 1px 0 #1a0e06, 1px 0 0 #4a2a14; display: flex; flex-direction: column; gap: 0;
+  font: 6px/6px VT323, monospace; color: #e8e4d8; cursor: pointer; pointer-events: auto; overflow: hidden; image-rendering: pixelated; }
+.hangout.mini .dnd-wallboard { cursor: default; }
+.dnd-wallboard .nail { position: absolute; left: 50%; top: -5px; width: 2px; height: 2px; margin-left: -1px; background: #8a8a92; box-shadow: 0 1px 0 #2a2a30; }
+.dnd-wallboard .hd { align-self: center; font-weight: 400; color: #e8c860; text-align: center; margin-bottom: 1px; white-space: nowrap; letter-spacing: 0; }
+.dnd-wallboard div { display: flex; align-items: center; gap: 1px; height: 6px; white-space: nowrap; }
+.dnd-wallboard div i { flex: none; width: 2px; height: 3px; }
+.dnd-wallboard div span { flex: 1; overflow: hidden; }
+.dnd-wallboard div em { font-style: normal; color: #b8b4a8; }
+.dnd-wallboard div.now { background: #e8c860; color: #26282a; margin: 0 -1px; padding: 0 1px; }
+.dnd-wallboard div.now em { color: #4a3a10; }
+
+/* ── the tracker, opened large from the board ── */
+.dnd-init .chip { flex: none; width: 10px; height: 10px; box-shadow: 0 0 0 1px #000; }
+.dnd-init .num { width: 52px; text-align: center; font-size: 18px; }
+.dnd-init .nm small { color: var(--muted); font-size: 0.8em; }
+.dnd-init li.hid { opacity: 0.7; border-style: dashed; }
+.dnd-init .go { border-color: var(--accent); }
+.dnd-init .hp input { width: 52px; }
+.dnd-init.big { font-size: 20px; }
+.dnd-init.big li { padding: 4px 8px; gap: 10px; }
+.dnd-init.big li.now { box-shadow: inset 4px 0 0 var(--accent); }
+.dnd-init.big .chip { width: 14px; height: 14px; }
+.dnd-init.big input, .dnd-init.big button { font: inherit; font-size: 18px; }
+.dnd-init.big input { background: var(--raised); color: var(--text); border: 1px solid var(--line); padding: 1px 4px; }
+.dnd-init.big button { padding: 1px 10px; }
+.dnd-init.big button.on { background: var(--accent); color: var(--accent-text); }
+.dnd-init.big .danger { color: var(--danger); }
+.dnd-init.big .gap { flex: 1; }
+.dnd-init.big .muted { color: var(--muted); }
+
+/* ── the dice tower and its dice ── */
+.dnd-tower { position: absolute; image-rendering: pixelated; cursor: pointer; pointer-events: auto; }
+.hangout.mini .dnd-tower { cursor: default; }
+.dnd-die { position: absolute; width: 3px; height: 3px; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.55); pointer-events: none; }
+.dnd-die b { position: absolute; width: 1px; height: 1px; background: #f4efe2; }
+.dnd-towertotal { position: absolute; transform: translateX(-50%); padding: 0 2px; background: #1c1814; border: 1px solid #d8b040; box-shadow: 0 1px 0 #000;
+  font: 8px/8px VT323, monospace; white-space: nowrap; pointer-events: none; }
+
+
+/* ── the drawing on the map ── */
+.dnd-ink { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; image-rendering: pixelated; }
+.dnd-tableink { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.dnd-map.tool-draw { cursor: crosshair; } .dnd-map.tool-erase { cursor: cell; }
+.dnd-inkbar { padding-top: 0; }
+.dnd-panel .dnd-inkbar button.ink { width: 18px; height: 18px; padding: 0; border: 1px solid var(--line); }
+.dnd-panel .dnd-inkbar button.ink.on { outline: 2px solid var(--accent); outline-offset: 1px; }

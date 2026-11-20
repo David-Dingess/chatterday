@@ -1,6 +1,6 @@
 // Chatterday desktop shell. It shows the web UI served by your friend group's server and adds the
 // things a browser tab cannot do: tray presence, a screen picker, system-audio capture, global hotkeys.
-const { app, BrowserWindow, Tray, Menu, ipcMain, session, desktopCapturer, globalShortcut, powerMonitor, shell, nativeImage, net, screen, dialog } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, session, desktopCapturer, globalShortcut, powerMonitor, shell, nativeImage, net, screen, dialog, MessageChannelMain } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const { spawn, execFile } = require('node:child_process');
@@ -142,7 +142,18 @@ function createWindow() {
     // With no page of the server's on show (it was the app's own first load), the connect page, not an empty window.
     if (!fromServer(win.webContents.getURL())) setImmediate(() => { if (win && !win.isDestroyed()) void win.loadFile(CONNECT_PAGE); });
   });
-  win.webContents.on('did-finish-load', () => { win.webContents.setAudioMuted(false); stopShareSound(); });      // a fresh page is never deafened, and shares nothing
+  win.webContents.on('did-finish-load', () => { win.webContents.setAudioMuted(false); stopShareSound(); stopShareVideo(); });      // a fresh page is never deafened, and shares nothing
+  // A page that has died takes what was being captured for it with it: nothing would ever stop either otherwise.
+  // And the window is not left blank: the page is loaded again, once (a page that dies again within the minute is
+  // left alone, for F5 or a restart, and not loaded round and round).
+  let diedAt = 0;
+  win.webContents.on('render-process-gone', (_e, details) => {
+    stopShareSound(); stopShareVideo();
+    if (quitting || details?.reason === 'clean-exit' || Date.now() - diedAt < 60_000) return;
+    diedAt = Date.now();
+    console.warn('[app] the page died (' + details?.reason + '); loading it again');
+    setTimeout(() => { if (win && !win.isDestroyed() && !quitting) loadApp(); }, 1000);
+  });
   win.webContents.on('did-fail-load', (_e, code, _desc, url, isMainFrame) => {
     if (isMainFrame && code !== -3 && fromServer(url)) void win.loadFile(CONNECT_PAGE);
   });
@@ -197,17 +208,22 @@ function lockDownSession() {
 
 // ───────── presence ─────────
 
-let foreground = { path: '', title: '', product: '' };
+let foreground = { path: '', title: '', product: '', pid: 0, cls: '', rect: null };
+/** The game last seen in front, and its process: it still counts while it is running and nothing else is in front
+ *  that says otherwise (a video, another game). Somebody playing with the mouse last clicked into another window (a
+ *  chat, a browser) is still playing. (The page holds a game for a minute too; this is for as long as it runs.) */
+let heldGame = null;
+const running = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };      // (EPERM: there, but not ours to touch, as an elevated game is)
 let locked = false;
 let lastActivity = '';
 let subscribed = false;
 const GAME_FOLDERS = ['\\steamapps\\common\\', '\\epic games\\', '\\riot games\\', '\\xboxgames\\', '\\gog galaxy\\games\\', '\\gog games\\', '\\ubisoft game launcher\\games\\', '\\ea games\\', '\\origin games\\', '\\rockstar games\\'];
 const NOT_GAMES = ['\\epic games\\launcher\\', '\\riot games\\riot client\\', 'wallpaper_engine', '\\steamvr\\', '\\rockstar games\\launcher\\'];
-const KNOWN_GAMES = { 'minecraft.windows.exe': 'Minecraft', 'robloxplayerbeta.exe': 'Roblox', 'osu!.exe': 'osu!', 'dolphin.exe': 'Dolphin', 'slippi dolphin.exe': 'Melee', 'overwatch.exe': 'Overwatch', 'wow.exe': 'World of Warcraft', 'gta5.exe': 'GTA V', 'diablo iv.exe': 'Diablo IV' };
-const JAVA_GAMES = [[/^Minecraft/i, 'Minecraft'], [/Puzzle Pirates/i, 'Puzzle Pirates'], [/RuneLite|Old School RuneScape/i, 'RuneScape']];
+const KNOWN_GAMES = { 'minecraft.windows.exe': 'Minecraft', 'robloxplayerbeta.exe': 'Roblox', 'osu!.exe': 'osu!', 'dolphin.exe': 'Dolphin', 'wow.exe': 'World of Warcraft', 'gta5.exe': 'GTA V', 'diablo iv.exe': 'Diablo IV' };
+const JAVA_GAMES = [[/^Minecraft/i, 'Minecraft']];
 const VIDEO_APPS = { 'vlc.exe': 'VLC', 'mpv.exe': 'mpv', 'mpc-hc64.exe': 'a video', 'mpc-be64.exe': 'a video', 'potplayermini64.exe': 'a video', 'plex.exe': 'Plex', 'plex htpc.exe': 'Plex', 'netflix.exe': 'Netflix', 'stremio.exe': 'Stremio', 'kodi.exe': 'Kodi', 'jellyfinmediaplayer.exe': 'Jellyfin', 'disney+.exe': 'Disney+' };
 const BROWSERS = new Set(['chrome.exe', 'msedge.exe', 'firefox.exe', 'brave.exe', 'opera.exe', 'vivaldi.exe', 'arc.exe', 'zen.exe']);
-const VIDEO_SITES = [[/YouTube Music/i, null], [/\bYouTube\b/i, 'YouTube'], [/\bNetflix\b/i, 'Netflix'], [/\bTwitch\b/i, 'Twitch'], [/\bHulu\b/i, 'Hulu'], [/Disney\+/i, 'Disney+'], [/Prime Video/i, 'Prime Video'], [/Crunchyroll/i, 'Crunchyroll'], [/\bPlex\b/i, 'Plex'], [/Jellyfin/i, 'Jellyfin'], [/Peacock/i, 'Peacock'], [/Paramount\+/i, 'Paramount+'], [/Apple TV/i, 'Apple TV'], [/\| Max$|HBO Max/i, 'Max']];
+const VIDEO_SITES = [[/YouTube Music/i, null], [/\bYouTube\b/i, 'YouTube'], [/\bNetflix\b/i, 'Netflix'], [/\bHulu\b/i, 'Hulu'], [/Disney\+/i, 'Disney+'], [/Prime Video/i, 'Prime Video'], [/Crunchyroll/i, 'Crunchyroll'], [/\bPlex\b/i, 'Plex'], [/Jellyfin/i, 'Jellyfin'], [/Peacock/i, 'Peacock'], [/Paramount\+/i, 'Paramount+'], [/Apple TV/i, 'Apple TV'], [/\| Max$|HBO Max/i, 'Max']];
 
 // How long the mouse and keyboard may sit untouched before somebody counts as away. It depends on what is in front:
 // at the desk it is what the person chose in Settings (the page says: 'activity:away-after'). A game gets far longer,
@@ -222,7 +238,10 @@ const idleLimit = (state) => (state === 'watching' ? VIDEO_IDLE : state === 'gam
 function classify() {
   const exe = path.win32.basename(foreground.path).toLowerCase();
   if (locked) return { state: 'away', label: '', proc: exe };
-  const a = inFront(exe);
+  let a = inFront(exe);
+  if (a.state === 'gaming') heldGame = foreground.pid ? { pid: foreground.pid, label: a.label, proc: a.proc } : null;
+  else if (heldGame && !running(heldGame.pid)) heldGame = null;      // the game has been closed
+  else if (heldGame && a.state === 'desk') a = { state: 'gaming', label: heldGame.label, proc: heldGame.proc };      // still running behind whatever is in front
   return powerMonitor.getSystemIdleTime() >= idleLimit(a.state) ? { state: 'away', label: '', proc: exe } : a;
 }
 /** What the window in front says they are doing, whether or not anybody is at the keyboard. */
@@ -258,8 +277,9 @@ function startWatcher() {
   watcher = ps;
   ps.on('error', () => { /* PowerShell would not start: the app carries on, knowing only "here" or "away" */ });
   readline.createInterface({ input: ps.stdout }).on('line', (line) => {
-    const [p = '', title = '', product = ''] = line.split('\t');
-    foreground = { path: p, title, product };
+    const [p = '', title = '', product = '', pid = '', cls = '', rect = ''] = line.split('\t');
+    const [l, t, r, b] = rect.split(',').map(Number);
+    foreground = { path: p, title, product, pid: Number(pid) || 0, cls, rect: rect && [l, t, r, b].every(Number.isFinite) && r > l && b > t ? { x: l, y: t, width: r - l, height: b - t } : null };
     tickPresence();
   });
   ps.on('exit', () => { if (!quitting) setTimeout(startWatcher, 15000); });
@@ -382,6 +402,174 @@ function startShareSound(sourceId) {
     });
     setTimeout(() => done({ error: 'The sound helper did not answer.' }), 4000);
   });
+}
+
+// ───────── a shared screen, captured here and not by the browser ─────────
+// The browser's own screen capture copies every picture off the graphics card and through the processor, and waits
+// after each one for as long as that copy took. With a game using the whole graphics card the copy is slow, and a
+// 1080p share at "60" went out at 9 to 15 pictures a second (measured on the host's PC, 2026-11-16, a game on a
+// 3440x1440 monitor). Even its faster way, which leaves the picture on the card (the WebRtcAllowWgcUsingTexture
+// feature), gets every second refresh of a 100 Hz monitor and no more: 50.
+// So ffmpeg does it instead, when there is one (packed with the app, or on the PATH): Windows hands it the pictures
+// on the graphics card at up to 120 a second, it keeps 60 of them (or 30), scales them there and encodes them there
+// (H.264 on the card's own encoder), and what comes out, a few megabytes a second, goes to the page down a channel
+// of its own. The page turns it back into pictures (on the card again) and sends those as it sends any share. With
+// the same game running that is 60 a second, every second. Without an ffmpeg, or with a graphics card whose encoder
+// it cannot use, startShareVideo says so and the page falls back to the browser's capture.
+let videoProc = null;
+let videoPort = null;
+let videoShare = null;          // what is being captured, and how: { ff, from, width, height, fps, idle }
+let ffmpegLooking = null;       // the one search for an ffmpeg, which everybody who asks waits for
+function stopShareVideo() {
+  const p = videoProc, port = videoPort;
+  videoProc = null;
+  videoPort = null;
+  videoShare = null;
+  if (port) { try { port.postMessage(null); port.close(); } catch { /* the page has gone */ } }
+  if (p) endFfmpeg(p);
+}
+/** ffmpeg is asked to finish (a "q", as if typed at it), and does: it lets go of the graphics card's encoder and of the
+ *  capture in good order. It is never simply killed while it works: killed in the middle of a picture, with a game
+ *  using the whole card, the card's driver reported errors and the game went down with them (2026-11-16). Only one
+ *  that has not finished after five seconds is stopped the hard way. */
+function endFfmpeg(p) {
+  if (p.exitCode !== null || p.signalCode !== null) return;
+  const hard = setTimeout(() => { try { p.kill(); } catch { /* already gone */ } }, 5000);
+  p.once('exit', () => clearTimeout(hard));
+  try { p.stdin.write('q'); p.stdin.end(); } catch { /* its input has closed: the timer sees to it */ }
+}
+/** Runs ffmpeg to the end and gives back what it wrote (both streams), or '' if it would not run or took too long. */
+const ffmpegSays = (exe, args, ms = 8000) => new Promise((resolve) => {
+  execFile(exe, ['-hide_banner', ...args], { windowsHide: true, timeout: ms, maxBuffer: 4 << 20 }, (err, stdout, stderr) => resolve({ ok: !err, text: String(stdout) + String(stderr) }));
+});
+// How each graphics card's encoder is asked for the same thing: no waiting for later pictures, and quality set by
+// how the picture looks, not by a bit rate (it only has to cross a pipe, and is encoded again for the others).
+const VIDEO_ENCODERS = {
+  h264_nvenc: ['-preset', 'p3', '-tune', 'ull', '-zerolatency', '1', '-rc', 'vbr', '-cq', '19', '-b:v', '0', '-maxrate', '45M', '-bufsize', '45M', '-bf', '0'],
+  h264_amf: ['-usage', 'ultralowlatency', '-quality', 'speed', '-rc', 'cqp', '-qp_i', '20', '-qp_p', '20', '-bf', '0'],
+  h264_qsv: ['-preset', 'veryfast', '-global_quality', '20', '-look_ahead', '0', '-async_depth', '1', '-bf', '0'],
+};
+/** The ffmpeg to use and the encoder of this PC's that it can drive, as { exe, encoder }; null when there is none.
+ *  Looked for once: whoever asks while the looking is going on waits for the same answer. */
+function findFfmpeg() {
+  ffmpegLooking ??= lookForFfmpeg().catch(() => null);
+  return ffmpegLooking;
+}
+async function lookForFfmpeg() {
+  if (process.platform !== 'win32') return null;
+  // By its full path only, the app's own copy first. The PATH is walked here and not by Windows, which would look in
+  // the app's folder and the current one before it.
+  // (the packed one is an LGPL build, with its licence beside it: scripts/pack-ffmpeg.mjs)
+  const places = [app.isPackaged ? path.join(process.resourcesPath, 'ffmpeg', 'ffmpeg.exe') : path.join(__dirname, 'vendor', 'ffmpeg-packed', 'ffmpeg.exe'),
+    path.join(process.env.LOCALAPPDATA || '', 'Microsoft', 'WinGet', 'Links', 'ffmpeg.exe'),
+    ...String(process.env.PATH || '').split(';').filter((d) => path.isAbsolute(d)).map((d) => path.join(d, 'ffmpeg.exe'))];
+  for (const exe of [...new Set(places)]) {
+    if (!fs.existsSync(exe)) continue;
+    if (!/\bgfxcapture\b/.test((await ffmpegSays(exe, ['-filters'])).text)) continue;        // older than 8.0: it cannot capture this way
+    // (asking for the list of encoders says what ffmpeg was built with, not what this PC has: each is tried)
+    const tried = await Promise.all(Object.keys(VIDEO_ENCODERS).map(async (encoder) =>
+      (await ffmpegSays(exe, ['-loglevel', 'error', '-f', 'lavfi', '-i', 'color=c=black:s=1280x720:r=30', '-frames:v', '3', '-c:v', encoder, '-f', 'null', '-'])).ok ? encoder : ''));
+    const encoder = tried.find(Boolean);
+    if (encoder) return { exe, encoder };
+  }
+  return null;
+}
+/** Windows' own name for a monitor (its HMONITOR), which is what the capture is told. Asked of Windows through
+ *  PowerShell, once for each place a monitor is in. */
+const monitorHandles = new Map();
+function monitorHandle(display) {
+  const at = screen.dipToScreenPoint({ x: Math.round(display.bounds.x + display.bounds.width / 2), y: Math.round(display.bounds.y + display.bounds.height / 2) });
+  const key = `${at.x},${at.y}`;
+  if (monitorHandles.has(key)) return Promise.resolve(monitorHandles.get(key));
+  const script = `Add-Type 'using System; using System.Runtime.InteropServices; public class ChatterdayMon { [StructLayout(LayoutKind.Sequential)] public struct P { public int X, Y; } [DllImport("user32.dll")] public static extern IntPtr MonitorFromPoint(P p, uint f); public static long At(int x, int y) { P p; p.X = x; p.Y = y; return MonitorFromPoint(p, 0).ToInt64(); } }'; [ChatterdayMon]::At(${Math.round(at.x)}, ${Math.round(at.y)})`;
+  return new Promise((resolve) => {
+    execFile(POWERSHELL, ['-NoProfile', '-NonInteractive', '-Command', script], { windowsHide: true, timeout: 10000 }, (err, stdout) => {
+      const handle = err ? 0 : Number(String(stdout).trim());
+      if (handle > 0) monitorHandles.set(key, handle);
+      resolve(handle > 0 ? handle : 0);
+    });
+  });
+}
+/** `want`: { side, fps }: the picture's shorter side is at most `side` dots (1080 for "1080p": an ultrawide screen
+ *  keeps its 1080 lines and is wider), at `fps` pictures a second. Answers { width, height, fps, encoder } once ffmpeg
+ *  is running, and the pictures follow on the channel sent to the page as 'share-video:port'; or { error }. */
+async function startShareVideo(sourceId, want) {
+  stopShareVideo();
+  const fps = Number(want?.fps) === 60 ? 60 : 30;
+  const side = Math.max(360, Math.min(1440, Math.round(Number(want?.side)) || 1080));
+  const ff = await findFfmpeg();
+  if (!ff) return { error: 'no ffmpeg that can capture, or no encoder on the graphics card that it can use' };
+  if (!win || win.isDestroyed()) return { error: 'no window' };
+  let from = '';
+  const windowId = /^window:(\d+):/.exec(String(sourceId));
+  if (windowId) from = `hwnd=${windowId[1]}`;
+  else {
+    const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 0, height: 0 } });
+    const source = sources.find((s) => s.id === String(sourceId));
+    const display = source && (screen.getAllDisplays().find((d) => String(d.id) === String(source.display_id)) ?? (sources.length === 1 ? screen.getPrimaryDisplay() : null));
+    const handle = display ? await monitorHandle(display) : 0;
+    if (!handle) return { error: 'that screen was not found' };
+    from = `hmonitor=${handle}`;
+  }
+  // How big it is, from ffmpeg itself (one picture taken and thrown away): a window's size is nowhere else to be had.
+  const look = await ffmpegSays(ff.exe, ['-loglevel', 'info', '-f', 'lavfi', '-i', `gfxcapture=${from}:max_framerate=30`, '-frames:v', '1', '-f', 'null', '-']);
+  const size = /d3d11, (\d+)x(\d+)/.exec(look.text);
+  if (!size) return { error: 'it could not be captured this way' };
+  const fullW = Number(size[1]), fullH = Number(size[2]);
+  // Never bigger than it is; and never more than three million dots (a 32:9 screen at 1080 lines would be four).
+  const scale = Math.min(1, side / Math.min(fullW, fullH), Math.sqrt(3_000_000 / (fullW * fullH)));
+  const width = Math.max(2, Math.round((fullW * scale) / 2) * 2), height = Math.max(2, Math.round((fullH * scale) / 2) * 2);
+  if (videoProc) return { error: 'started twice' };       // (another start came in while this one was looking)
+  const { port1, port2 } = new MessageChannelMain();
+  videoPort = port1;
+  videoShare = { ff, from, width, height, fps, idle: false };
+  if (!runCapture()) { stopShareVideo(); return { error: 'ffmpeg would not start' }; }
+  port1.start();
+  win.webContents.postMessage('share-video:port', null, [port2]);
+  return { width, height, fps, encoder: ff.encoder };
+}
+/** Starts ffmpeg on what is being shared, at the share's full rate or, with nobody watching, at two pictures a second
+ *  (IDLE_FPS). Its output goes down the channel the page already has. */
+const IDLE_FPS = 2;
+function runCapture() {
+  const s = videoShare, port = videoPort;
+  if (!s || !port) return false;
+  const fps = s.idle ? IDLE_FPS : s.fps;
+  // Up to twice as many pictures are asked of Windows as are sent: it hands them over on the monitor's own beat, and
+  // "at most 60" of a 100 Hz monitor is every second one, 50. From 100 a second, 60 can be kept.
+  const args = ['-hide_banner', '-loglevel', 'error', '-f', 'lavfi',
+    '-i', `gfxcapture=${s.from}:max_framerate=${fps * 2}:width=${s.width}:height=${s.height}:resize_mode=scale_aspect:scale_mode=bicubic`,
+    '-vf', `fps=${fps}`, '-c:v', s.ff.encoder, ...VIDEO_ENCODERS[s.ff.encoder], '-g', String(fps),
+    '-bsf:v', 'h264_metadata=aud=insert',          // a mark before each picture: it is how the page finds where one ends
+    '-flush_packets', '1', '-f', 'h264', 'pipe:1'];
+  let child;
+  try { child = spawn(s.ff.exe, args, { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] }); } catch { return false; }
+  videoProc = child;
+  let said = '';
+  child.stderr.on('data', (d) => { said = (said + d).slice(-400); });
+  child.stdout.on('data', (chunk) => { if (videoProc === child) port.postMessage(chunk); });
+  child.stdin.on('error', () => { /* it had already gone when it was told to finish */ });
+  child.on('error', () => { if (videoProc === child) stopShareVideo(); });
+  child.on('exit', () => {
+    if (said.trim()) console.warn('[share] ffmpeg:', said.trim());
+    if (videoProc === child) stopShareVideo();       // the window that was shared has closed, or the encoder gave up: the page is told (a null)
+  });
+  return true;
+}
+/** With nobody watching a share, capturing and encoding it sixty times a second is work taken from the game for
+ *  nothing (measured: a seventh of the card's encoder and a tenth of its decoder). The page says when nobody needs the
+ *  pictures (idle) and when somebody does again: the capture is then started afresh at the other rate. Two a second
+ *  while idle keeps the projector's still fresh, and gives whoever opens the screen a picture at once, the second or so
+ *  before the full rate is back. */
+function setShareVideoIdle(idle) {
+  const s = videoShare, old = videoProc, port = videoPort;
+  if (!s || !old || !port || s.idle === !!idle) return;
+  s.idle = !!idle;
+  videoProc = null;               // (so that what the old one still writes, and its going, are no longer the share's)
+  // the page is told that a new stream starts here, and how fast: the last picture of the old one may be half sent
+  try { port.postMessage({ restart: true, fps: s.idle ? IDLE_FPS : s.fps }); } catch { /* the page has gone */ }
+  if (!runCapture()) { videoProc = old; return stopShareVideo(); }
+  endFfmpeg(old);
 }
 
 // ───────── updating itself ─────────
@@ -575,6 +763,9 @@ function registerIpc() {
   ipcMain.handle('update:install', guard(() => installUpdate()));
   ipcMain.handle('share-sound:start', guard((id) => startShareSound(id)));
   ipcMain.on('share-sound:stop', heard(() => stopShareSound()));
+  ipcMain.handle('share-video:start', guard((id, want) => startShareVideo(id, want)));
+  ipcMain.on('share-video:stop', heard(() => stopShareVideo()));
+  ipcMain.on('share-video:idle', heard((idle) => setShareVideoIdle(!!idle)));
   ipcMain.on('activity:subscribe', heard(() => { subscribed = true; tickPresence(true); }));
   ipcMain.on('activity:away-after', heard((seconds) => { awayAfter = Math.max(60, Math.min(3600, Math.round(Number(seconds)) || 300)); tickPresence(); }));
   ipcMain.on('set-tray', heard((s) => {
@@ -695,11 +886,13 @@ app.whenReady().then(() => {
   createWindow();
   buildTray();
   startWatcher();
+  // (which ffmpeg, and which of the graphics card's encoders: found now, so that the first share does not wait for it)
+  setTimeout(() => { void findFfmpeg().catch(() => {}); }, 8000);
   setInterval(tickPresence, 5000);
   powerMonitor.on('lock-screen', () => { locked = true; tickPresence(); });
   powerMonitor.on('unlock-screen', () => { locked = false; tickPresence(); });
 });
-app.on('before-quit', () => { quitting = true; stopShareSound(); watcher?.kill(); });
+app.on('before-quit', () => { quitting = true; stopShareSound(); stopShareVideo(); watcher?.kill(); });
 app.on('will-quit', () => globalShortcut.unregisterAll());
 app.on('window-all-closed', () => { /* stay in the tray */ });
 // No new windows, no webviews, no surprise navigation in any frame.

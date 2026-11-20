@@ -24,7 +24,7 @@
 .g-suit.big { --su: calc(1px * (var(--k, 2) + 1)); }
 .g-quiet .g-suit, .g-chip .g-suit { --su: calc(1px * (var(--k, 2) - 1)); }
 .g-mark { --mu: calc(1px * (var(--k, 2) - 1)); display: inline-block; flex: none; width: calc(16 * var(--mu)); height: calc(16 * var(--mu)); background: currentColor; image-rendering: pixelated;
-  -webkit-mask: url(/games/marks.png) no-repeat calc(-16 * var(--i, 0) * var(--mu)) 0 / calc(48 * var(--mu)) calc(16 * var(--mu)); }
+  -webkit-mask: url(/games/marks.png) no-repeat calc(-16 * var(--i, 0) * var(--mu)) 0 / calc(320 * var(--mu)) calc(16 * var(--mu)); }
 
 /* ── a card ── */
 .g-card, .games-view button.g-card { position: relative; display: block; flex: none; width: calc(30 * var(--u)); height: calc(42 * var(--u)); padding: 0; overflow: hidden; text-align: left;
@@ -146,6 +146,10 @@
 .g-tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(5 * var(--u)); }
 .games-view .g-tile { flex-direction: column; justify-content: flex-start; width: calc(62 * var(--u)); min-height: calc(90 * var(--u)); padding: calc(5 * var(--u)) calc(3 * var(--u)); gap: calc(2 * var(--u)); white-space: normal; text-align: center; color: var(--accent); }
 .g-tile b { font-size: calc(13 * var(--u)); text-transform: uppercase; }
+.g-tile b.long { font-size: calc(10 * var(--u)); }      /* (one long word: Shuffleboard) */
+/* the card table's game, set up or going: its tile says so */
+.games-view .g-tile.on { border-color: var(--accent); }
+.g-tile em { font-style: normal; color: var(--accent); font-size: max(14px, calc(6 * var(--u))); }
 .g-tile span { color: var(--muted); font-size: max(16px, calc(7 * var(--u))); }
 .games-view .g-tile:hover:not(:disabled) span { color: inherit; }
 .g-tile .g-mark { --mu: calc(1px * (var(--k, 2) + 1)); }
@@ -265,3 +269,8 @@
 .mj-page p, .mj-page ul { margin: 0; }
 .mj-page ul { padding-left: calc(10 * var(--u)); }
 .games-view .mj-example small { flex: 1 1 calc(90 * var(--u)); font-size: inherit !important; color: var(--text); }
+
+/* Play Games' two tabs (2026-11-17): the card table's games, and the game room's (the basement bar) */
+.games-view .g-tabs { display: flex; gap: 4px; flex: none; }
+.games-view .g-tabs button { padding: 2px 10px; }
+.games-view .g-tabs button.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }

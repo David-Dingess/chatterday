@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { setPrefs, toast, useStore } from '../store';
 import { applyVolumes, screenTrack, setWatching } from '../voice';
 import { Avatar, Icon } from './ui';
+import { doubleTap } from '../touch';
 
 // ───────── a live screen, wherever it is shown ─────────
 
@@ -41,7 +42,7 @@ function StreamTile({ id, big = false, onPick }: { id: string; big?: boolean; on
     else void video.requestPictureInPicture().catch(() => toast('Could not pop this stream out.'));
   };
   return (
-    <div className={`tile${big ? ' big' : ''}`} ref={tile} onDoubleClick={full}>
+    <div className={`tile${big ? ' big' : ''}`} ref={tile} {...doubleTap(full)}>
       <div className="frame" onClick={onPick} title={big ? 'Double-click for full screen' : 'Click to focus, double-click for full screen'}><LiveVideo userId={id} /></div>
       <div className="tile-bar">
         <Avatar user={user} size={22} /><b>{user?.name}{id === meId ? ' (you)' : ''}</b>

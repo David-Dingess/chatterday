@@ -1,0 +1,15 @@
+/* The holiday decorations (client/src/holidays/decor.tsx): pictures laid in the room, never clicked. What moves steps
+   a frame at a time (steps, not blends), and nothing moves with reduced motion. */
+.club > .hol { position: absolute; pointer-events: none; background-repeat: no-repeat; background-position: 0 0; }
+/* a garland repeats along the wall */
+.club > .hol.tile { background-repeat: repeat-x; }
+.club > .hol.tw3 { animation: hol-tw3 2.7s steps(1, end) infinite; }
+.club > .hol.tw2 { animation: hol-tw2 0.8s steps(1, end) infinite; }
+.club > .hol.flick { animation: hol-flick 1.1s steps(1, end) infinite; }
+.club > .hol.tile-tw { animation: hol-tile 1.6s steps(1, end) infinite; }
+@keyframes hol-tw3 { 0% { background-position-x: 0; } 33.33% { background-position-x: calc(var(--fw) * -1); } 66.67% { background-position-x: calc(var(--fw) * -2); } }
+@keyframes hol-tw2 { 0% { background-position-x: 0; } 50% { background-position-x: calc(var(--fw) * -1); } }
+/* the candle in a lantern: frames 1 and 2, on an uneven beat */
+@keyframes hol-flick { 0% { background-position-x: calc(var(--fw) * -1); } 37% { background-position-x: calc(var(--fw) * -2); } 52% { background-position-x: calc(var(--fw) * -1); } 81% { background-position-x: calc(var(--fw) * -2); } }
+@keyframes hol-tile { 0% { background-position-y: 0; } 50% { background-position-y: calc(var(--fh) * -1); } }
+@media (prefers-reduced-motion: reduce) { .club > .hol { animation: none !important; } }

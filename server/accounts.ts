@@ -18,12 +18,22 @@ const WORDS = ('amber anchor arcade autumn badger bamboo banjo beacon biscuit bl
   'forest fossil garlic ginger glacier goblin granite gravel hammer harbor hazel hollow honey island jacket jungle kettle lantern lemon lizard magnet mango ' +
   'maple marble meadow mirror monkey mustard nickel noodle oyster paddle pebble pepper pickle pirate planet pocket potato pumpkin puzzle rabbit radish raven ' +
   'ribbon rocket saddle salmon sandal shadow silver sketch spider sponge squid stone summer sunset thunder timber toffee tunnel turtle velvet violet walnut ' +
-  'whistle willow winter wizard yonder zipper').split(' ');
+  'whistle willow winter wizard yonder zipper ' +
+  // (a longer list: four words from it are about 32 bits before the number, see newPassword)
+  'acorn alpine apricot arrow aspen atlas avocado bagel ballad banana barley basil beetle berry blossom bonfire bramble brick bucket ' +
+  'buffalo bugle butter button cabin camel canoe caramel carrot cashew cello chalk cheddar chimney cider cliff cloud cobble cocoa compass ' +
+  'cookie cosmos cupcake curtain dolphin donut drum eagle easel elbow emerald engine fable fern ferry flannel flint flute fudge galaxy ' +
+  'garden gecko geyser glove gopher grape gumbo hammock hatchet helmet heron hiccup igloo iris ivory jasper jelly jigsaw juniper kayak ' +
+  'kiwi koala ladder lagoon latte lava lilac lobster locket lotus lunar mammoth meteor mitten moose muffin nectar nutmeg olive onion ' +
+  'orbit otter panda papaya parrot peach peanut pelican penguin piano plum pony quartz quill raccoon raisin rhubarb river robin saffron ' +
+  'sequoia sherbet skillet sloth sparrow spruce tango teapot thistle tiger tomato topaz trumpet tulip tundra ukulele umbrella valley ' +
+  'vanilla viking waffle walrus wasabi yeti yodel zebra').split(' ').filter((w, i, all) => all.indexOf(w) === i);
 
-/** Easy to read out, hard to guess: three words and a number. */
+/** Easy to read out, hard to guess: four words and a number (about 38 bits: with the sign-in limits, centuries of
+ *  guessing). Older passwords of three words still work. */
 export function newPassword() {
   const pick = () => WORDS[crypto.randomInt(WORDS.length)];
-  return `${pick()}-${pick()}-${pick()}-${crypto.randomInt(10, 100)}`;
+  return `${pick()}-${pick()}-${pick()}-${pick()}-${crypto.randomInt(10, 100)}`;
 }
 
 export function hashPassword(password: string) {

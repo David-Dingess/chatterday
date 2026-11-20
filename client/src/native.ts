@@ -35,5 +35,13 @@ export type NativeApi = {
   startShareSound?(sourceId: string): Promise<{ error?: string }>;
   stopShareSound?(): void;
   onShareSound?(cb: (chunk: Uint8Array | null) => void): void;
+  /** The app captures the screen or window itself (0.2.1 on; see desktop/main.cjs), which holds 60 pictures a second where
+   *  the browser's own capture cannot. `side`: the most dots along the picture's shorter side. Its H.264 follows on a
+   *  channel posted to the page's window ({ chatterdayShareVideo: true }, with the port). An error means: capture it the old way. */
+  startShareVideo?(sourceId: string, want: { side: number; fps: number }): Promise<{ error?: string; width?: number; height?: number; fps?: number; encoder?: string }>;
+  stopShareVideo?(): void;
+  /** Nobody needs the pictures for now (true), or somebody does again (false): the app captures two a second meanwhile
+   *  instead of sixty (0.2.3 on). The stream starts afresh each time, after a { restart: true, fps } on the channel. */
+  setShareVideoIdle?(idle: boolean): void;
 };
 export const native: NativeApi | undefined = (window as any).chatterdayNative;

@@ -9,13 +9,19 @@ export type { Look, PetLook, Desk };
 export type User = { id: string; name: string; color: string; avatar: string | null; emoji: string; role: string; status: string; look: Look | null; pet: PetLook | null; desk: Desk | null; talk?: number | null; birthday?: string | null; seenAt?: number | null };
 export type Me = User & { theme: Theme | null; invisible: boolean; entrance?: number | null; exit?: number | null; /** my settings as the server last had them, and when they were changed */ prefs?: Record<string, unknown> | null; prefsAt?: number };
 export type Channel = { id: number; name: string; kind: 'text' | 'voice'; position: number };
-export type VoiceInfo = { channelId: number; muted: boolean; deafened: boolean; sharing: boolean; /** whose shared screens they have open */ watching?: string[]; /** they have the Player's video large */ big?: boolean };
-export type Place = '' | 'gaming' | 'watching' | 'kitchen' | 'bathroom' | 'sleeping' | 'working' | 'cleaning' | 'exercising' | 'showering' | 'away' | 'here';
+export type VoiceInfo = { channelId: number; muted: boolean; deafened: boolean; sharing: boolean; /** whose shared screens they have open */ watching?: string[]; /** they have the Player's video large */ big?: boolean;
+  /** what they are sharing, in a few words ("Elden Ring", "Screen 1") */ label?: string };
+export type Place = '' | 'gaming' | 'watching' | 'kitchen' | 'peeing' | 'pooping' | 'bathroom' | 'sleeping' | 'working' | 'cleaning' | 'exercising' | 'showering' | 'prompting' | 'doomscrolling' | 'vcall' | 'calling' | 'away' | 'here' | 'imhere' | 'chillin';
 export type Presence = { state: 'offline' | 'away' | 'desk' | 'gaming' | 'watching'; label: string; voice: VoiceInfo | null; place?: Place; since?: number; /** which desk and bunk they hold while online (0 to 5), 6 and up for a visitor with a laptop, -1 if none */ slot?: number;
   /** With place 'here': the seat they clicked (living3, seat2, table0), or the point on the floor they are standing at. */
   at?: { x: number; y: number; seat?: string };
-  /** A drink from the fridge, in their hand for eight minutes. `since` tells one drink from the next. */
-  drink?: { kind: string; since: number } };
+  /** A drink from the fridge, theirs for half an hour (a coffee, two hours). `since` tells one drink from the next. */
+  drink?: { kind: string; since: number };
+  /** Down in the basement, in that fit-out (missing: upstairs). */
+  floor?: string;
+  /** In one of Chatterday's own games (the card table, or the basement's): playing it, or sat or joined and waiting for it;
+   *  or (watching) watching one under way that they are not in. */
+  playing?: { game: string; waiting: boolean; watching?: boolean; /** what to say instead ('singing karaoke') */ says?: string } };
 export type Attachment =
   | { kind: 'file'; id: string; url: string; mime: string; name: string; size: number }
   | { kind: 'image'; url: string; name: string }
@@ -24,17 +30,25 @@ export type Attachment =
 export type Message = {
   id: number; channelId: number; userId: string; content: string; attachments: Attachment[];
   createdAt: number; editedAt: number | null; reactions: Record<string, string[]>;
+  /** a reply in that message's thread (not shown in the chat itself) */
+  threadId?: number;
+  /** how many replies its thread has, and when the last came in */
+  replies?: number; lastReply?: number;
 };
 export type Sound = { id: number; name: string; emoji: string; url: string; userId: string; /** set on a person's own entrance clip (from the server's "entrance sounds" folder): their id. Not a soundboard button. */ entranceFor?: string };
 export type Track = { videoId: string; title: string; seconds: number };
 export type Playlist = { id: number; name: string; userId: string; items: (Track & { id: number })[] };
-export type Song = { id: number; videoId: string; title: string; by: string; seconds: number };
+/** `auto`: put on by autoplay, after `by`'s pick. */
+/** `singer`: a karaoke sign-up, sung by them (client/src/basement/karaoke.tsx). */
+export type Song = { id: number; videoId: string; title: string; by: string; seconds: number; auto?: boolean; singer?: string };
 /** What is playing: `startedAt` is when it began (on the server's clock); `pausedAt` is how far in it stands while paused for everyone. */
 export type Playing = Song & { startedAt: number; pausedAt?: number | null; /** a live stream: no length, no bar */ live?: boolean };
 export type Music = { current: Playing | null; queue: Song[]; now: number };
-export type Weather = { kind: 'clear' | 'clouds' | 'rain' | 'storm' | 'snow' | 'fog'; cover: number; text: string; temp: number | null; unit: 'F' | 'C'; at: number };
+export type Weather = { kind: 'clear' | 'clouds' | 'rain' | 'storm' | 'snow' | 'fog'; cover: number; text: string; temp: number | null; unit: 'F' | 'C'; windMph?: number | null; windFrom?: number | null; at: number };
 /** `tz`: the clock the house keeps; `town`: where its weather is read for ('' for none); `photo`: the picture on the lounge wall. */
-export type ServerSettings = { serverName: string; publicUrl: string; voice: boolean; gifKey: string; appVersion?: string; tz: string; town: string; unit: 'F' | 'C'; photo: string | null };
+export type ServerSettings = { serverName: string; publicUrl: string; voice: boolean; gifKey: string; appVersion?: string; tz: string; town: string; sky?: [number, number] | null; unit: 'F' | 'C'; photo: string | null;
+  /** Today's photos on the lounge wall, by frame ('poster' is the big gilt one; the others are CLUB.gallery's names). */
+  wall?: Record<string, string> };
 
 // ── the game table (the server's side is server/games.ts, and the rules of each game are in server/games/) ──
 export type GameKind = 'hearts' | 'spades' | 'rummy' | 'chess' | 'checkers' | 'mahjong' | 'go' | 'four' | 'mancala';

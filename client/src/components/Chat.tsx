@@ -1,13 +1,17 @@
 import { personColor } from '../sprites';
 import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react';
 import { api, upload } from '../api';
-import { jumpTo, loadMessages, markRead, mentionsMe, openText, send, sendMessage, SPOILER, toast, useStore, veiled } from '../store';
+import { jumpTo, loadMessages, markRead, mentionsMe, openText, openThread, send, sendMessage, SPOILER, toast, useStore, veiled } from '../store';
 import { applyTheme, sanitizeTheme } from '../theme';
 import type { Attachment, Message, User } from '../types';
 import { ICON_NAMES } from '../icons.gen';
 import { Avatar, fmtDay, fmtSize, fmtTime, Icon, SureButton } from './ui';
 import type { IconName } from './ui';
+import { create } from 'zustand';
+
+/** The message a finger last tapped: its tools (react, reply, edit...) show, as they do under a mouse. One at a time. */
+const useTapped = create<{ id: number | null }>(() => ({ id: null }));
 
 // ───────── text → rich nodes ─────────
 
@@ -189,9 +193,14 @@ const reaction = (code: string) => {
 };
 
 // (memo: a row is drawn again only when its own message, or somebody's name or colour, changes; not on every key typed below)
-const MessageRow = memo(function MessageRow({ m, head, users, meId, admin }: { m: Message; head: boolean; users: Record<string, User>; meId: string; admin: boolean }) {
+type RowKeys = { selected: boolean; editNow: number; armed: boolean; onEditEnd: () => void; inThread: boolean };
+const NO_KEYS_THREAD: RowKeys = { selected: false, editNow: 0, armed: false, onEditEnd: () => {}, inThread: true };
+const MessageRow = memo(function MessageRow({ m, head, users, meId, admin, keys }: { m: Message; head: boolean; users: Record<string, User>; meId: string; admin: boolean; keys?: RowKeys }) {
   const [editing, setEditing] = useState<string | null>(null);
+  // E on the keyboard, with this message chosen: edit it (only one's own)
+  useEffect(() => { if (keys?.selected && keys.editNow && m.userId === meId) setEditing(m.content); }, [keys?.editNow]);   // eslint-disable-line react-hooks/exhaustive-deps
   const [picking, setPicking] = useState(false);
+  const tapped = useTapped((s) => s.id === m.id);
   const tools = useRef<HTMLDivElement>(null);
   const leaving = useRef(0);
   // The reaction picker used to shut the moment the pointer slipped off it. Now it stays until a reaction is picked,
@@ -210,22 +219,40 @@ const MessageRow = memo(function MessageRow({ m, head, users, meId, admin }: { m
   const embeds = urls.map(embedFor).filter(Boolean).slice(0, 3) as Embed[];
   const onlyEmbed = embeds.length === 1 && urls.length === 1 && m.content.trim() === urls[0] && embeds[0].type !== 'yt';
   const body = useMemo(() => rich(m.content, list), [m.content, list]);
-  const saveEdit = () => { if (editing?.trim() && editing !== m.content) send({ t: 'edit', id: m.id, content: editing }); setEditing(null); };      // unchanged: not "(edited)"
+  const endEdit = () => { setEditing(null); keys?.onEditEnd(); };
+  const saveEdit = () => { if (editing?.trim() && editing !== m.content) send({ t: 'edit', id: m.id, content: editing }); endEdit(); };      // unchanged: not "(edited)"
+  // A line from the house itself, not from anybody (a birthday: sayBirthdays in server/index.ts): across the chat on its own.
+  if (m.userId === 'house') {
+    return (
+      <div id={`m-${m.id}`} className="msg house-line" style={{ display: 'block', textAlign: 'center', color: 'var(--accent)', padding: '6px 12px', fontSize: 20 }}>
+        <span>{m.content} <time style={{ opacity: 0.6, fontSize: '0.8em' }}>{fmtTime(m.createdAt)}</time></span>
+      </div>
+    );
+  }
 
   return (
-    <div id={`m-${m.id}`} className={`msg${head ? ' head' : ''}${mentionsMe(m) ? ' mentioned' : ''}${picking ? ' picking' : ''}`}
+    <div id={`m-${m.id}`} className={`msg${head ? ' head' : ''}${mentionsMe(m) ? ' mentioned' : ''}${picking ? ' picking' : ''}${keys?.selected ? ' selected' : ''}${keys?.selected && keys.armed ? ' armed' : ''}${tapped ? ' tapped' : ''}`}
+      onPointerUp={(e) => {
+        // (a touch screen has no hover: a tap on the message itself, not on something in it that does something, shows its tools)
+        if (e.pointerType !== 'touch' || (e.target as HTMLElement).closest('a, button, input, textarea, select, video, audio, img, iframe, summary, .actions, .reactions')) return;
+        useTapped.setState({ id: tapped ? null : m.id });
+      }}
       onMouseEnter={() => window.clearTimeout(leaving.current)}
       onMouseLeave={() => { if (picking) leaving.current = window.setTimeout(() => setPicking(false), 1500); }}>
       <div className="gutter">{head ? <Avatar user={user} size={38} /> : <time>{fmtTime(m.createdAt)}</time>}</div>
       <div className="body">
-        {head && <div className="meta"><b style={{ color: personColor(user) }}>{user?.name ?? 'someone'}</b><time>{fmtTime(m.createdAt)}</time></div>}
+        {head && <div className="meta"><b style={{ color: personColor(user) }}>{user?.name ?? (m.userId === 'whiteboard' ? 'Whiteboard' : 'someone')}</b><time>{fmtTime(m.createdAt)}</time></div>}
         {editing !== null
           ? <textarea className="edit" autoFocus value={editing} onChange={(e) => setEditing(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit(); } if (e.key === 'Escape') setEditing(null); }} />
+              onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit(); } if (e.key === 'Escape') endEdit(); }} />
           : !onlyEmbed && m.content && <div className="text">{body}{m.editedAt && <small className="edited"> (edited)</small>}</div>}
         {embeds.map((e, i) => e.type === 'img' ? <Picture key={i} url={e.url} at={m.createdAt} /> : e.type === 'video'
           ? <video key={i} className="clip" src={e.url} controls loop muted playsInline preload="metadata" /> : <YouTube key={i} id={e.id!} />)}
         {m.attachments.map((a, i) => <AttachmentView key={i} a={a} at={m.createdAt} />)}
+        {!keys?.inThread && !m.threadId && (m.replies ?? 0) > 0 && (
+          <button className="thread-link" onClick={() => void openThread(m.id)}>{m.replies} {m.replies === 1 ? 'reply' : 'replies'}<small> · last {fmtTime(m.lastReply ?? m.createdAt)}</small></button>
+        )}
+        {keys?.selected && keys.armed && <div className="armed-note">Press Delete again to delete it</div>}
         {Object.keys(m.reactions).length > 0 && (
           <div className="reactions">
             {Object.entries(m.reactions).map(([emoji, ids]) => (
@@ -237,6 +264,7 @@ const MessageRow = memo(function MessageRow({ m, head, users, meId, admin }: { m
       </div>
       <div className="actions" ref={tools}>
         <button title="React" onClick={() => setPicking(!picking)}><Icon name="smile" size={12} /></button>
+        {!keys?.inThread && !m.threadId && <button title="Reply in a thread" onClick={() => void openThread(m.id)}><Icon name="mail" size={12} /></button>}
         {m.userId === meId && <button title="Edit" onClick={() => setEditing(m.content)}><Icon name="pencil" size={12} /></button>}
         {(m.userId === meId || admin) && <SureButton title="Delete" onSure={() => send({ t: 'delete', id: m.id })}><Icon name="trash" size={12} /></SureButton>}
         {picking && <div className="quick">
@@ -288,9 +316,9 @@ function GifPicker({ onPick, onClose }: { onPick: (url: string, name: string) =>
   useEffect(() => {
     const away = (e: MouseEvent) => { if (!box.current?.contains(e.target as Node) && !(e.target as HTMLElement).closest('.gif-toggle')) onClose(); };
     const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('mousedown', away);
+    document.addEventListener('pointerdown', away);      // (pointerdown: Safari on an iPad sends no mousedown for a tap on nothing in particular)
     document.addEventListener('keydown', esc);
-    return () => { document.removeEventListener('mousedown', away); document.removeEventListener('keydown', esc); };
+    return () => { document.removeEventListener('pointerdown', away); document.removeEventListener('keydown', esc); };
   }, [onClose]);
   useEffect(() => {
     if (tab !== 'search' || !gifKey) return;
@@ -346,7 +374,9 @@ function GifPicker({ onPick, onClose }: { onPick: (url: string, name: string) =>
 
 // ───────── the channel ─────────
 
-export const Chat = memo(function Chat({ channelId }: { channelId: number }) {
+/** `focus`: put the cursor in the message box on opening (the desktop). The phone page says no: there it would throw
+ *  the keyboard up over the messages the moment a chat is opened. */
+export const Chat = memo(function Chat({ channelId, focus = true }: { channelId: number; focus?: boolean }) {
   const messages = useStore((s) => s.messages[channelId]);
   const more = useStore((s) => s.more[channelId]);
   const users = useStore((s) => s.users);
@@ -396,12 +426,63 @@ export const Chat = memo(function Chat({ channelId }: { channelId: number }) {
     ro.observe(box);
     return () => ro.disconnect();
   }, []);   // eslint-disable-line react-hooks/exhaustive-deps
+  // ── a thread open in the chat column, and its own message box ──
+  const threadId = useStore((s) => s.thread);
+  const th = useStore((s) => (s.thread ? s.threads[s.thread] : undefined));
+  const [threadText, setThreadText] = useState('');
+  const threadInput = useRef<HTMLTextAreaElement>(null);
+  const threadList = useRef<HTMLDivElement>(null);
+  useEffect(() => { void openThread(null); }, [channelId]);
+  useEffect(() => { if (threadId) { setThreadText(''); threadInput.current?.focus(); } }, [threadId]);
+  useEffect(() => { const el = threadList.current; if (el) el.scrollTop = el.scrollHeight; }, [th?.replies.length, threadId]);
+  const submitThread = () => {
+    if (!threadText.trim() || !th) return;
+    if (!sendMessage(channelId, threadText.trim(), [], th.root.id)) return;
+    setThreadText('');
+  };
+
+  // ── the keyboard: Up in an empty message box chooses the last message; then Up and Down move, E edits (your own),
+  // Delete or Backspace twice deletes, T (or Enter) opens its thread, Escape goes back to typing ──
+  const [sel, setSel] = useState<number | null>(null);
+  const [editNow, setEditNow] = useState(0);
+  const [armed, setArmed] = useState(false);
+  const armTimer = useRef(0);
+  const shown: Message[] = threadId && th ? [th.root, ...th.replies] : messages ?? [];
+  const listEl = () => (threadId ? threadList.current : scroller.current);
+  const choose = (id: number | null) => {
+    setSel(id); setArmed(false); setEditNow(0); window.clearTimeout(armTimer.current);      // (a new choice starts with nothing asked of it)
+    if (id == null) { (threadId ? threadInput : input).current?.focus(); return; }
+    listEl()?.focus({ preventScroll: true });
+    window.setTimeout(() => document.getElementById(`m-${id}`)?.scrollIntoView({ block: 'nearest' }), 0);
+  };
+  useEffect(() => { setSel(null); setArmed(false); }, [channelId, threadId]);
+  const fromBox = (e: ReactKeyboardEvent<HTMLTextAreaElement>, empty: boolean) => {
+    if (e.key === 'ArrowUp' && empty && shown.length) { e.preventDefault(); choose(shown[shown.length - 1].id); }
+  };
+  const onListKey = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (sel == null || (e.target as HTMLElement).tagName === 'TEXTAREA') return;
+    const k = shown.findIndex((x) => x.id === sel), m = shown[k];
+    if (!m) { choose(null); return; }
+    const mine = m.userId === me.id, may = mine || me.role === 'admin';
+    if (e.key === 'ArrowUp') { e.preventDefault(); if (k > 0) choose(shown[k - 1].id); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); choose(k < shown.length - 1 ? shown[k + 1].id : null); }
+    else if (e.key === 'Escape') { e.preventDefault(); choose(null); }
+    else if ((e.key === 'e' || e.key === 'E') && mine) { e.preventDefault(); setEditNow((n) => n + 1); }
+    else if ((e.key === 'Delete' || e.key === 'Backspace') && may) {
+      e.preventDefault();
+      if (!armed) { setArmed(true); window.clearTimeout(armTimer.current); armTimer.current = window.setTimeout(() => setArmed(false), 3000); return; }
+      send({ t: 'delete', id: m.id });
+      choose(shown[k - 1]?.id ?? shown[k + 1]?.id ?? null);
+    } else if ((e.key === 't' || e.key === 'T' || e.key === 'Enter') && !threadId && !m.threadId) { e.preventDefault(); void openThread(m.id); }
+  };
+  const rowKeys = (id: number, inThread: boolean): RowKeys | undefined => (sel === id ? { selected: true, editNow, armed, onEditEnd: () => listEl()?.focus({ preventScroll: true }), inThread } : inThread ? NO_KEYS_THREAD : undefined);
+
   const atBottom = useRef(true);
   const prevHeight = useRef(0);
   const prevFirst = useRef<number | undefined>(undefined);
   const lastTyping = useRef(0);
 
-  useEffect(() => { atBottom.current = true; input.current?.focus(); }, [channelId]);
+  useEffect(() => { atBottom.current = true; if (focus) input.current?.focus(); }, [channelId]);   // eslint-disable-line react-hooks/exhaustive-deps
   // "… is typing" goes four seconds after their last key: one timer for the moment the next name is due to go, and
   // none at all while nobody is typing.
   useEffect(() => {
@@ -497,7 +578,7 @@ export const Chat = memo(function Chat({ channelId }: { channelId: number }) {
         <div className="search-results">
           {found.length === 0 && <p className="empty">Nothing found for "{query.trim()}".</p>}
           {found.map((m) => (
-            <button key={m.id} onClick={() => void show(m.id)} title="Show it in the chat">
+            <button key={m.id} onClick={() => { if (m.threadId) { setQuery(''); void openThread(m.threadId); } else void show(m.id); }} title={m.threadId ? 'Show it in its thread' : 'Show it in the chat'}>
               <small>{users[m.userId]?.name ?? 'someone'} · {fmtDay(m.createdAt)} {fmtTime(m.createdAt)}</small>
               <span>{m.content.length > 160 ? `${veiled(m.content).slice(0, 160)}…` : veiled(m.content)}</span>
             </button>
@@ -505,7 +586,33 @@ export const Chat = memo(function Chat({ channelId }: { channelId: number }) {
         </div>
       )}
       {historic && !found && <button className="to-latest" onClick={latest}>You are looking at older messages. Back to the latest</button>}
-      <div className="messages" ref={scroller} onScroll={onScroll} hidden={!!found}>
+      {threadId && (
+        <div className="thread">
+          <div className="thread-head">
+            <button onClick={() => void openThread(null)} title="Back to the chat">← {dm ? 'Back' : '# Text Chat'}</button>
+            <b>Thread</b>
+            {th && <small>{th.replies.length} {th.replies.length === 1 ? 'reply' : 'replies'}</small>}
+          </div>
+          <div className="messages" ref={threadList} tabIndex={-1} onKeyDown={onListKey}>
+            {!th && <p className="beginning">Loading the thread…</p>}
+            {th && <MessageRow m={th.root} head users={users} meId={me.id} admin={me.role === 'admin'} keys={rowKeys(th.root.id, true)} />}
+            {th && <div className="day"><span>{th.replies.length ? 'Replies' : 'No replies yet'}</span></div>}
+            {th?.replies.map((m, i) => {
+              const prev = i ? th.replies[i - 1] : th.root;
+              const head = prev.userId !== m.userId || m.createdAt - prev.createdAt > 5 * 60_000;
+              return <MessageRow key={m.id} m={m} head={head} users={users} meId={me.id} admin={me.role === 'admin'} keys={rowKeys(m.id, true)} />;
+            })}
+          </div>
+          {sel != null && <div className="key-hint">↑ ↓ choose · E edit · Delete twice to delete · Esc back to typing</div>}
+          <div className="composer">
+            <textarea ref={threadInput} rows={1} placeholder="Reply in the thread" value={threadText} maxLength={4000}
+              onChange={(e) => setThreadText(e.target.value)}
+              onKeyDown={(e) => { fromBox(e, !threadText); if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitThread(); } if (e.key === 'Escape') void openThread(null); }} />
+            <button className="primary" onClick={submitThread} disabled={!threadText.trim()}>Reply</button>
+          </div>
+        </div>
+      )}
+      <div className="messages" ref={scroller} onScroll={onScroll} hidden={!!found || !!threadId} tabIndex={-1} onKeyDown={onListKey}>
         {messages && !more && <p className="beginning">{dm ? `This is the start of your private chat with ${place}. Only the two of you can see it.` : 'This is the start of # Text Chat.'}</p>}
         {(messages ?? []).map((m, i) => {
           const prev = messages![i - 1];
@@ -516,12 +623,13 @@ export const Chat = memo(function Chat({ channelId }: { channelId: number }) {
           return (
             <Fragment key={m.id}>
               {newDay && <div className="day"><span>{day}</span></div>}
-              <MessageRow m={m} head={head} users={users} meId={me.id} admin={me.role === 'admin'} />
+              <MessageRow m={m} head={head} users={users} meId={me.id} admin={me.role === 'admin'} keys={rowKeys(m.id, false)} />
             </Fragment>
           );
         })}
       </div>
-      <div className="typing">{typers.length > 0 && `${typers.join(', ')} ${typers.length === 1 ? 'is' : 'are'} typing…`}</div>
+      {!threadId && sel != null && <div className="key-hint">↑ ↓ choose · E edit · Delete twice to delete · T thread · Esc back to typing</div>}
+      {!threadId && <div className="typing">{typers.length > 0 && `${typers.join(', ')} ${typers.length === 1 ? 'is' : 'are'} typing…`}</div>}
       {(pending.length > 0 || busy > 0) && (
         <div className="pending">
           {pending.map((a, i) => (
@@ -531,14 +639,14 @@ export const Chat = memo(function Chat({ channelId }: { channelId: number }) {
           {busy > 0 && <span className="chip">Uploading…</span>}
         </div>
       )}
-      <div className="composer">
+      <div className="composer" hidden={!!threadId}>
         <label className="icon" title="Attach files"><Icon name="plus" /><input type="file" multiple hidden onChange={(e) => { if (e.target.files) void addFiles([...e.target.files]); e.target.value = ''; }} /></label>{/* a copy: clearing the box empties its own list, and only the first file would be sent */}
         <textarea ref={input} rows={1} placeholder={`Message ${place}`} title="**bold**   *italic*   `code`   ||spoiler||" value={text} maxLength={4000}
           onChange={(e) => {
             setText(e.target.value);
             if (Date.now() - lastTyping.current > 2500) { lastTyping.current = Date.now(); send({ t: 'typing', channelId }); }
           }}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}
+          onKeyDown={(e) => { fromBox(e, !text && !pending.length); if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}
           onPaste={(e) => { const files = [...e.clipboardData.files]; if (files.length) { e.preventDefault(); void addFiles(files); } }} />
         <button className="icon gif-toggle" title="GIFs" onClick={() => setStash(!stash)}>GIF</button>
         <button className="primary" onClick={submit} disabled={!text.trim() && !pending.length}>Send</button>

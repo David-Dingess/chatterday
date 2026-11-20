@@ -32,12 +32,14 @@ export const same = (a: RGB | null, b: RGB | null) => !!a && !!b && a[0] === b[0
 
 /** A material: a base colour with a lit and a shaded tone, and perhaps a pattern. */
 export class Mat {
-  base: RGB; hi: RGB; lo: RGB; pat?: Pattern;
-  constructor(base: string | RGB, o: { hi?: string | RGB; lo?: string | RGB; pat?: Pattern } = {}) {
+  /** pat: a pattern inside the part, leaving its lit and shaded edges alone. trim: repaints any dot, edges too (stripes and cuffs). */
+  base: RGB; hi: RGB; lo: RGB; pat?: Pattern; trim?: Pattern;
+  constructor(base: string | RGB, o: { hi?: string | RGB; lo?: string | RGB; pat?: Pattern; trim?: Pattern } = {}) {
     this.base = rgb(base);
     this.hi = o.hi ? rgb(o.hi) : mix(this.base, LIGHT, 0.30);
     this.lo = o.lo ? rgb(o.lo) : mix(this.base, SHADE, 0.30);
     this.pat = o.pat;
+    this.trim = o.trim;
   }
 }
 
@@ -92,6 +94,7 @@ export class Cv {
       else if ((hi.includes('t') && !has(x, y - 1)) || (hi.includes('l') && !has(x - 1, y))) col = mat.hi;
       else edge = false;
       if (mat.pat && anchor && !edge) col = mat.pat(x - anchor[0], y - anchor[1], col, mat);
+      if (mat.trim && anchor) col = mat.trim(x - anchor[0], y - anchor[1], col, mat);
       this.px(x, y, col);
     }
     return pts;

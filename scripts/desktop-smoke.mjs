@@ -166,7 +166,7 @@ try {
     check('the ring round my own picture comes on with sound and goes off without', /^[1-9]\d* on, [1-9]\d* off$/.test(ring), ring);
     check('nobody in the room glows', await js(`return [...document.querySelectorAll('.actor .sprite')].every((el) => getComputedStyle(el).filter === 'none')`));
     // the noise gate: with it on, the pretend microphone's beeps open it and the gaps between them shut it
-    const gateToggle = `document.querySelector('.mebar button.icon').click(); await new Promise((r) => setTimeout(r, 300)); [...document.querySelectorAll('.settings nav button')].find((b) => b.textContent.startsWith('Voice')).click(); await new Promise((r) => setTimeout(r, 300)); [...document.querySelectorAll('.toggle')].find((t) => t.textContent.startsWith('Noise gate')).querySelector('input').click(); document.querySelector('.modal header button').click()`;
+    const gateToggle = `document.querySelector('.mebar button.icon').click(); for (let i = 0; i < 40 && !document.querySelector('.settings nav button'); i++) await new Promise((r) => setTimeout(r, 125)); [...document.querySelectorAll('.settings nav button')].find((b) => b.textContent.startsWith('Voice')).click(); await new Promise((r) => setTimeout(r, 300)); [...document.querySelectorAll('.toggle')].find((t) => t.textContent.startsWith('Noise gate')).querySelector('input').click(); document.querySelector('.modal header button').click()`;
     await js(gateToggle);
     const gate = await js(`let shut = 0, open = 0; for (let i = 0; i < 60; i++) { document.querySelector('.voicebar-buttons button.gated') ? shut++ : open++; await new Promise((r) => setTimeout(r, 50)); } return open + ' open, ' + shut + ' shut'`);
     check('the noise gate opens with sound and shuts without', /^[1-9]\d* open, [1-9]\d* shut$/.test(gate), gate);
@@ -217,7 +217,7 @@ try {
   check('microphones and speakers are listed by name (for the pickers in Settings)', Number(named.split(' ')[0]) > 0, named);
 
   if (!process.env.SMOKE_REAL) {      // the microphone test in Settings: the bar moves with the pretend microphone's beeps
-    await js(`document.querySelector('.mebar button.icon').click(); await new Promise((r) => setTimeout(r, 300)); [...document.querySelectorAll('.settings nav button')].find((b) => b.textContent.startsWith('Voice')).click()`);
+    await js(`document.querySelector('.mebar button.icon').click(); for (let i = 0; i < 40 && !document.querySelector('.settings nav button'); i++) await new Promise((r) => setTimeout(r, 125)); [...document.querySelectorAll('.settings nav button')].find((b) => b.textContent.startsWith('Voice')).click()`);
     const meter = await js(`await new Promise((r) => setTimeout(r, 1500)); const bar = document.querySelector('.mic-test .meter i'); let lo = 100, hi = 0, green = 0; for (let i = 0; i < 40; i++) { const w = parseFloat(bar.style.width) || 0; lo = Math.min(lo, w); hi = Math.max(hi, w); if (bar.classList.contains('talking')) green++; await new Promise((r) => setTimeout(r, 50)); } document.querySelector('.modal header button').click(); return Math.round(lo) + ' to ' + Math.round(hi) + ', green ' + green + ' of 40'`);
     check('the microphone test meter moves and turns green with sound', /^(\d+) to (\d+), green [1-9]/.test(meter) && Number(meter.split(' ')[2].replace(',', '')) - Number(meter.split(' ')[0]) > 5, meter);
   }
@@ -509,8 +509,11 @@ try {
   check('smoke test ran to the end', false, e.message);
 } finally {
   cdp?.close();
-  child.kill();
-  spawn('taskkill', ['/F', '/T', '/PID', String(child.pid)], { stdio: 'ignore' });
+  // Quit the app the way its tray menu does, so it stops any share and lets ffmpeg finish (a force-killed app can leave
+  // ffmpeg holding the graphics card's encoder). Only if it has not gone after a few seconds is it stopped outright.
+  try { await inMain(`process.mainModule.require('electron').app.quit()`); } catch { /* not reachable */ }
+  for (let i = 0; i < 32 && child.exitCode === null; i++) await sleep(250);
+  if (child.exitCode === null) { child.kill(); spawn('taskkill', ['/F', '/T', '/PID', String(child.pid)], { stdio: 'ignore' }); }
   console.log(`\n${results.filter(Boolean).length}/${results.length} checks passed`);
   setTimeout(() => process.exit(results.every(Boolean) ? 0 : 1), 500);
 }

@@ -105,6 +105,7 @@ export function Gate() {
         {nameField}
         {newPassword}
         {passwordNote && <p className="hint">{passwordNote}</p>}
+        <p className="hint content-note">Content note: the house depicts alcohol and tobacco use (the bar, beer pong, the smoking table). It is made for adult friends.</p>
       </>
     ), name.trim().length >= 2 && passwordsFine, 'Set it up', () => void go('/setup', { name, password, serverName }));
   }

@@ -1,0 +1,5 @@
+/* The robot vacuum and its dock (client/src/vacuum.tsx). Drawn at 4x and shown at room size, like the room's own art. */
+.club > .vacuum, .club > .vac-dock { position: absolute; background-repeat: no-repeat; pointer-events: none; image-rendering: pixelated; }
+.club > .vacuum { left: 0; top: 0; will-change: transform; }
+.club > .vac-dock { background-size: 100% 100%; }
+.club > .vacuum.clicky, .club > .vac-dock.clicky { pointer-events: auto; cursor: pointer; }

@@ -41,6 +41,95 @@ MARKS = {
         '#..##.##.##.##.#', '#..##.##.##.##.#', '.#............#.', '..############..', '................', '................', '................', '................'],
 }
 
+def _drawn(*parts):
+    """A 16x16 mark made of shapes rather than typed out: each part is ('fill' | 'clear', test(x, y)), applied in turn to
+    the middle of each dot."""
+    rows = []
+    for y in range(16):
+        row = ''
+        for x in range(16):
+            on = False
+            for kind, test in parts:
+                if test(x + 0.5, y + 0.5):
+                    on = kind == 'fill'
+            row += '#' if on else '.'
+        rows.append(row)
+    return rows
+
+
+def _disc(cx, cy, r):
+    return lambda x, y: (x - cx) ** 2 + (y - cy) ** 2 <= r * r
+
+
+def _box(x0, y0, x1, y1):
+    return lambda x, y: x0 <= x <= x1 and y0 <= y <= y1
+
+
+def _line(x0, y0, x1, y1, w):
+    def test(x, y):
+        dx, dy = x1 - x0, y1 - y0
+        t = max(0.0, min(1.0, ((x - x0) * dx + (y - y0) * dy) / (dx * dx + dy * dy)))
+        return (x - x0 - t * dx) ** 2 + (y - y0 - t * dy) ** 2 <= (w / 2) ** 2
+    return test
+
+
+def _tri(a, b, c):
+    def side(p, q, x, y):
+        return (q[0] - p[0]) * (y - p[1]) - (q[1] - p[1]) * (x - p[0])
+    return lambda x, y: (side(a, b, x, y) >= 0) == (side(b, c, x, y) >= 0) == (side(c, a, x, y) >= 0)
+
+
+# the basement's games and cornhole, for the list of games: the eight ball and a cue, a dartboard, a shuffleboard weight
+# on its lane, a pin and a ball, a flag in a green, a poker chip, a cornhole board with its hole and a bag
+MARKS.update({
+    'pool': _drawn(('fill', _disc(9.5, 9.5, 6.2)), ('clear', _disc(9.5, 8.6, 2.6)), ('fill', _box(8.6, 7.0, 10.4, 7.6)), ('fill', _box(8.6, 9.4, 10.4, 10.0)),
+                   ('fill', _line(0.8, 0.8, 4.4, 4.4, 1.6))),
+    'darts': _drawn(('fill', _disc(8, 8, 7.4)), ('clear', _disc(8, 8, 5.6)), ('fill', _disc(8, 8, 4.0)), ('clear', _disc(8, 8, 2.4)), ('fill', _disc(8, 8, 1.1))),
+    'shuffle': _drawn(('fill', _box(3, 0, 12.9, 15.9)), ('clear', _box(4.2, 0, 11.7, 15.9)), ('fill', _box(4.2, 10.4, 11.7, 11.0)),
+                      ('fill', _disc(8, 5.5, 3.2)), ('clear', _disc(8, 5.5, 1.3))),
+    'bowling': _drawn(('fill', _disc(4.6, 2.6, 1.9)), ('fill', _box(3.9, 3.6, 5.3, 6.0)), ('fill', lambda x, y: ((x - 4.6) / 2.9) ** 2 + ((y - 10.6) / 4.9) ** 2 <= 1),
+                      ('fill', _disc(11.4, 11.4, 4.3)), ('clear', _disc(10.2, 9.9, 0.8)), ('clear', _disc(12.3, 9.6, 0.8)), ('clear', _disc(11.6, 11.8, 0.8))),
+    'golf': _drawn(('fill', lambda x, y: ((x - 8) / 7.6) ** 2 + ((y - 13.6) / 2.4) ** 2 <= 1), ('clear', lambda x, y: ((x - 8.6) / 1.6) ** 2 + ((y - 13.4) / 0.9) ** 2 <= 1),
+                   ('fill', _box(8, 0.6, 9.1, 13.6)), ('fill', _tri((9, 0.6), (15.4, 3.2), (9, 5.8))), ('fill', _disc(3.4, 11.0, 1.1))),
+    'chips': _drawn(('fill', _disc(8, 8, 7.4)), ('clear', _disc(8, 8, 4.8)), ('fill', _disc(8, 8, 3.4)), ('clear', _disc(8, 8, 1.6)),
+                    ('clear', _box(7.2, 0, 8.8, 1.9)), ('clear', _box(7.2, 14.1, 8.8, 16)), ('clear', _box(0, 7.2, 1.9, 8.8)), ('clear', _box(14.1, 7.2, 16, 8.8))),
+    'cornhole': _drawn(('fill', _tri((4.4, 0.4), (11.6, 0.4), (15.2, 11.4))), ('fill', _tri((4.4, 0.4), (15.2, 11.4), (0.8, 11.4))), ('clear', _disc(8, 3.4, 1.6)),
+                       ('clear', _box(0, 11.4, 16, 12.4)), ('fill', _box(1.0, 12.4, 15.0, 13.4)), ('fill', _box(1.6, 13.4, 2.6, 15.6)), ('fill', _box(13.4, 13.4, 14.4, 15.6)),
+                       ('fill', _box(6.2, 7.0, 9.8, 9.4)), ('clear', _box(5.2, 6.2, 6.1, 10.2)), ('clear', _box(9.9, 6.2, 10.8, 10.2)), ('clear', _box(5.2, 6.0, 10.8, 6.9)), ('clear', _box(5.2, 9.5, 10.8, 10.3))),
+})
+
+# the backyard's games: ten cups racked in a triangle (beer pong), a horseshoe, two bocce balls and the pallino
+def _cups():
+    parts = []
+    for r, n in enumerate((4, 3, 2, 1)):
+        for i in range(n):
+            x0, y0 = 0.5 + (4 - n) * 2 + i * 4, 1 + r * 4
+            parts += [('fill', _box(x0, y0, x0 + 2.9, y0 + 2.9)), ('clear', _box(x0 + 1, y0 + 1, x0 + 1.9, y0 + 1.9))]
+    return _drawn(*parts)
+
+
+MARKS.update({
+    'pong': _cups(),
+    'shoes': _drawn(('fill', _disc(8, 7, 6.6)), ('clear', _disc(8, 7, 3.8)), ('clear', _box(4.6, 7, 11.4, 16)),
+                    ('fill', _box(1.4, 7, 4.6, 14.6)), ('fill', _box(11.4, 7, 14.6, 14.6)), ('clear', _box(2.6, 7, 3.4, 13.2)), ('clear', _box(12.6, 7, 13.4, 13.2)),
+                    ('clear', _disc(4.2, 3.6, 0.6)), ('clear', _disc(11.8, 3.6, 0.6)), ('clear', _disc(2.2, 7.6, 0.6)), ('clear', _disc(13.8, 7.6, 0.6))),
+    'bocce': None,                                                      # (drawn further down, with _ring)
+})
+
+
+def _ring(cx, cy, r, half):
+    """The dots within `half` of a circle's edge (a groove, or a hollow stone)."""
+    return lambda x, y: abs(((x - cx) ** 2 + (y - cy) ** 2) ** 0.5 - r) <= half
+
+
+def _solid(rows, holes=()):
+    """One of the coloured sprites below as a plain mark: outline and body all filled, then `holes` cleared."""
+    out = [''.join('#' if ch != '.' else '.' for ch in row) for row in rows]
+    for x, y in holes:
+        out[y] = out[y][:x] + '.' + out[y][x + 1:]
+    return out
+
+
 # '#' is the outline, 'o' the body. The body's left edge is lit and its right edge shaded when it is coloured in.
 CHESS = {
     'p': [
@@ -81,6 +170,30 @@ YELLOW_INK = ((242, 200, 30), (190, 150, 10), None, (255, 236, 120), (190, 150, 
 STONE = [r.replace('+', 'o') for r in DISC]
 # body, lit edge, shaded edge
 STONE_INK = {'b': ((40, 42, 52), (96, 100, 118), (16, 17, 22)), 'w': ((244, 241, 228), (255, 255, 255), (176, 170, 150))}
+
+# The rest of the list of games as plain marks too, all in the one grey like the others: two bocce balls with their grooves
+# and the pallino; a fish on a line (the lake); a knight; a checker with its groove; stones on a go board; a four in a row
+# frame with a piece dropping in; a mahjong tile (the red dragon's character); a sudoku grid with a few numbers in.
+_bocce = _drawn(('fill', _disc(5, 10.5, 4.8)), ('clear', _ring(5, 4.5, 6.0, 0.5)), ('clear', _disc(12.2, 11.2, 4.6)), ('fill', _disc(12.2, 11.2, 3.8)),
+                ('clear', _ring(12.2, 6.4, 4.75, 0.45)), ('fill', _disc(11.5, 2.8, 1.6)))
+MARKS.update({
+    'bocce': _bocce,
+    'fish': _drawn(('fill', _box(4.6, 0, 5.6, 4.4)), ('fill', _ring(6.2, 4.6, 1.4, 0.5)),
+                   ('fill', lambda x, y: ((x - 7.0) / 5.6) ** 2 + ((y - 10.4) / 3.4) ** 2 <= 1), ('fill', _tri((11.4, 10.4), (15.8, 6.6), (15.8, 14.2))),
+                   ('clear', _disc(4.0, 9.6, 0.8)), ('clear', _box(8.6, 8.4, 9.2, 12.4))),
+    'chess': _solid(CHESS['n'], holes=((7, 4),)),
+    'checkers': [row.replace('o', '#').replace('+', '.') for row in DISC],
+    'go': _drawn(*[('fill', _box(0, v - 0.3, 16, v + 0.3)) for v in (3.5, 8.5, 13.5)], *[('fill', _box(v - 0.3, 0, v + 0.3, 16)) for v in (3.5, 8.5, 13.5)],
+                 ('clear', _disc(8.5, 8.5, 3.9)), ('fill', _disc(8.5, 8.5, 3.3)), ('clear', _disc(13.5, 3.5, 3.0)), ('fill', _ring(13.5, 3.5, 2.2, 0.55)),
+                 ('clear', _disc(3.5, 13.5, 3.0)), ('fill', _ring(3.5, 13.5, 2.2, 0.55))),
+    'four': _drawn(*[('fill', _disc(2.5 + 3.6 * k, 11.5 - 3.3 * k, 1.75)) for k in range(4)], ('fill', _box(0, 15, 16, 16))),
+    'mahjong': _drawn(('fill', _box(2.5, 0, 13.5, 16)), ('clear', _box(3.5, 1, 12.5, 15)), ('fill', _box(4.5, 13.2, 12.5, 15)),
+                      ('fill', _box(7.5, 2.2, 8.5, 12)), ('fill', _box(5, 4.5, 11, 9.5)), ('clear', _box(6, 5.5, 10, 8.5)), ('fill', _box(7.5, 5.5, 8.5, 8.5))),
+    'sudoku': _drawn(('fill', _box(0.5, 0.5, 15.5, 15.5)), ('clear', _box(1.5, 1.5, 14.5, 14.5)),
+                     ('fill', _box(5.5, 0, 6.4, 16)), ('fill', _box(9.6, 0, 10.5, 16)), ('fill', _box(0, 5.5, 16, 6.4)), ('fill', _box(0, 9.6, 16, 10.5)),
+                     ('fill', _box(2.6, 2.4, 3.4, 4.6)), ('fill', _box(11.6, 2.6, 13.4, 3.4)), ('fill', _box(12.6, 3.4, 13.4, 4.6)),
+                     ('fill', _box(7.2, 7.2, 8.8, 8.8)), ('fill', _box(2.6, 11.6, 4.4, 13.4)), ('clear', _box(3.4, 12.4, 3.6, 12.6)), ('fill', _box(11.6, 11.6, 13.4, 13.4))),
+})
 
 # ── mahjong ──
 TILE_W, TILE_H = 18, 24            # with its outline; the face inside is 16 by 22

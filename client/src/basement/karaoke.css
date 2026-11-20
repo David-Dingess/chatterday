@@ -1,0 +1,50 @@
+/* The karaoke lounge (karaoke.tsx), in the room's own dots. */
+.ko-screen, .ko-board, .ko-pool, .ko-pic, .ko-hot, .ko-menu, .ko-card, .ko-done, .ko-sync { position: absolute; display: block; }
+.ko-screen { overflow: hidden; background: #0a0e1c; pointer-events: none; }
+.ko-screen .ko-video, .ko-screen .ko-idle { position: absolute; inset: 0; }
+.ko-screen iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+.ko-idle { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px; text-align: center; color: #cfe6ff;
+  background: radial-gradient(ellipse at 50% 40%, #1e3260 0%, #0a0e1c 75%); }
+.ko-idle b { font-size: 12px; font-weight: 400; line-height: 1; color: #fff; }
+.ko-idle .ko-logo { font-size: 16px; color: #ff6fc0; letter-spacing: 1px; text-shadow: 1px 1px 0 #3a0a2a; }
+.ko-idle .ko-title { font-size: 7px; line-height: 1.1; max-height: 3.3em; overflow: hidden; }
+.ko-idle .ko-note { font-size: 6px; line-height: 1; color: #8aa8d0; }
+
+.ko-board { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 1px; overflow: hidden; pointer-events: none; }
+.ko-board li { display: flex; align-items: center; gap: 2px; font-size: 7px; line-height: 7px; height: 7px; color: #e8f4ff; white-space: nowrap; }
+.ko-board li i { flex: none; width: 3px; height: 3px; }
+.ko-board li .ko-tag { margin-left: auto; font-size: 6px; color: #38d6e8; }
+.ko-board li.now { color: #f6d84a; }
+.ko-board li.now .ko-tag { color: #f6d84a; }
+.ko-board li.none { color: #6a7a90; }
+
+.ko-done { font-size: 7px; line-height: 1; padding: 1px 2px; border-width: 1px; box-shadow: none; justify-content: center; }
+.ko-done:active:not(:disabled) { transform: none; }
+
+/* the spotlight's pool: light on the boards, laid under everybody */
+.ko-pool { border-radius: 50%; pointer-events: none; mix-blend-mode: screen;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255, 240, 200, 0.55) 0%, rgba(255, 230, 180, 0.3) 45%, rgba(255, 220, 160, 0) 72%); }
+.ko-pic { left: 0; top: 0; background-repeat: no-repeat; image-rendering: pixelated; pointer-events: none; }
+.ko-held { will-change: transform; }
+.ko-hot { cursor: pointer; }
+
+.ko-menu { display: flex; flex-direction: column; gap: 1px; padding: 2px; width: 150px; background: #000; border: 1px solid var(--accent); box-shadow: 2px 2px 0 #000; }
+.ko-menu b { font-size: 7px; line-height: 1; padding: 1px 2px 2px; color: var(--accent); font-weight: 400; }
+.ko-menu p { margin: 0; padding: 1px 2px; font-size: 6px; line-height: 1.1; color: #c8c8d8; }
+.ko-menu button { font-size: 7px; line-height: 1; letter-spacing: 0; padding: 2px 3px; border-width: 1px; box-shadow: none; justify-content: flex-start; }
+.ko-menu button:active:not(:disabled) { transform: none; }
+.ko-menu .ko-row { display: flex; gap: 1px; align-items: center; }
+.ko-menu input { flex: 1; min-width: 0; font-size: 7px; line-height: 1; padding: 1px 2px; height: 10px; border-width: 1px; }
+.ko-menu .ko-result { display: flex; gap: 2px; }
+.ko-menu .ko-result span:first-child, .ko-menu .ko-mine > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+.ko-menu .ko-result .ko-len { flex: none; font-size: 6px; line-height: 1; opacity: 0.7; }
+.ko-menu .ko-mine > span { font-size: 6px; color: #e8f4ff; padding-left: 2px; }
+
+.ko-card { transform: translateX(-50%); max-width: 180px; padding: 2px 4px; font-size: 8px; line-height: 1.1; text-align: center; color: #fff; background: #000;
+  border: 1px solid #ff4fb0; box-shadow: 2px 2px 0 #000; pointer-events: none; animation: ko-card 6.5s linear forwards; }
+@keyframes ko-card { 0% { opacity: 0; transform: translate(-50%, 3px); } 5% { opacity: 1; transform: translate(-50%, 0); } 88% { opacity: 1; } 100% { opacity: 0; } }
+/* the admin's sync control, under Done */
+.ko-sync { display: flex; align-items: center; justify-content: space-between; gap: 2px; font-size: 7px; line-height: 1; color: #f2e6c8; }
+.ko-sync span { flex: 1; text-align: center; }
+.ko-sync button { font-size: 7px; line-height: 1; padding: 1px 3px; border-width: 1px; box-shadow: none; }
+.ko-sync button:active:not(:disabled) { transform: none; }

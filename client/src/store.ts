@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { api } from './api';
 import { applyTheme } from './theme';
 import { native } from './native';
+import { setHouseZone } from './clock';
+import { CLUB } from './clubhouse.gen';
 import type { Attachment, Channel, GameKind, GameTable, Me, Message, Music, Presence, ServerSettings, Sound, User, Weather } from './types';
 
 export type Prefs = {
@@ -9,6 +11,9 @@ export type Prefs = {
   ptt: boolean; pttKey: string;
   /** The soundboard slider, 0 to 1. It is a position, not a loudness: see soundGain. */
   soundVol: number; userVol: Record<string, number>; mediaVol: Record<string, number>;
+  /** The soundboard sounds starred as favourites (sound id → when it was starred, which orders them): shown first,
+   *  above a line. (Not a list: `sane` throws away any setting that is one.) */
+  favSounds: Record<string, number>;
   shareQuality: '720p30' | '1080p30' | '1080p60'; /** Send a shared window's own sound along with it (through the desktop app's helper). A whole screen never has sound. */
   shareAppSound: boolean;
   shareActivity: boolean; shareDetail: boolean;
@@ -45,16 +50,20 @@ export type Prefs = {
   soloW: number;
   /** The player's slider, 0 to 1. A position too: see playerLevel. */
   playerVol: number;
+  /** The player's speaker clicked off: silent, with the slider left where it was for when it comes back on. */
+  playerMuted?: boolean;
   /** Turn music and soundboard clips down while somebody else is talking. */
   duck: boolean;
+  /** A quiet notice when a friend's PC starts a game ("Sam started Kart Racing"): see client/src/gamealerts.ts. */
+  gameAlerts: boolean;
   /** Bumped when a default changes and everybody should get the new one once. */
   v: number;
 };
 const DEFAULT_PREFS: Prefs = {
   micId: '', outId: '', echo: true, noise: true, agc: true, ptt: false, pttKey: 'Backquote',
-  soundVol: 0.65, userVol: {}, mediaVol: {}, shareQuality: '1080p30', shareAppSound: true,
+  soundVol: 0.65, userVol: {}, mediaVol: {}, favSounds: {}, shareQuality: '1080p30', shareAppSound: true,
   shareActivity: true, shareDetail: true, awayAfter: 5, notify: 'all', chimes: true, hotkeys: {}, lastRead: {}, dockOpen: false, dockH: 80, playerOpen: true, leftW: 310, chatW: 440,
-  roomOpen: true, levelVoices: true, lockMute: true, mutedNudge: true, autoDevice: true, textSize: 1, gate: false, showVideo: false, soloW: 0, playerVol: 0.73, duck: true, v: 5,
+  roomOpen: true, levelVoices: true, lockMute: true, mutedNudge: true, autoDevice: true, textSize: 1, gate: false, showVideo: false, soloW: 0, playerVol: 0.73, duck: true, gameAlerts: true, v: 5,
 };
 // The browser can refuse to keep anything (site data blocked, or full). A setting then lasts until the page is closed,
 // rather than not changing at all.
@@ -89,11 +98,13 @@ export type View = { kind: 'hangout' } | { kind: 'stage' } | { kind: 'theatre' }
 /** A wad of paper thrown at the bin: who threw it, where it is every `ms` ([x, y, height]), whether it went in, how many
  *  times it came off the rim, how many that person has now got in running, and how far away they stood. */
 export type Toss = { from: string; path: number[][]; ms: number; made: boolean; rims: number; streak: number; far: number };
-export type Ball = { x: number; y: number; path: number[][] | null; ms: number; t0: number };
+export type Ball = { x: number; y: number; path: number[][] | null; ms: number; t0: number; goal?: number; by?: string };      // (goal: the step of the roll at which it went in the goal; by: who kicked it)
 export type VoiceState = {
   channelId: number | null; connecting: boolean; muted: boolean; deafened: boolean; sharing: boolean;
   micError: string; error: string;
   speaking: Record<string, boolean>; screens: string[]; rev: number;
+  /** The browser will not play the call's sound until the page is touched once more (a phone, mostly): see startAudio. */
+  audioBlocked?: boolean;
   /** True while the noise gate is holding my microphone shut. */
   gated: boolean;
   /** True for a few seconds after I was caught talking with my microphone muted. */
@@ -113,6 +124,8 @@ type State = {
   /** How many unread messages each chat holds, for the badges. (`unread` only says whether, and whether I was mentioned.) */
   counts: Record<number, number>;
   view: View; chat: number | null; settingsOpen: string | null; picker: boolean;
+  /** The thread open in the chat column (the message it hangs off), and its replies as loaded, by that message's id. */
+  thread: number | null; threads: Record<number, { root: Message; replies: Message[] }>;
   voice: VoiceState; prefs: Prefs; toast: string;
   /** The shared music queue; `skew` is how far this PC's clock is from the server's. */
   music: Music & { skew: number };
@@ -121,10 +134,10 @@ type State = {
   /** My private chats: the channel each one lives in, and who it is with. */
   dms: { id: number; with: string }[];
   /** Something worth acting on now, with one button (somebody started sharing their screen). */
-  notice: { text: string; label: string; run: () => void } | null;
-  /** The weather where the house is (the town the admin picked), for its windows and its yard. */
+  notice: { text: string; label: string; run: () => void; /** a second button in words, in place of the little close button ("Not now") */ no?: { label: string; run: () => void } } | null;
+  /** The weather where the house is (the town the admin picked), for its windows and its yard; and when everyone was last in voice together (0: never). */
   weather: Weather | null;
-  asking: { title: string; value: string; resolve: (v: string | null) => void } | null;
+  asking: { title: string; value: string; clear?: boolean; resolve: (v: string | null) => void } | null;
   /** The game table as the server last described it to me (null until it has), and its last "no, because" line. */
   table: GameTable | null; tableNote: string;
   ball: Ball | null;
@@ -132,16 +145,20 @@ type State = {
   toss: Record<string, number>;
   /** The arcade machine's best scores, by game: the top few people at each. */
   arcade: Record<string, { userId: string; score: number }[]>;
+  /** Each basement fit-out's game as it stands (what its server module's hello() said, then whatever it sends as `state`). */
+  fits: Record<string, any>;
+  /** The main room's disco lights (the switch by the wall clock, client/src/disco.tsx): the same for everybody. */
+  disco: boolean;
 };
 
 export const useStore = create<State>()(() => ({
   phase: 'loading', connected: false,
   me: null, users: {}, channels: [], presence: {}, sounds: [], soundBusy: {},
-  settings: { serverName: 'Chatterday', publicUrl: '', voice: false, gifKey: '', appVersion: '', tz: '', town: '', unit: 'F', photo: null }, previews: {},
+  settings: { serverName: 'Chatterday', publicUrl: '', voice: false, gifKey: '', appVersion: '', tz: '', town: '', unit: 'F', photo: null, wall: {} }, previews: {},
   messages: {}, more: {}, loaded: {}, historic: {}, typing: {}, unread: {}, counts: {},
-  view: { kind: 'hangout' }, chat: null, settingsOpen: null, picker: false,
+  view: { kind: 'hangout' }, chat: null, thread: null, threads: {}, settingsOpen: null, picker: false,
   voice: { channelId: null, connecting: false, muted: false, deafened: false, sharing: false, micError: '', error: '', speaking: {}, screens: [], rev: 0, gated: false, talkingMuted: false },
-  prefs: loadPrefs(), toast: '', asking: null, music: { current: null, queue: [], now: 0, skew: 0 }, ducked: false, weather: null, dms: [], notice: null, table: null, tableNote: '', ball: null, arcade: {}, toss: {},
+  prefs: loadPrefs(), toast: '', asking: null, music: { current: null, queue: [], now: 0, skew: 0 }, ducked: false, weather: null, dms: [], notice: null, table: null, tableNote: '', fits: {}, ball: null, arcade: {}, toss: {}, disco: false,
 }));
 const S = useStore.getState;
 const set = useStore.setState;
@@ -151,6 +168,13 @@ export const soundGain = (pos: number) => (pos <= 0 ? 0 : Math.pow(10, (Math.min
 /** The player slider's position as a share of YouTube's full volume: from 1% (its quietest step) at the bottom to
  *  30% at the top (music sits well under voices), again in even steps to the ear. */
 export const playerLevel = (pos: number) => (pos <= 0 ? 0 : 0.01 * Math.pow(30, Math.min(1, pos)));
+
+/** Stars a soundboard sound as a favourite, or takes the star off again (it follows you, like the other settings). */
+export function toggleFav(id: number) {
+  const favs = { ...S().prefs.favSounds };
+  if (favs[id]) delete favs[id]; else favs[id] = Date.now();
+  setPrefs({ favSounds: favs });
+}
 
 export function setPrefs(p: Partial<Prefs>) {
   const prefs = { ...S().prefs, ...p };
@@ -197,8 +221,17 @@ function takePrefs(prefs: unknown, at: number) {
 }
 function syncPrefs(me: Me) {
   const theirs = me.prefsAt ?? 0;
-  if (me.prefs && theirs > prefsAt()) takePrefs(me.prefs, theirs);
-  else if (!me.prefs || prefsAt() > theirs) pushPrefs();
+  if (me.prefs && theirs > prefsAt()) return takePrefs(me.prefs, theirs);
+  // Mine win, but what was read on another PC still counts (2026-11-17): the times compared here are each device's
+  // own clock, so a phone a little ahead used to win every time, show chats read on the PC as new, and send them back
+  // unread. Each chat keeps whichever side had got further.
+  const read = (me.prefs as Partial<Prefs> | null)?.lastRead;
+  if (read && typeof read === 'object') {
+    const mine = S().prefs.lastRead, next = { ...mine };
+    for (const [cid, id] of Object.entries(read)) if (Number(id) > (next[Number(cid)] ?? 0)) next[Number(cid)] = Number(id);
+    if (Object.keys(next).some((cid) => next[Number(cid)] !== mine[Number(cid)])) { const prefs = { ...S().prefs, lastRead: next }; keep('fc_prefs', JSON.stringify(prefs)); set({ prefs }); }
+  }
+  if (!me.prefs || prefsAt() > theirs) pushPrefs();
 }
 
 let toastTimer = 0;
@@ -208,32 +241,58 @@ export function toast(text: string) {
   toastTimer = window.setTimeout(() => set({ toast: '' }), 5000);
 }
 
-/** An in-app replacement for window.prompt, which the desktop shell does not have. */
-export const ask = (title: string, value = '') =>
+/** An in-app replacement for window.prompt, which the desktop shell does not have. `clear`: a Clear button too, which
+ *  answers '' (for something that can be taken away: a status). */
+export const ask = (title: string, value = '', clear = false) =>
   new Promise<string | null>((resolve) => {
     S().asking?.resolve(null);          // a question still open is answered "never mind", not left waiting for good
-    set({ asking: { title, value, resolve } });
+    set({ asking: { title, value, clear, resolve } });
   });
 
 /** Other modules subscribe here so the store never has to import them. */
+// Whether the Player was open large in the middle of the window, kept for this window only: when the page reloads for a
+// new version, it opens again on whatever is playing.
+const THEATRE_KEY = 'cd_theatre';
+const theatreWasOpen = () => { try { return sessionStorage.getItem(THEATRE_KEY) === '1'; } catch { return false; } };
+// (from the moment the server says it is restarting, the note stays as it was: leaving the voice chat on the way out
+// closes the Theatre, and that is not the person closing it, so it opens again once the page is back)
+let goingDown = false;
+useStore.subscribe((s, was) => {
+  if (s.view.kind === was.view.kind || S().phase !== 'ready' || goingDown) return;
+  try { if (s.view.kind === 'theatre') sessionStorage.setItem(THEATRE_KEY, '1'); else sessionStorage.removeItem(THEATRE_KEY); } catch { /* not kept */ }
+});
+
 export const hooks = {
   ready: [] as (() => void)[],
-  sound: [] as ((id: number, channelId?: number) => void)[],
+  sound: [] as ((id: number, channelId?: number, entrance?: boolean) => void)[],
   message: [] as ((m: Message) => void)[],
   presence: [] as ((userId: string, prev: Presence | undefined, next: Presence) => void)[],
   wave: [] as ((from: string) => void)[],
-  act: [] as ((a: { id: number; kind: string; from: string; target: string; pet: string }) => void)[],
+  act: [] as ((a: { id: number; kind: string; from: string; target: string; pet: string; dx: number; dy: number }) => void)[],
   toss: [] as ((t: Toss) => void)[],
   /** A step of drawing on the whiteboard, from somebody else. */
   board: [] as ((d: any) => void)[],
+  /** The steamed-up bathroom mirror (client/src/mirror.ts): the whole of it, or a finger's stroke. */
+  mirror: [] as ((d: any) => void)[],
+  /** The server is about to restart for an update, or this page to load a new version (voice.ts leaves the call, to go back in afterwards). */
+  restarting: [] as (() => void)[],
+  /** Something from a basement fit-out's game (server/basement/<id>.ts): { t: 'fit', id, ... }. */
+  fit: [] as ((d: any) => void)[],
+  /** Asked to share my game ({ t: 'ask', from, game }), or told my ask was turned down ({ t: 'askno', from }): client/src/askshare.ts. */
+  ask: [] as ((d: any) => void)[],
 };
 
 // ───────── staying up to date ─────────
 // The server names the build it is handing out (it changes whenever any file of the UI does: code or pictures).
 // The first name this page hears is the build it was loaded from; when a different one is announced, the page
-// reloads: straight away, or as soon as you leave voice if you are in it.
+// reloads straight away. In a voice chat it goes the way a server restart does (voice.ts): it notes the chat (and,
+// in the desktop app, the window being shared), leaves it properly, reloads, and goes back in on its own, muted if it
+// was. It used to wait until you left voice, and somebody who stayed in a call all evening never got a fix: a share
+// that stuck small once ran the old code for an hour after the fix for it was out.
 let myBuild = '';
 let reloadWaiting = false;
+/** A new version has been announced and this page is about to load it (now, or when voice is left). */
+export const updating = () => reloadWaiting;
 function checkBuild(id: unknown) {
   if (typeof id !== 'string' || !id || reloadWaiting) return;
   if (!myBuild) { myBuild = id; return; }
@@ -241,8 +300,10 @@ function checkBuild(id: unknown) {
   reloadWaiting = true;
   const go = () => window.setTimeout(() => location.reload(), 1500);
   if (S().voice.channelId == null) { toast('Updating Chatterday…'); go(); return; }
-  toast('A new version of Chatterday is ready. It will load when you leave voice.');
+  goingDown = true;                     // (leaving the call closes the Theatre: it opens again after the reload)
+  for (const h of hooks.restarting) h();
   const stop = useStore.subscribe((st) => { if (st.voice.channelId == null) { stop(); go(); } });
+  if (S().voice.channelId == null) { stop(); go(); }
 }
 
 // ───────── socket ─────────
@@ -284,7 +345,8 @@ export async function boot() {
 function connect() {
   if (ws && ws.readyState <= 1) return; // already connected, or connecting
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  const sock = new WebSocket(`${proto}://${location.host}/ws?kind=${native ? 'app' : 'web'}`);
+  // (the phone page says so: the server then sends it only what a phone needs, and takes only what a phone sends)
+  const sock = new WebSocket(`${proto}://${location.host}/ws?kind=${native ? 'app' : document.body.classList.contains('phone') ? 'phone' : 'web'}`);
   ws = sock;
   sock.onopen = () => { retry = 0; };
   sock.onmessage = (ev) => onEvent(JSON.parse(ev.data));
@@ -315,7 +377,11 @@ function onEvent(d: any) {
         ...(d.music ? { music: { ...d.music, skew: Date.now() - d.music.now } } : {}),
         weather: d.weather ?? null, dms: d.dms ?? [],
         ball: d.ball ? { x: Number(d.ball.x), y: Number(d.ball.y), path: null, ms: 50, t0: 0 } : null, arcade: d.arcade ?? {}, toss: d.toss ?? {},
+        fits: d.fits ?? {}, disco: !!d.disco,
+        // (the Player large in the middle of the window, as it was before the page reloaded for an update)
+        ...(d.music?.current && S().view.kind === 'hangout' && theatreWasOpen() ? { view: { kind: 'theatre' as const } } : {}),
       });
+      goingDown = false;                // (the server is back: closing the Theatre from here on counts again)
       // how many are waiting in each chat with something new (a chat read while the answer was on its way stays at none)
       if (Object.keys(unread).length) void api<{ counts: Record<number, number> }>('/unread', { since: Object.fromEntries(Object.keys(unread).map((cid) => [cid, lastRead[Number(cid)] ?? 0])) }).then((r) => {
         const now = S();
@@ -333,8 +399,13 @@ function onEvent(d: any) {
       const viewing = s.chat === m.channelId && !document.hidden;
       const patch: Partial<State> = {};
       if (m.id > (newest[m.channelId] ?? 0)) newest[m.channelId] = m.id;
-      arriving.get(m.channelId)?.push(m);
-      if (s.loaded[m.channelId] && !s.historic[m.channelId]) patch.messages = { ...s.messages, [m.channelId]: [...(s.messages[m.channelId] ?? []), m] };
+      if (m.threadId) {                                 // a reply in a thread: in its thread (if that is loaded), not in the chat
+        const th = s.threads[m.threadId];
+        if (th && !th.replies.some((x) => x.id === m.id)) patch.threads = { ...s.threads, [m.threadId]: { ...th, replies: [...th.replies, m] } };
+      } else {
+        arriving.get(m.channelId)?.push(m);
+        if (s.loaded[m.channelId] && !s.historic[m.channelId]) patch.messages = { ...s.messages, [m.channelId]: [...(s.messages[m.channelId] ?? []), m] };
+      }
       if (viewing) markRead(m.channelId, m.id);
       else if (m.userId !== s.me?.id) {
         patch.unread = { ...s.unread, [m.channelId]: Math.max(s.unread[m.channelId] ?? 0, mentionsMe(m) ? 2 : 1) };
@@ -352,12 +423,20 @@ function onEvent(d: any) {
     case 'msg_edit': {
       const m = d.message as Message;
       const list = s.messages[m.channelId];
-      if (list) set({ messages: { ...s.messages, [m.channelId]: list.map((x) => (x.id === m.id ? m : x)) } });
+      const patch: Partial<State> = {};
+      if (list) patch.messages = { ...s.messages, [m.channelId]: list.map((x) => (x.id === m.id ? m : x)) };
+      const th = s.threads[m.threadId ?? m.id];
+      if (th) patch.threads = { ...s.threads, [m.threadId ?? m.id]: m.threadId ? { ...th, replies: th.replies.map((x) => (x.id === m.id ? m : x)) } : { ...th, root: m } };
+      if (Object.keys(patch).length) set(patch);
       break;
     }
     case 'msg_delete': {
       const list = s.messages[d.channelId];
-      if (list) set({ messages: { ...s.messages, [d.channelId]: list.filter((x) => x.id !== d.id) } });
+      const patch: Partial<State> = {};
+      if (list) patch.messages = { ...s.messages, [d.channelId]: list.filter((x) => x.id !== d.id) };
+      if (s.threads[d.id]) { const t = { ...s.threads }; delete t[d.id]; patch.threads = t; if (s.thread === d.id) patch.thread = null; }      // the thread went with it
+      else for (const [root, th] of Object.entries(s.threads)) if (th.replies.some((x) => x.id === d.id)) patch.threads = { ...s.threads, [root]: { ...th, replies: th.replies.filter((x) => x.id !== d.id) } };
+      if (Object.keys(patch).length) set(patch);
       break;
     }
     case 'typing':
@@ -389,21 +468,28 @@ function onEvent(d: any) {
       set({ previews });
       break;
     }
-    case 'sound': for (const h of hooks.sound) h(d.id, d.channelId); break;
+    case 'sound': for (const h of hooks.sound) h(d.id, d.channelId, !!d.entrance); break;
     case 'music':
       set({ music: { ...d.music, skew: Date.now() - d.music.now }, ...(!d.music.current && s.view.kind === 'theatre' ? { view: { kind: 'hangout' as const } } : {}) });      // nothing left to watch
       break;
     case 'toast': toast(String(d.text ?? '')); break;
     case 'weather': set({ weather: d.weather }); break;
     case 'build': checkBuild(d.build); break;
+    case 'restarting': goingDown = true; for (const h of hooks.restarting) h(); break;
     case 'board': for (const h of hooks.board) h(d); break;
+    case 'mirror': for (const h of hooks.mirror) h(d); break;
     case 'game': onTable(d); break;
     case 'ball': {                 // somebody kicked the football: the whole roll, which the room plays back from now
       const path = d.path as number[][], end = path[path.length - 1];
-      if (end) set({ ball: { x: end[0], y: end[1], path, ms: Number(d.ms) || 50, t0: performance.now() } });
+      if (end) set({ ball: { x: end[0], y: end[1], path, ms: Number(d.ms) || 50, t0: performance.now(), goal: Number(d.goal ?? -1), by: String(d.by ?? '') } });
       break;
     }
     case 'arcade': set({ arcade: d.scores ?? {} }); break;
+    case 'disco': set({ disco: !!d.on }); break;
+    case 'fit':                    // a basement game: its state (if it sent one) is kept here, and its own code hears the rest
+      if (typeof d.id === 'string' && 'state' in d) set({ fits: { ...s.fits, [d.id]: d.state } });
+      for (const h of hooks.fit) h(d);
+      break;
     case 'toss': {                 // somebody threw a wad of paper at the bin: the whole flight, for the room to play
       const flight: Toss = { from: String(d.from), path: d.path as number[][], ms: Number(d.ms) || 42, made: !!d.made, rims: Number(d.rims) || 0, streak: Number(d.streak) || 0, far: Number(d.far) || 0 };
       if (flight.made) set({ toss: { ...s.toss, [flight.from]: Number(d.count) || 0 } });
@@ -412,7 +498,8 @@ function onEvent(d: any) {
     }
     case 'prefs': takePrefs(d.prefs, Number(d.at)); break;
     case 'dm': if (!s.dms.some((x) => x.id === d.id)) set({ dms: [...s.dms, { id: Number(d.id), with: String(d.with) }] }); break;
-    case 'act': for (const h of hooks.act) h({ id: Number(d.id), kind: String(d.kind), from: String(d.from), target: String(d.target ?? ''), pet: String(d.pet ?? '') }); break;
+    case 'act': for (const h of hooks.act) h({ id: Number(d.id), kind: String(d.kind), from: String(d.from), target: String(d.target ?? ''), pet: String(d.pet ?? ''), dx: Number(d.dx) || 0, dy: Number(d.dy) || 0 }); break;
+    case 'ask': case 'askno': for (const h of hooks.ask) h(d); break;
     case 'wave':
       toast(`${s.users[d.from]?.name ?? 'Someone'} is waving you over.`);
       for (const h of hooks.wave) h(String(d.from));
@@ -431,7 +518,19 @@ export function tableNote(text: string) {
 }
 /** Does something at the game table: `gameOp('sit', { seat: 2 })`, `gameOp('move', { m: { play: 'QS' } })`. */
 export function gameOp(op: string, more: Record<string, unknown> = {}) {
-  if (!send({ t: 'game', op, ...more })) tableNote('No connection to the server.');
+  if (!send({ t: 'game', op, ...more })) return tableNote('No connection to the server.');
+  if (op === 'pick' || op === 'sit' || op === 'replace') toCardTable();
+}
+/** Playing at the card table: my character goes and sits at the table beside it (2026-11-17), up from the basement
+ *  first if that is where they are. Whoever is only watching stays where they are. */
+function toCardTable() {
+  const s = S(), me = s.me, p = me && s.presence[me.id];
+  if (!me || !p || p.state === 'offline') return;
+  if (!p.floor && p.place === 'here' && /^table\d+$/.test(p.at?.seat ?? '')) return;      // (sat there already)
+  if (p.floor) send({ t: 'floor', fit: '', x: CLUB.stairs.top.x, y: CLUB.stairs.top.y });
+  const held = new Set(Object.entries(s.presence).filter(([id, q]) => id !== me.id && q.state !== 'offline' && !q.floor && q.place === 'here').map(([, q]) => q.at?.seat));
+  const n = CLUB.table.findIndex((_, k) => !held.has(`table${k}`));
+  if (n >= 0) send({ t: 'place', place: 'here', x: CLUB.table[n].x, y: CLUB.table[n].y, seat: `table${n}` });
 }
 const openGames = () => set({ view: { kind: 'games' } });
 function onTable(d: any) {
@@ -521,17 +620,30 @@ export async function openDm(userId: string) {
 
 let noticeTimer = 0;
 /** Shows a notice with one button. It goes away by itself after a while. */
-export function notify(text: string, label: string, run: () => void, ms = 25_000) {
+export function notify(text: string, label: string, run: () => void, ms = 25_000, no?: { label: string; run: () => void }) {
   window.clearTimeout(noticeTimer);
-  set({ notice: { text, label, run: () => { set({ notice: null }); run(); } } });
+  set({ notice: { text, label, run: () => { set({ notice: null }); run(); }, ...(no ? { no: { label: no.label, run: () => { set({ notice: null }); no.run(); } } } : {}) } });
   noticeTimer = window.setTimeout(() => set({ notice: null }), ms);
 }
 
+/** Opens a message's thread in the chat column (fetching it afresh), or closes it (null). */
+export async function openThread(id: number | null) {
+  if (id == null) { set({ thread: null }); return; }
+  set({ thread: id });
+  try {
+    const r = await api<{ root: Message; replies: Message[] }>(`/thread?id=${id}`);
+    set({ threads: { ...S().threads, [id]: r } });
+  } catch (e: any) { toast(e.message); set({ thread: null }); }
+}
+
 /** False if it could not be sent (no connection): the person is told, so what they typed is not quietly lost. */
-export function sendMessage(channelId: number, content: string, attachments: Attachment[] = []): boolean {
-  const sent = send({ t: 'send', channelId, content, attachments });
+export function sendMessage(channelId: number, content: string, attachments: Attachment[] = [], threadId?: number): boolean {
+  const sent = send({ t: 'send', channelId, content, attachments, ...(threadId ? { threadId } : {}) });
   if (!sent) toast('No connection to the server: that was not sent.');
   return sent;
 }
 
 export const userName = (id: string) => S().users[id]?.name ?? 'someone';
+
+// The house's clock follows the zone the server keeps (client/src/clock.ts).
+useStore.subscribe((s) => setHouseZone(s.settings.tz));

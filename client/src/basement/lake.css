@@ -1,0 +1,73 @@
+/* The lake (lake.tsx): rods, lines and bobbers, the life on the water, the catch card and the record board. */
+.lk-svg, .lk-pic, .lk-pop, .lk-splash, .lk-cap, .lk-card, .lk-rain, .lk-fog, .lk-glint, .lk-ring, .lk-jump { position: absolute; display: block; }
+.lk-svg { left: 0; top: 0; pointer-events: none; overflow: visible; }
+.lk-pic { position: relative; display: inline-block; background: url(/basement/lake/catch.png) 0 0 no-repeat; image-rendering: pixelated; vertical-align: middle; }
+/* what somebody came up with, held up over them; or a word (got away, missed) */
+.lk-pop { transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 1px; pointer-events: none; animation: lk-pop 5s linear forwards; }
+.lk-pop b { font-size: 6px; line-height: 1; padding: 1px 2px; background: #000; color: #d8f0ff; border: 1px solid #3a6a8a; white-space: nowrap; font-weight: 400; }
+.lk-pop:not(.big) { animation-duration: 3s; }
+@keyframes lk-pop { 0% { transform: translate(-50%, 6px); opacity: 0; } 6% { transform: translate(-50%, 0); opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+/* a splash: white drops flying up and out from the middle, falling back */
+.lk-splash { width: 16px; height: 12px; pointer-events: none; }
+.lk-splash::before, .lk-splash::after { content: ''; position: absolute; left: 8px; top: 9px; width: 1px; height: 1px; background: #f2fbff; opacity: 0;
+  box-shadow: -4px -2px 0 #f2fbff, 4px -2px 0 #f2fbff, -2px -4px 0 #d8eef4, 2px -5px 0 #f2fbff, 0 -6px 0 #d8eef4, -6px 0 0 #d8eef4, 6px 0 0 #d8eef4;
+  animation: lk-splash 0.9s ease-out forwards; }
+.lk-splash::after { animation-delay: 0.12s; transform: scale(0.7); }
+.lk-splash.small { transform: scale(0.7); }
+@keyframes lk-splash { 0% { transform: translateY(2px) scale(0.4); opacity: 1; } 55% { transform: translateY(-3px) scale(1.2); opacity: 1; } 100% { transform: translateY(1px) scale(1.4); opacity: 0; } }
+/* where a cast is taken (the water on the side faced), and the whole scene while a fish is on */
+.lk-cap { cursor: crosshair; touch-action: none; }
+.lk-cap.reel { cursor: grab; }
+.lk-cap.reel:active { cursor: grabbing; }
+.hangout.mini .lk-cap { display: none; }
+/* the catch card, mine: a cream card with a dark frame, the catch large on it, two buttons */
+.lk-card { left: 50%; top: 22px; width: 132px; transform: translateX(-50%); padding: 5px 6px 6px; background: #f2e8cc; color: #2a1e14; border: 1px solid #1a1228;
+  box-shadow: inset 0 0 0 1px #c8b48a, 2px 2px 0 rgba(0, 0, 0, 0.6); text-align: center; font-size: 7px; line-height: 1.05; animation: lk-card 0.25s steps(3); }
+@keyframes lk-card { from { transform: translate(-50%, -8px); opacity: 0; } }
+.lk-card-top { display: inline-block; font-size: 6px; text-transform: uppercase; letter-spacing: 0.5px; padding: 0 3px; background: #2a1e14; }
+.lk-card-name { display: block; color: #2a1e14; font-size: 10px; font-weight: 400; margin: 1px 0 2px; }
+.lk-card-pic { background: #3a6a86; border: 1px solid #1a1228; padding: 2px 0; margin: 0 -1px; box-shadow: inset 0 -3px 0 #2f5a74; }
+.lk-card-size { font-size: 9px; margin-top: 3px; }
+.lk-card-size span { font-size: 7px; color: #6a5a44; margin-left: 2px; }
+.lk-card-flag { display: inline-block; margin-top: 2px; padding: 0 3px; background: #2a1e14; color: #ffd04a; font-size: 6px; }
+.lk-card-say, .lk-card-note { margin: 3px 0 0; font-size: 6px; color: #5a4a36; }
+.lk-card-note { font-style: italic; color: #2a3a5a; }
+.lk-card-buttons { display: flex; gap: 4px; justify-content: center; margin-top: 4px; }
+.lk-card-buttons button { font: inherit; font-size: 7px; line-height: 1; padding: 2px 5px; min-height: 0; background: #2a1e14; color: #f2e8cc; border: 1px solid #1a1228; box-shadow: 1px 1px 0 #000; cursor: pointer; }
+.lk-card-buttons button:hover { background: #4a3420; }
+/* the weather on the water */
+.lk-rain { inset: -32px -16px 0 0; background: url(/clubhouse/rain.png) 0 0 / 16px 16px; opacity: 0.55; pointer-events: none; will-change: transform; animation: rain-over 0.42s linear infinite; }
+.lk-rain.hard { opacity: 0.85; animation-duration: 0.26s; }
+.lk-fog { inset: 0; background: linear-gradient(rgba(214, 220, 232, 0.55), rgba(214, 220, 232, 0.25) 70%, rgba(214, 220, 232, 0.4)); pointer-events: none; }
+/* glints on the water, coming and going (a path of them under the moon at night) */
+.lk-glint { width: 3px; height: 1px; background: #e8f6fa; pointer-events: none; opacity: 0; animation: lk-glint 3.2s steps(4) infinite; }
+.lk-glint.moon { background: #fffbe0; width: 4px; animation-duration: 2.2s; }
+@keyframes lk-glint { 0%, 60%, 100% { opacity: 0; } 70% { opacity: 0.9; } 85% { opacity: 0.4; transform: translateX(1px); } }
+/* rain on the water: a ring spreading out from each drop */
+.lk-ring { width: 8px; height: 3px; border: 0.5px solid rgba(220, 240, 248, 0.8); border-radius: 50%; pointer-events: none; animation: lk-ring 1.6s linear infinite; }
+@keyframes lk-ring { 0% { transform: scale(0.2); opacity: 0.9; } 100% { transform: scale(1.3); opacity: 0; } }
+/* the rings spreading out round the buoy and the rocks: each starts at the waterline round it and spreads and fades */
+.lk-wake { position: absolute; display: block; pointer-events: none; }
+.lk-wake i { position: absolute; display: block; box-sizing: border-box; border: 1px solid rgba(214, 236, 246, 0.75); border-radius: 50%; opacity: 0;
+  animation: lk-wake 3.6s linear infinite; }
+@keyframes lk-wake { 0% { transform: scale(1); opacity: 0.85; } 100% { transform: scale(1.9); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .lk-wake i { animation: none; opacity: 0.45; } }
+/* a fish jumping: up out of the water in an arc and back in */
+.lk-jump { pointer-events: none; animation: lk-jump 0.9s linear forwards; }
+@keyframes lk-jump { 0% { transform: translate(-8px, 0) rotate(-40deg); opacity: 0; } 10% { opacity: 1; } 50% { transform: translate(-2px, -12px) rotate(0); } 90% { opacity: 1; } 100% { transform: translate(4px, 0) rotate(45deg); opacity: 0; } }
+
+/* the record board, opened large */
+.lk-board .lk-board-body { display: flex; flex-direction: column; gap: 12px; overflow: auto; }
+.lk-table { border-collapse: collapse; width: 100%; font-size: 20px; }
+.lk-table th { text-align: left; color: var(--muted); font-weight: 400; font-size: 16px; padding: 2px 8px; border-bottom: 1px solid var(--line); }
+.lk-table td { padding: 3px 8px; border-bottom: 1px solid color-mix(in srgb, var(--line) 50%, transparent); vertical-align: middle; }
+.lk-table td:first-child { width: 1%; }
+.lk-table tr.none td { color: var(--muted); }
+.lk-table small { color: var(--muted); font-size: 16px; }
+.lk-table .lk-pic { zoom: 1.5; }
+.lk-bests td, .lk-bests th { text-align: center; }
+.lk-bests td:first-child, .lk-bests th:first-child { text-align: left; width: auto; white-space: nowrap; }
+.lk-bests tr.me td:first-child { color: var(--accent); }
+.lk-bests td.top { color: #ffd04a; }
+.lk-bests .lk-pic { zoom: 1; }
+.lk-note { font-style: italic; }

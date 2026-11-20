@@ -173,15 +173,29 @@ main > section { flex: 1; display: flex; flex-direction: column; min-height: 0; 
 @media (max-width: 860px) { .shell { grid-template-columns: 200px minmax(0, 1fr); } .grid2 { grid-template-columns: 1fr 1fr; } }
 
 /* ── soundboard dock (bottom of the main area) ── */
-.dock { flex: none; display: flex; align-items: center; gap: 14px; padding: 8px 14px; border-top: 1px solid var(--line); background: var(--panel); min-height: 60px; }
+.dock { flex: none; display: flex; align-items: stretch; gap: 14px; padding: 8px 14px; border-top: 1px solid var(--line); background: var(--panel); min-height: 60px; }
 .dock.closed { width: 100%; justify-content: flex-start; border: none; border-top: 1px solid var(--line); border-radius: 0; min-height: 0; padding: 5px 14px; color: var(--muted); font-size: 12px; background: var(--panel); }
 .dock.closed span { margin-left: auto; }
-.dock-side { display: flex; flex-direction: column; flex: none; width: 152px; line-height: 1.25; } .dock-side small { font-size: 11px; }
-.dock-sounds { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 6px; max-height: 80px; overflow-y: auto; padding: 5px 4px; align-content: flex-start; }
+.dock-side { display: flex; flex-direction: column; justify-content: center; gap: 6px; flex: none; width: 200px; line-height: 1.25; } .dock-side small { font-size: 11px; margin-top: -4px; }
+/* As tall as the height dragged with the grip, or the column on the right if that is taller: never taller because of
+   the sounds in it (`contain: size`), which scroll inside it instead. */
+.dock-sounds { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 6px; overflow-y: auto; padding: 5px 4px; align-content: flex-start; contain: size; }
+.dock-sounds .sound { flex: 1 0 auto; }            /* each line of sounds is stretched to the full width */
+.dock-sounds .sound > button:first-child { width: 100%; justify-content: center; padding-right: 26px; }
+/* the star on the right of each sound: outlined, or filled once it is a favourite */
+.sound > .fav { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; padding: 0; display: grid; place-items: center;
+  background: none; border: none; box-shadow: none; color: var(--muted); }
+.sound > .fav:hover:not(:disabled) { background: none; color: var(--accent); }
+.sound > .fav.on { color: var(--accent); }
+.sound > .fav:active:not(:disabled) { transform: translateY(-50%) scale(0.85); }
+/* the line under the favourites, with its name at the right-hand end */
+.dock-favs { flex: 0 0 100%; display: flex; align-items: center; gap: 8px; margin: 2px 0; color: var(--muted); font-size: 13px; }
+.dock-favs::before { content: ''; flex: 1; border-top: 1px solid var(--line); }
 .dock-sounds .empty { padding: 4px 0; }
 .dock-draft { flex: 1; min-width: 0; display: flex; gap: 6px; align-items: center; }
-.dock-tools { display: flex; align-items: center; gap: 6px; flex: none; }
-.dock-vol { display: flex; align-items: center; gap: 4px; width: 104px; color: var(--muted); }
+.dock-tools { display: flex; align-items: center; gap: 6px; }
+.dock-tools > .icon { margin-left: auto; }
+.dock-vol { display: flex; align-items: center; gap: 6px; width: 100%; color: var(--muted); } .dock-vol input { flex: 1; min-width: 0; }
 .sound { position: relative; display: inline-flex; }
 .sound > button:first-child { padding: 5px 11px 5px 8px; gap: 6px; border-radius: 999px; }
 .sound > button:first-child:active { transform: scale(0.94); background: color-mix(in srgb, var(--accent) 35%, var(--raised)); }
@@ -279,6 +293,8 @@ button.link { background: none; border: none; padding: 0; color: var(--accent); 
 .member-row b { font-weight: 400; overflow: hidden; text-overflow: ellipsis; } .member-row small { overflow: hidden; text-overflow: ellipsis; }
 .voice-member.out { opacity: 0.55; filter: grayscale(1); } .voice-member.asleep { opacity: 0.3; }
 .voice-member .person-vols { padding: 0 6px 6px 30px; }
+.voice-member .tidy-status { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 6px 6px 30px; }
+.voice-member .tidy-status button { padding: 1px 8px; font-size: 15px; }
 
 /* ── the 8-bit terminal look: one font, hard edges, one colour (--accent) that everything is worked out from ── */
 :root {
@@ -330,6 +346,33 @@ input[type='color'] { border: 2px solid var(--line); }
 /* room to miss by: the picker counts as under the pointer for a little way all round it */
 .quick::before { content: ''; position: absolute; inset: -14px; z-index: -1; }
 /* a photo off the clubhouse wall, opened up: as large as fits, even where the file itself is smaller */
+.lightbox.figurine { cursor: default; }
+.figurine-card { position: relative; display: grid; justify-items: center; gap: 14px; padding: 26px 30px 22px; background: linear-gradient(#ffd1e3, #ff9fc4); border: 4px solid #281824; border-radius: 6px; box-shadow: 6px 6px 0 #281824; max-width: 92vw; }
+.figurine-x { position: absolute; top: 6px; right: 6px; width: 30px; height: 30px; padding: 0; display: grid; place-items: center; background: #fff5fa; color: #281824; border: 3px solid #281824; border-radius: 4px; font-weight: 800; }
+/* as big as the window lets her be: its height, less the card's edges and the button under her, or its width at her shape (4:5) */
+.figurine-card { --fig-h: min(calc(100vh - 150px), calc((96vw - 76px) * 1.25)); padding: 20px 30px 16px; gap: 10px; max-width: 98vw; }
+.figurine-pic { display: grid; place-items: center; height: var(--fig-h); width: calc(var(--fig-h) * 0.8); }
+.figurine-pic canvas { image-rendering: pixelated; height: var(--fig-h); width: calc(var(--fig-h) * 0.8); }
+.figurine-statue.shake { animation: figurine-shake 1.6s ease-in forwards; }
+.figurine-statue.white { animation: figurine-white 0.7s ease-out forwards; }
+@keyframes figurine-shake {
+  0%, 18%, 34%, 52% { transform: none; }
+  4%, 12% { transform: translateX(-3px) rotate(-1deg); } 8% { transform: translateX(3px) rotate(1deg); }
+  22%, 30% { transform: translateX(-6px) rotate(-2deg); } 26% { transform: translateX(6px) rotate(2deg); }
+  56%, 64%, 72%, 80%, 88%, 96% { transform: translateX(-9px) rotate(-3deg) scale(1.02); }
+  60%, 68%, 76%, 84%, 92% { transform: translateX(9px) rotate(3deg) scale(1.02); }
+  100% { transform: scale(1.04); filter: brightness(1.6) drop-shadow(0 0 12px #fff); }
+}
+@keyframes figurine-white {
+  from { transform: scale(1.04); filter: brightness(1.6) drop-shadow(0 0 12px #fff); }
+  to { transform: scale(1.08); filter: brightness(0) invert(1) drop-shadow(0 0 30px #fff); }
+}
+.figurine-lol { font-size: calc(var(--fig-h) * 0.55); line-height: 1; animation: figurine-lol 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) both, figurine-wobble 0.9s ease-in-out 0.5s infinite; }
+@keyframes figurine-lol { from { transform: scale(0.2); opacity: 0; filter: brightness(0) invert(1); } to { transform: scale(1); opacity: 1; filter: none; } }
+@keyframes figurine-wobble { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
+.figurine-go { background: #e23048; color: #fff; border: 3px solid #281824; font-weight: 700; padding: 8px 16px; }
+.figurine-go:disabled { opacity: 0.6; }
+.figurine-busted { margin: 0; max-width: 320px; text-align: center; color: #281824; font-weight: 800; font-size: 19px; line-height: 1.3; }
 .lightbox.wall img { width: min(92vw, 1200px); height: min(92vh, 1200px); max-width: none; max-height: none; object-fit: contain; }
 .club-screen .feed small { font-size: 6px !important; }
 .club .tag, .club .say { letter-spacing: 0; }
@@ -346,6 +389,18 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .main-row { flex: 1; min-height: 0; display: flex; }
 .main-view { flex: 1; min-width: 0; min-height: 0; position: relative; display: flex; flex-direction: column; }
 .hangout { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+/* the room, and beside it the panel of a basement game that needs one (the DnD table); the dark while taking the stairs, over it all */
+.hangout { position: relative; }
+.club-row { flex: 1; min-height: 0; display: flex; }
+.club-row > .club-wrap { min-width: 0; }
+.fit-side { flex: 0 0 auto; min-height: 0; overflow: hidden; display: flex; background: var(--panel); border-left: 1px solid var(--line); }
+.club-crop { position: absolute; left: 0; top: 0; }
+.club-wrap.cropped { background: #0a0810; }
+.club-dark { position: absolute; inset: 0; z-index: 25; background: #000; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
+.club-dark.on { opacity: 1; pointer-events: auto; transition-duration: 0.2s; }
+.fit-tv { position: absolute; image-rendering: pixelated; pointer-events: none; filter: saturate(1.15) brightness(1.1); }
+.fit-pads { position: absolute; pointer-events: none; overflow: visible; shape-rendering: crispEdges; }
+.fit-tv-clip { position: absolute; max-width: none; image-rendering: auto; }
 .hangout.mini .club-wrap { background: #000; }
 .stage .bar { border-bottom: none; background: #000; gap: 8px; }
 .banner { position: fixed; left: 0; right: 0; bottom: 0; z-index: 9000; text-align: center; padding: 4px 16px; }
@@ -440,10 +495,12 @@ div.update i { position: absolute; left: 0; bottom: 0; height: 4px; background: 
 
 /* ── status, and what people just said ── */
 .member-row small.status, .status-btn { color: color-mix(in srgb, var(--accent) 60%, #fff); font-style: italic; }
+/* a long status wraps onto more lines instead of stopping at "..." (up to three; the tooltip has the rest) */
+.voice-member .member-row small.status { white-space: normal; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-height: 1.1; }
 .status-btn { display: block; width: 100%; text-align: left; justify-content: flex-start; background: none; border: none; box-shadow: none; padding: 0; font-size: 16px; overflow: hidden; text-overflow: ellipsis; }
 .status-btn:hover:not(:disabled) { background: none; color: #fff; text-decoration: underline; }
 .actor .tag { text-align: center; }
-.actor .tag i { display: block; font-style: normal; font-weight: 400; font-size: 5px; line-height: 1.1; margin-top: 1px; color: #dfe3ee; max-width: 76px; overflow: hidden; text-overflow: ellipsis; }
+.actor .tag i { display: block; font-style: normal; font-weight: 400; font-size: 4px; line-height: 1.1; margin-top: 1px; color: #dfe3ee; max-width: 70px; overflow: hidden; text-overflow: ellipsis; }
 .actor .say.chat { max-width: 124px; z-index: 5; animation: said 0.2s steps(3); }
 @keyframes said { from { opacity: 0; } }
 
@@ -611,9 +668,13 @@ input.bday { width: 84px !important; text-align: center; }
 .voicebar-buttons button.gated { color: var(--muted); border-style: dashed; }
 
 /* ── the small buttons on a person's row: message, wave ── */
-.member-tools { position: absolute; right: 4px; top: 3px; display: flex; gap: 4px; }
-.member-tools button { padding: 3px; background: var(--panel); border: 2px solid var(--line); box-shadow: none; opacity: 0; }
-.voice-member:hover .member-tools button, .member-tools button.on { opacity: 1; filter: none; }
+/* Always there, at the right of the row, beside the name (not over it): message, wave, and for the admin kick. */
+.voice-member { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+.voice-member > .person-vols { grid-column: 1 / -1; }
+.member-tools { display: flex; gap: 4px; padding-right: 4px; }
+.member-tools button { padding: 3px; background: var(--panel); border: 2px solid var(--line); box-shadow: none; }
+.member-tools button.kick:hover:not(:disabled), .member-tools button.kick.sure { border-color: var(--danger); color: var(--danger); }
+.member-tools button.sure { font-size: 13px !important; padding: 1px 5px; }
 .member-tools button.on { border-color: var(--accent); color: var(--accent); }
 .dm-new { margin-left: 6px; background: var(--accent); color: var(--accent-text); font-style: normal; font-size: 14px; padding: 0 5px; vertical-align: 2px; }
 .dm-title { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px; background: var(--accent); color: var(--accent-text); }
@@ -744,18 +805,32 @@ input.bday { width: 84px !important; text-align: center; }
 /* ── muted or deafened: a red icon straight after the name, in the list and over the character ── */
 .member-row b { display: flex; align-items: center; gap: 6px; }
 .member-row b .quiet { flex: none; display: inline-flex; gap: 3px; color: var(--danger); font-style: normal; }
-.actor .tag .quiet { display: inline-flex; gap: 1px; margin-left: 2px; color: var(--danger); font-style: normal; vertical-align: -1px; }
+.actor .tag:empty { display: none; }
+.actor .tag .quiet { display: inline-flex; gap: 1px; margin-left: 0; color: var(--danger); font-style: normal; vertical-align: -1px; }
 
 /* ── unread badges: a number in a pill, on Text Chat and beside a friend's name; a friend who is away is not dimmed while one shows ── */
-.dm-new { margin-left: 2px; padding: 0 6px; background: var(--accent); color: var(--accent-text); font-style: normal; font-size: 16px; line-height: 1.1; flex: none; }
+/* An unread private message: big, with an envelope, and glowing slowly so it is not missed. */
+.dm-new { margin-left: 6px; padding: 2px 8px; display: inline-flex; align-items: center; gap: 5px; background: var(--accent); color: var(--accent-text); font-style: normal; font-size: 18px !important; line-height: 1.1; flex: none;
+  box-shadow: 0 0 6px 1px var(--accent); animation: dm-glow 1.6s ease-in-out infinite; }
+@keyframes dm-glow { 50% { box-shadow: 0 0 14px 4px var(--accent); } }
+/* (the name's line clips what overflows it, for long names; while it holds the badge, the glow and the number must show) */
+.member-row > span:has(.dm-new), .member-row b:has(.dm-new) { overflow: visible; }
+.member-row b:has(.dm-new) { display: flex; align-items: center; white-space: nowrap; }
+/* and its Message button glows with it */
+.member-tools button.waiting { border-color: var(--accent); color: var(--accent); animation: dm-glow 1.6s ease-in-out infinite; box-shadow: 0 0 6px 1px var(--accent); }
+@media (prefers-reduced-motion: reduce) { .dm-new, .member-tools button.waiting { animation: none; } }
 .voice-member.out:has(.dm-new) { opacity: 1; filter: none; }
 
 /* ── a thin left panel: nothing is cut off or spills over. The panel measures itself, so this follows its own width ── */
 .sidebar { container: side / inline-size; }
 .music-head { position: relative; min-width: 0; } .music-head b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.music-head .vol-inline { flex: 0 1 120px; min-width: 0; } .music-head .vol-inline input { min-width: 0; width: 100%; }
+.music-head .vol-inline { flex: 0 1 140px; min-width: 0; display: flex; align-items: center; gap: 2px; } .music-head .vol-inline input { min-width: 0; width: 100%; }
+.vol-inline .mute, .vol-popup .mute { flex: none; }
+/* the Player muted: the speaker goes red with a line struck through it */
+button.icon.muted { position: relative; color: var(--danger); }
+button.icon.muted::after { content: ''; position: absolute; left: 50%; top: 50%; width: 16px; height: 2px; background: currentColor; transform: translate(-50%, -50%) rotate(-45deg); pointer-events: none; }
 .vol-pop { display: none; position: relative; flex: none; }
-.vol-popup { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; display: flex; align-items: center; width: 170px; max-width: 70cqw; padding: 10px; background: #000; border: 2px solid var(--accent); box-shadow: 4px 4px 0 #000; }
+.vol-popup { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; display: flex; align-items: center; gap: 4px; width: 190px; max-width: 70cqw; padding: 10px; background: #000; border: 2px solid var(--accent); box-shadow: 4px 4px 0 #000; }
 .vol-popup input { width: 100%; min-width: 0; }
 .where-list button { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 @container side (max-width: 300px) {
@@ -809,6 +884,9 @@ input.bday { width: 84px !important; text-align: center; }
 .admin ol.steps { padding-left: 22px; display: flex; flex-direction: column; gap: 8px; }
 .admin textarea.code { width: 100%; font-family: Consolas, monospace; font-size: 13px !important; background: #000; color: var(--text); border: 2px solid var(--line); padding: 6px; resize: vertical; }
 .photo-thumb { width: 132px; height: 99px; object-fit: cover; border: 3px solid #d9a441; }
+.wall-thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
+.wall-thumbs figure { margin: 0; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.wall-thumbs .photo-thumb { width: 96px; height: 72px; }
 .builder-parts .seg { display: flex; flex-wrap: wrap; margin-bottom: 10px; } .builder-parts .seg button { flex: none; }
 .builder-parts { min-width: 0; }
 
@@ -871,44 +949,81 @@ input, textarea { user-select: text; -webkit-user-select: text; }
 .actor[data-fx="shower"] .fx { display: block; left: 15px; top: 4px; width: 18px; height: 40px; background: repeating-linear-gradient(90deg, rgba(190, 228, 255, 0.95) 0 1px, transparent 1px 3px);
   -webkit-mask: repeating-linear-gradient(180deg, #000 0 3px, transparent 3px 7px); mask: repeating-linear-gradient(180deg, #000 0 3px, transparent 3px 7px); animation: shower-fall 0.35s linear infinite; }
 @keyframes shower-fall { to { -webkit-mask-position: 0 7px; mask-position: 0 7px; } }
-/* Cleaning: a broom held in the hands and worked to and fro. The stick is one dot wide and turns about the hand that
-   holds it (--bx, --by: where that hand is in each view, and it moves with the arm), eight dots of it above the hand.
-   data-stroke says whether the broom is pushed out or drawn back (Clubhouse.tsx picks the pose to match). Seen from
-   behind, the broom is in front of them, so it is drawn under the body and only its head shows, to one side and the other. */
-.actor[data-fx="sweep"] { --bx: var(--cup-x, 29px); --by: var(--cup-y, 30px); --turn: 33deg; }
-.actor[data-fx="sweep"][data-stroke="out"] { --turn: 6deg; }
-.actor[data-fx="sweep"][data-view="left"] { --bx: 27px; --by: 30px; --turn: 38deg; }
-.actor[data-fx="sweep"][data-view="left"][data-stroke="out"] { --bx: 13px; --turn: 30deg; }
-.actor[data-fx="sweep"][data-view="right"] { --bx: 20px; --by: 30px; --turn: -38deg; }
-.actor[data-fx="sweep"][data-view="right"][data-stroke="out"] { --bx: 34px; --turn: -30deg; }
-.actor[data-fx="sweep"][data-view="back"] { --bx: 24px; --by: 31px; --turn: 58deg; }
-.actor[data-fx="sweep"][data-view="back"][data-stroke="out"] { --turn: -58deg; }
-.actor[data-fx="sweep"] .fx { display: block; left: var(--bx); top: calc(var(--by) - 8px); width: 1px; height: 27px; background: #c59a62; transform-origin: 0.5px 8px; transform: rotate(var(--turn)); }
-.actor[data-fx="sweep"][data-view="back"] .fx { height: 19px; z-index: -1; }
-.actor[data-fx="sweep"][data-view] .drink { display: none; }          /* (both hands are on the broom) */
-.actor[data-fx="sweep"] .fx::after { content: ''; position: absolute; left: -3px; bottom: -4px; width: 7px; height: 4px; background: repeating-linear-gradient(90deg, #e2c36a 0 1px, #b9903c 1px 2px); border-top: 1px solid #b9443c; }
+/* Cleaning: the broom is drawn into their frames (the sweep row), standing on the floor at their feet. On each push
+   (data-stroke "... out") a puff of dust is kicked off the straw, ahead of it, and settles. --dx: where the straw is in
+   that view; --dir: which way is ahead. */
+.actor[data-fx="sweep"] { --dx: 12px; --dir: -1; }
+.actor[data-fx="sweep"][data-stroke~="left"] { --dx: 9px; }
+.actor[data-fx="sweep"][data-stroke~="right"] { --dx: 38px; --dir: 1; }
+.actor[data-fx="sweep"] .fx { display: block; left: calc(var(--dx) + var(--dir) * 3px); top: 42px; width: 1px; height: 1px; opacity: 0;
+  background: rgba(214, 204, 186, 0.9); box-shadow: calc(var(--dir) * 2px) -1px rgba(214, 204, 186, 0.7), calc(var(--dir) * -1px) -2px rgba(200, 190, 172, 0.6), calc(var(--dir) * 3px) 0 rgba(200, 190, 172, 0.5); }
+.actor[data-fx="sweep"][data-stroke~="out"] .fx { animation: sweep-dust 0.6s ease-out both; }
+@keyframes sweep-dust { 0% { opacity: 0; transform: none; } 20% { opacity: 0.9; } 100% { opacity: 0; transform: translate(calc(var(--dir) * 4px), -3px); } }
+.actor[data-fx="sweep"][data-view] .drink, .actor[data-fx="call"][data-view] .drink { display: none; }          /* (their hands are full) */
 /* working out: sweat flying */
 .actor[data-fx="sweat"] .fx { display: block; left: 11px; top: 12px; width: 1px; height: 2px; background: #8fd3ff; box-shadow: 25px 1px #8fd3ff, -2px 6px #bfe6ff, 28px 7px #bfe6ff; animation: tears 0.6s linear infinite; }
 
 /* the projector screen comes down in front of the whiteboard */
 .club-roll, .club-screen { z-index: 2; }
 
+/* (which picture on drinks.png: --di, set by the room, counting along CLUB.drinks; the sheet is 24 of them across) */
 /* A drink from the fridge. Standing or sitting facing us, they hold it: their sprite has that arm bent, with the fist
    in front of the chest (data-hold "cup") or lifted under the chin ("sip"), and the drink stands in the fist (--cup-x/y and
    --sip-x/y: where the fist is on this person; --sit-dy: how much lower when sitting), tipped towards the mouth for a
    sip. Walking, or side-on, it is in the hand at their side (--hx, --hy). Its foot is behind their fingers (--skin). */
-.actor .drink { position: absolute; display: none; left: calc(var(--hx, 33px) - 5px); top: calc(var(--hy, 33px) - 14px); width: 10px; height: 14px; background: url(/clubhouse/drinks.png) no-repeat 0 0 / 50px 14px; image-rendering: pixelated; pointer-events: none; transform-origin: 5px 12px; }
+.actor .drink { position: absolute; display: none; left: calc(var(--hx, 33px) - 5px); top: calc(var(--hy, 33px) - 14px); width: 10px; height: 14px; background: url(/clubhouse/drinks.png) no-repeat calc(var(--di, 0) * -10px) 0 / 240px 14px; image-rendering: pixelated; pointer-events: none; transform-origin: 5px 12px; }
 .actor[data-drink] .drink { display: block; }
-.actor[data-drink="coffee"] .drink { background-position: -10px 0; }
-.actor[data-drink="tiki"] .drink { background-position: -20px 0; }
-.actor[data-drink="water"] .drink { background-position: -30px 0; }
-.actor[data-drink="coke"] .drink { background-position: -40px 0; }
 .actor .drink::before { content: ''; position: absolute; left: 3px; top: 11px; width: 5px; height: 3px; background: var(--skin, #f0c2a2); border-bottom: 1px solid color-mix(in srgb, var(--skin, #f0c2a2) 60%, #1a1228); box-sizing: border-box; }
 .actor[data-view="back"] .drink, .actor[data-pose="sleep"] .drink, .actor[data-pose="bed"] .drink { display: none; }
 .actor[data-view="left"] .drink { left: 9px; }
 .actor[data-view="right"] .drink { left: 29px; }
 .actor[data-hold~="cup"] .drink { left: calc(var(--cup-x, 28px) - 5px); top: calc(var(--cup-y, 30px) - 12px); }
 .actor[data-hold~="sip"] .drink { left: calc(var(--sip-x, 29px) - 5px); top: calc(var(--sip-y, 22px) - 12px); rotate: -32deg; }
+/* The toys from the media console are played with, held at the chest: the yo-yo drops on its string and climbs back,
+   the slinky stretches and springs back, the spinner spins, the cube is twisted a turn at a time, the 8-ball is shaken
+   every few seconds. (The toy is drawn on its own layer over the hand's box, so only the toy moves: the hand holding it stays still.) */
+.actor:is([data-drink="yoyo"], [data-drink="slinky"], [data-drink="spinner"], [data-drink="cube"], [data-drink="eightball"]) .drink { background: none; }
+.actor:is([data-drink="yoyo"], [data-drink="slinky"], [data-drink="spinner"], [data-drink="cube"], [data-drink="eightball"]) .drink::after {
+  content: ''; position: absolute; inset: 0; background: url(/clubhouse/drinks.png) no-repeat calc(var(--di, 0) * -10px) 0 / 240px 14px; image-rendering: pixelated; }
+/* (the hand stays still over it: only the toy moves) */
+.actor:is([data-drink="yoyo"], [data-drink="slinky"], [data-drink="spinner"], [data-drink="cube"], [data-drink="eightball"]) .drink::before { z-index: 1; }
+/* the yo-yo hangs from the fist on a white string: it drops, stays a beat, climbs back to the hand, waits a beat. The
+   piece is drawn here, not from the sheet: the string down from inside the fist, the yo-yo at its end (a red disc with a
+   dark rim and a white hub), and the piece grows taller and shorter as the string pays out. */
+.actor[data-drink="yoyo"] .drink::after { inset: auto; left: 3px; top: 12px; width: 5px; height: 5px;
+  background: radial-gradient(circle at 2.5px 2.5px, #fbf9f2 0 0.7px, #e5484d 0.8px 1.7px, #7a1f2a 1.8px 2.5px, transparent 2.6px) 0 100% / 5px 5px no-repeat,
+    linear-gradient(#f4f1e9, #f4f1e9) 2px 0 / 1px calc(100% - 4px) no-repeat;
+  animation: toy-yoyo 2.6s ease-in-out infinite; }
+.actor[data-drink="slinky"] .drink::after { transform-origin: 5px 6px; animation: toy-slinky 1s ease-in-out infinite; }
+.actor[data-drink="spinner"] .drink::after { transform-origin: 5.5px 12px; animation: toy-spin 0.45s linear infinite; }
+.actor[data-drink="cube"] .drink::after { transform-origin: 4px 7px; animation: toy-cube 2.4s steps(1) infinite; }
+.actor[data-drink="eightball"] .drink::after { animation: toy-shake 3.2s linear infinite; }
+@keyframes toy-yoyo { 0%, 100% { height: 5px; } 28% { height: 15px; } 46% { height: 15px; } 74% { height: 5px; } }
+@keyframes toy-slinky { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.7); } }
+@keyframes toy-spin { to { transform: rotate(360deg); } }
+@keyframes toy-cube { 0% { transform: rotate(0deg); } 25% { transform: rotate(-12deg); } 50% { transform: rotate(0deg); } 75% { transform: rotate(12deg); } }
+@keyframes toy-shake { 0%, 70%, 100% { transform: translateX(0); } 74% { transform: translateX(-1px); } 78% { transform: translateX(1px); } 82% { transform: translateX(-1px); } 86% { transform: translateX(1px); } 90% { transform: translateX(0); } }
+/* A drink put down on a desk (Clubhouse.tsx sets data-drink on it while somebody sits there with one). The toys stand
+   still here: nobody is playing with them. */
+.club > .desk-drink { position: absolute; display: none; width: 10px; height: 14px; pointer-events: none; image-rendering: pixelated;
+  background: url(/clubhouse/drinks.png) no-repeat calc(var(--di, 0) * -10px) 0 / 240px 14px; }
+.club > .desk-drink[data-drink] { display: block; }
+/* Coffee's steam: soft wisps that rise off the mug, drift side to side and thin out as they go, instead of steam drawn
+   into the picture. Two wisps per tile of a pattern that repeats upward, so the rise loops without a jump; the sway is
+   a second, slower animation on its own property; the mask fades them in at the rim and out above. */
+.actor[data-drink="coffee"] .drink::after, .desk-drink[data-drink="coffee"]::after {
+  content: ''; position: absolute; left: 2px; top: -4px; width: 6px; height: 12px; pointer-events: none;
+  background:
+    radial-gradient(ellipse 0.8px 2.2px at 2px 3px, rgba(236, 240, 248, 0.72), transparent),
+    radial-gradient(ellipse 0.8px 2px at 4px 9px, rgba(236, 240, 248, 0.62), transparent);
+  background-size: 6px 12px; background-repeat: repeat-y;
+  -webkit-mask-image: linear-gradient(to top, transparent 0, #000 25%, #000 45%, transparent 100%);
+  mask-image: linear-gradient(to top, transparent 0, #000 25%, #000 45%, transparent 100%);
+  animation: coffee-rise 3.2s linear infinite, coffee-sway 2.1s ease-in-out infinite alternate;
+}
+@keyframes coffee-rise { from { background-position: 0 12px; } to { background-position: 0 0; } }
+@keyframes coffee-sway { from { translate: -0.6px 0; } to { translate: 0.6px 0; } }
+.actor[data-hold~="sip"][data-drink="coffee"] .drink::after { rotate: 32deg; transform-origin: 3px 12px; }      /* the steam rises straight up while the mug tips */
 .actor[data-hold~="down"] .drink { translate: 0 1px; }
 .actor[data-hold~="sit"] .drink { margin-top: var(--sit-dy, 1px); }
 /* On a bean bag: their phone is out, in the other hand from any drink (the hand on our left: it mirrors --hx). Its
@@ -917,7 +1032,12 @@ input, textarea { user-select: text; -webkit-user-select: text; }
    the screen, only the base shows, at the top of the heel: once every ten seconds it shifts a dot, as they scroll.
    The phone is small (four dots by seven), with half a dot of outline; the hand has none. The screen's light
    is on their face (--fy). */
-.actor[data-fx="phone"] .fx { display: block; --sk: var(--skin, #f0c2a2); --sk2: color-mix(in srgb, var(--skin, #f0c2a2) 55%, #1a1228); left: calc(47px - var(--hx, 33px)); top: calc(var(--hy, 33px) + var(--sit-dy, 1px) - 8px); width: 4px; height: 7px; background: #0c0d12 linear-gradient(#6b7080, #6b7080) 0.75px 0.75px / 1px 1px no-repeat; box-shadow: 0 0 0 0.5px rgba(26, 18, 40, 0.9); }
+.actor[data-fx="phone"] .fx { display: block; --sk: var(--skin, #f0c2a2); --sk2: color-mix(in srgb, var(--skin, #f0c2a2) 55%, #1a1228); left: calc(47px - var(--hx, 33px)); top: calc(var(--hy, 33px) + var(--sit-dy, 1px) - 8px); width: 4px; height: 7px; background: #0c0d12 linear-gradient(#6b7080, #6b7080) 0.75px 0.75px / 1px 1px no-repeat; box-shadow: 0 0 0 0.5px rgba(26, 18, 40, 0.9), 0 -1px 2.5px 1px rgba(196, 222, 255, 0.55), 0 -3px 5px 2px rgba(170, 205, 255, 0.28); animation: phone-halo 4.5s ease-in-out infinite; }
+/* (the screen's light spilling out from behind the phone, round its edges and mostly up towards the face, flickering
+   with the light on the face: 2026-11-17) */
+@keyframes phone-halo { 0%, 100% { box-shadow: 0 0 0 0.5px rgba(26, 18, 40, 0.9), 0 -1px 2.5px 1px rgba(196, 222, 255, 0.5), 0 -3px 5px 2px rgba(170, 205, 255, 0.24); }
+  40% { box-shadow: 0 0 0 0.5px rgba(26, 18, 40, 0.9), 0 -1px 3px 1.2px rgba(206, 230, 255, 0.68), 0 -3px 6px 2.4px rgba(170, 205, 255, 0.34); }
+  55% { box-shadow: 0 0 0 0.5px rgba(26, 18, 40, 0.9), 0 -1px 2px 0.8px rgba(196, 222, 255, 0.4), 0 -3px 4.5px 1.8px rgba(170, 205, 255, 0.18); } }
 /* (The hand is ONE shape, with no outline: the heel of it down the outside edge of the phone and the fingers across
    the back are a single piece, lit from above, rounded at the wrist side and stepped in at the fingertips, with the
    creases between the fingers only hinted at, and only over the fingers. The base of the thumb is a small bump on
@@ -988,6 +1108,12 @@ input, textarea { user-select: text; -webkit-user-select: text; }
     repeating-linear-gradient(180deg, transparent 0 1px, #1e2230 1px 3px) 0 1px / 100% 100% no-repeat,
     repeating-linear-gradient(180deg, #7fd0c9 0 3px, #dfe3ea 3px 6px) 1px 1px / 70% 100% no-repeat,
     #1e2230; }
+/* a game the room has a picture of (2026-11-16; games.ts): the picture is the screen's own background, set where the
+   screen is made, at two pixels a dot; there is no little hero. On the projector and the bar's TVs a share of that game
+   is the picture too, sharp dots like the room, in place of the still of the screen */
+.rig.known .rig-screen:first-child { image-rendering: pixelated; }
+.rig.gaming.known .rig-screen:first-child::after { content: none; }
+.club-screen .feed.game img, .bar-tv.game img { image-rendering: pixelated; }
 @keyframes game-run {
   0% { left: 4%; bottom: 2px; } 12% { left: 18%; bottom: 2px; } 17% { left: 26%; bottom: 62%; } 22% { left: 34%; bottom: 44%; }
   36% { left: 52%; bottom: 44%; } 42% { left: 62%; bottom: 88%; } 48% { left: 72%; bottom: 68%; } 62% { left: 90%; bottom: 68%; }
@@ -1043,7 +1169,8 @@ input, textarea { user-select: text; -webkit-user-select: text; }
 /* ── the football (2026-11-14): one small picture that the room moves about; four turns of it side by side, stepped as it rolls ── */
 .club-ball { position: absolute; left: 0; top: 0; width: 11px; height: 11px; will-change: transform; pointer-events: none; background: url(/clubhouse/ball.png) 0 0 / 44px 11px no-repeat; image-rendering: pixelated; }
 .club-ball::before { content: ''; position: absolute; left: 1px; right: 0; bottom: -2px; height: 3px; border-radius: 50%; background: rgba(20, 14, 40, 0.3); z-index: -1; }
-.hangout:not(.mini) .club-ball { pointer-events: auto; cursor: pointer; }
+.hangout:not(.mini) .club-ball { pointer-events: auto; cursor: grab; }
+.hangout:not(.mini) .club-ball.pulled { cursor: grabbing; }
 
 /* ── the arcade machine's games (2026-11-14): the machine drawn large, with its screen (one small canvas, shown at --k
    screen dots to each of its own), and beside it the list of games and the best scores ── */
@@ -1092,4 +1219,277 @@ input, textarea { user-select: text; -webkit-user-select: text; }
   38% { translate: var(--dx) var(--up); opacity: 1; animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.6); }
   100% { translate: calc(var(--dx) * 1.5) var(--down); rotate: var(--rot); opacity: 0; } }
 .club-callout { position: absolute; z-index: 3601; pointer-events: none; transform: translateX(-50%); white-space: nowrap; font: 700 7px/1 var(--font); letter-spacing: 0; color: #ffe08a; text-shadow: 0 1px 0 #1a1228, 1px 0 0 #1a1228, -1px 0 0 #1a1228, 0 -1px 0 #1a1228; animation: callout 1.8s ease-out both; }
+.club-callout.big { font-size: 13px; color: #fff3b0; letter-spacing: 0.5px; animation: callout-big 2.5s ease-out both; }
+@keyframes callout-big { 0% { scale: 0.3; opacity: 0; } 12% { scale: 1.25; opacity: 1; } 22% { scale: 1; } 75% { opacity: 1; } 100% { translate: 0 -12px; opacity: 0; } }
 @keyframes callout { 0% { translate: 0 4px; opacity: 0; } 15% { translate: 0 0; opacity: 1; } 70% { opacity: 1; } 100% { translate: 0 -10px; opacity: 0; } }
+
+/* ── prompting: a conversation with an AI assistant on every monitor, in dark mode: the question in a bubble on the
+   right, the answer in lines, the box to type in ── */
+.rig.prompting .rig-screen { background:
+    linear-gradient(#7aa2e0, #7aa2e0) calc(100% - 1px) calc(100% - 1px) / 1px 1px no-repeat,
+    linear-gradient(#30302e, #30302e) 1px calc(100% - 1px) / calc(100% - 2px) 2px no-repeat,
+    linear-gradient(#44433f, #44433f) 0.5px calc(100% - 0.5px) / calc(100% - 1px) 3px no-repeat,
+    linear-gradient(#3a3936, #3a3936) 100% 2px / 55% 2px no-repeat,
+    linear-gradient(#3a3936, #3a3936) 100% 9px / 45% 1.5px no-repeat,
+    repeating-linear-gradient(180deg, #d6d3cb 0 0.5px, transparent 0.5px 1px) 0.5px 5px / 85% 3px no-repeat,
+    repeating-linear-gradient(180deg, #d6d3cb 0 0.5px, transparent 0.5px 1px) 0.5px 11.5px / 70% 2px no-repeat,
+    #262624; }
+.rig.prompting .rig-screen::after { content: none; }
+
+/* ── on a video call (2026-11-17): a call window on the main monitor, and their own little picture in the corner. The
+   frame loop says whose turn it is (data-talk on the rig): 'man', then 'woman', each alone on the screen, the mouth
+   (::before) opening and shutting as they talk; then 'you', the person at the desk, whose head bobs while the two of
+   them listen side by side, each in half the window. A face is 9 dots across and 7 down, drawn with box-shadow; talking,
+   it is twice the size on a monitor big enough for it (--vs, set on each screen). Side by side they are always actual
+   size, so both fit (on the narrowest monitor they just touch the edges). ── */
+.rig.vcall .rig-screen:first-child { background:
+    linear-gradient(var(--c), var(--c)) calc(100% - 1px) calc(100% - 1px) / 4px 3px no-repeat,
+    linear-gradient(#56667c, #56667c) 0 0 / 100% 45% no-repeat,
+    #3b4757; }
+.rig.vcall .rig-screen:first-child::after { content: ''; position: absolute; left: calc(50% - 4.5px * var(--vs, 1)); top: calc(100% - 7px * var(--vs, 1)); width: 1px; height: 1px;
+  transform: scale(var(--vs, 1)); transform-origin: 0 0; box-shadow: 3px 0px #3a2a1e, 4px 0px #3a2a1e, 5px 0px #3a2a1e, 2px 1px #3a2a1e, 3px 1px #3a2a1e, 4px 1px #3a2a1e, 5px 1px #3a2a1e, 6px 1px #3a2a1e, 2px 2px #3a2a1e, 3px 2px #e0ac84, 4px 2px #e0ac84, 5px 2px #e0ac84, 6px 2px #3a2a1e, 2px 3px #e0ac84, 3px 3px #20181a, 4px 3px #e0ac84, 5px 3px #20181a, 6px 3px #e0ac84, 2px 4px #e0ac84, 3px 4px #e0ac84, 5px 4px #e0ac84, 6px 4px #e0ac84, 1px 5px #3f7fbf, 2px 5px #3f7fbf, 3px 5px #3f7fbf, 4px 5px #c99572, 5px 5px #3f7fbf, 6px 5px #3f7fbf, 7px 5px #3f7fbf, 0px 6px #3f7fbf, 1px 6px #3f7fbf, 2px 6px #3f7fbf, 3px 6px #3f7fbf, 4px 6px #3f7fbf, 5px 6px #3f7fbf, 6px 6px #3f7fbf, 7px 6px #3f7fbf, 8px 6px #3f7fbf; }
+.rig.vcall .rig-screen:first-child::before { content: ''; position: absolute; z-index: 1; left: calc(50% - 0.5px * var(--vs, 1)); top: calc(100% - 3px * var(--vs, 1)); width: calc(1px * var(--vs, 1)); height: calc(1px * var(--vs, 1)); background: #c99572; }
+/* the woman: a Black woman, her natural hair out round her face, gold hoops, a burnt-orange top, red-brown lips */
+.rig.vcall[data-talk="woman"] .rig-screen:first-child::after { box-shadow: 2px 0px #17110e, 3px 0px #17110e, 4px 0px #17110e, 5px 0px #17110e, 6px 0px #17110e, 1px 1px #17110e, 2px 1px #17110e, 3px 1px #17110e, 4px 1px #17110e, 5px 1px #17110e, 6px 1px #17110e, 7px 1px #17110e, 1px 2px #17110e, 2px 2px #17110e, 3px 2px #6b4128, 4px 2px #6b4128, 5px 2px #6b4128, 6px 2px #17110e, 7px 2px #17110e, 1px 3px #17110e, 2px 3px #6b4128, 3px 3px #140c0a, 4px 3px #6b4128, 5px 3px #140c0a, 6px 3px #6b4128, 7px 3px #17110e, 1px 4px #17110e, 2px 4px #6b4128, 3px 4px #6b4128, 5px 4px #6b4128, 6px 4px #6b4128, 7px 4px #17110e, 1px 5px #d2593c, 2px 5px #e8b730, 3px 5px #d2593c, 4px 5px #6b4128, 5px 5px #d2593c, 6px 5px #e8b730, 7px 5px #d2593c, 0px 6px #d2593c, 1px 6px #d2593c, 2px 6px #d2593c, 3px 6px #d2593c, 4px 6px #d2593c, 5px 6px #d2593c, 6px 6px #d2593c, 7px 6px #d2593c, 8px 6px #d2593c; }
+.rig.vcall[data-talk="woman"] .rig-screen:first-child::before { background: #8a3530; }
+.rig.vcall:is([data-talk="man"], [data-talk="woman"]) .rig-screen:first-child::before { animation: vcall-talk 0.36s steps(1) infinite; }
+@keyframes vcall-talk { 50% { background: #3a1210; } }
+/* your turn: the two of them side by side, mouths shut, a dark line between their halves (the man is ::before now, the woman ::after) */
+.rig.vcall[data-talk="you"] .rig-screen:first-child { background:
+    linear-gradient(var(--c), var(--c)) calc(100% - 1px) calc(100% - 1px) / 4px 3px no-repeat,
+    linear-gradient(#1c222c, #1c222c) 50% 0 / 1px 100% no-repeat,
+    linear-gradient(#56667c, #56667c) 0 0 / 100% 45% no-repeat,
+    #3b4757; }
+.rig.vcall[data-talk="you"] .rig-screen:first-child::before { left: calc(25% - 4.5px); top: calc(100% - 7px); width: 1px; height: 1px; background: none; box-shadow: 3px 0px #3a2a1e, 4px 0px #3a2a1e, 5px 0px #3a2a1e, 2px 1px #3a2a1e, 3px 1px #3a2a1e, 4px 1px #3a2a1e, 5px 1px #3a2a1e, 6px 1px #3a2a1e, 2px 2px #3a2a1e, 3px 2px #e0ac84, 4px 2px #e0ac84, 5px 2px #e0ac84, 6px 2px #3a2a1e, 2px 3px #e0ac84, 3px 3px #20181a, 4px 3px #e0ac84, 5px 3px #20181a, 6px 3px #e0ac84, 2px 4px #e0ac84, 3px 4px #e0ac84, 4px 4px #c99572, 5px 4px #e0ac84, 6px 4px #e0ac84, 1px 5px #3f7fbf, 2px 5px #3f7fbf, 3px 5px #3f7fbf, 4px 5px #c99572, 5px 5px #3f7fbf, 6px 5px #3f7fbf, 7px 5px #3f7fbf, 0px 6px #3f7fbf, 1px 6px #3f7fbf, 2px 6px #3f7fbf, 3px 6px #3f7fbf, 4px 6px #3f7fbf, 5px 6px #3f7fbf, 6px 6px #3f7fbf, 7px 6px #3f7fbf, 8px 6px #3f7fbf; }
+.rig.vcall[data-talk="you"] .rig-screen:first-child::after { left: calc(75% - 4.5px); top: calc(100% - 7px); transform: none; box-shadow: 2px 0px #17110e, 3px 0px #17110e, 4px 0px #17110e, 5px 0px #17110e, 6px 0px #17110e, 1px 1px #17110e, 2px 1px #17110e, 3px 1px #17110e, 4px 1px #17110e, 5px 1px #17110e, 6px 1px #17110e, 7px 1px #17110e, 1px 2px #17110e, 2px 2px #17110e, 3px 2px #6b4128, 4px 2px #6b4128, 5px 2px #6b4128, 6px 2px #17110e, 7px 2px #17110e, 1px 3px #17110e, 2px 3px #6b4128, 3px 3px #140c0a, 4px 3px #6b4128, 5px 3px #140c0a, 6px 3px #6b4128, 7px 3px #17110e, 1px 4px #17110e, 2px 4px #6b4128, 3px 4px #6b4128, 4px 4px #8a3530, 5px 4px #6b4128, 6px 4px #6b4128, 7px 4px #17110e, 1px 5px #d2593c, 2px 5px #e8b730, 3px 5px #d2593c, 4px 5px #6b4128, 5px 5px #d2593c, 6px 5px #e8b730, 7px 5px #d2593c, 0px 6px #d2593c, 1px 6px #d2593c, 2px 6px #d2593c, 3px 6px #d2593c, 4px 6px #d2593c, 5px 6px #d2593c, 6px 6px #d2593c, 7px 6px #d2593c, 8px 6px #d2593c; }
+.rig.vcall .rig-screen:not(:first-child) { background: #10131c; }
+
+/* ── the basement's game room (client/src/basement/gameroom.tsx) ── */
+.gr-mini { position: absolute; pointer-events: none; }
+.gr-dart { position: absolute; width: 3px; height: 3px; background: #f2c230; box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.55); pointer-events: none; }
+.gr-hot { position: absolute; cursor: pointer; pointer-events: auto; }
+.hangout.mini .gr-hot { cursor: default; }
+.gr-overlay { position: fixed; inset: 0; z-index: 900; display: grid; place-items: center; background: rgba(0, 0, 0, 0.62); }
+.gr-box { width: min(1100px, 96vw); max-height: 96vh; overflow: auto; background: var(--panel); border: 1px solid var(--accent); box-shadow: 4px 4px 0 #000; padding: 10px 14px 14px; }
+/* a game open in the room's place (the soundboard under it, and chat beside it, still to hand) */
+.main-view > .gr-overlay { position: absolute; z-index: 50; background: var(--bg); overflow: auto; display: block; }
+/* ...filling the whole panel: the box takes all of it, and the game's picture (.gr-fill) whatever height the header,
+   the line under it and any scoresheet leave, scaled to fit it either way (--ar: its width over its height, set on
+   the picture itself). Small panels still scroll, the picture never below 220px high. */
+.main-view > .gr-overlay > .gr-box { width: 100%; height: 100%; max-height: none; box-shadow: none; border: 0; display: flex; flex-direction: column; }
+.main-view .gr-game { flex: 1 1 auto; min-height: 0; }
+.main-view .gr-fill { flex: 1 1 0; min-height: 220px; container-type: size; display: flex; justify-content: center; align-items: center; }
+.main-view .gr-fill > * { width: min(100cqw, calc(100cqh * var(--ar, 1.6))); height: auto; flex: none; }
+.main-view .gr-fill > .bw-stage > .gr-table { width: 100%; }
+.main-view .gr-darts-row { flex: 1 1 0; min-height: 260px; container-type: size; align-items: center; }
+.main-view .gr-darts-row > .gr-board { width: min(100cqh, calc(100cqw - 222px)); }
+@media (max-width: 760px) { .main-view .gr-darts-row { container-type: normal; flex: none; } .main-view .gr-darts-row > .gr-board { width: min(68vh, 100%); } }
+.gr-tabs { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
+.gr-tabs span { flex: 1; }
+.gr-tabs button.on { background: var(--accent); color: var(--accent-text); }
+.gr-game { display: flex; flex-direction: column; gap: 8px; }
+.gr-players { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-height: 32px; }
+.gr-player { padding: 3px 10px; border: 1px solid var(--line); font-size: 18px; }
+.gr-player.turn { border-color: var(--accent); color: var(--accent); }
+.gr-player span { margin-left: 6px; font-size: 22px; }
+.gr-player i { color: var(--muted); }
+.gr-gap { flex: 1; }
+.gr-table { width: 100%; height: auto; display: block; background: #000; cursor: default; }
+.gr-table.mine { cursor: crosshair; }
+.gr-board { width: min(68vh, 100%); flex: 0 1 auto; min-width: 0; height: auto; display: block; background: #1a120c; touch-action: none; }
+.gr-table { touch-action: none; }
+.gr-tray { display: flex; gap: 2px; margin-top: 3px; min-height: 18px; align-items: center; }
+.gr-tray small { color: var(--muted); font-size: 14px; }
+.gr-chip { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; box-shadow: inset -2px -2px 3px rgba(0, 0, 0, 0.35);
+  background: radial-gradient(circle at 34% 30%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 45%), var(--c); }
+.gr-chip.stripe { background: radial-gradient(circle at 34% 30%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 45%), linear-gradient(#f4f1e6 0 26%, var(--c) 26% 74%, #f4f1e6 74%); }
+.gr-chip b { display: grid; place-items: center; width: 10px; height: 10px; border-radius: 50%; background: #fff; color: #111; font: 700 7px/1 sans-serif; }
+.gr-chip.sunk { filter: grayscale(1) brightness(0.55); opacity: 0.4; }
+.gr-flight { display: inline-block; width: 8px; height: 8px; margin-right: 6px; transform: rotate(45deg); box-shadow: 1px 1px 0 #000; }
+.gr-darts-row { display: flex; gap: 12px; align-items: flex-start; justify-content: center; }
+.gr-chalk { flex: 0 0 210px; align-self: stretch; padding: 10px 12px; color: #ecebe4; font-size: 17px; border: 6px solid #5a2e16; box-shadow: inset 0 0 0 1px #2a1408, 2px 2px 0 #000;
+  background: radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.07), transparent 60%), repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.025) 0 2px, transparent 2px 7px), #26302b; }
+.gr-chalk h4 { margin: 0 0 6px; font-weight: 400; font-size: 18px; color: #f2e6a8; border-bottom: 1px dashed rgba(236, 235, 228, 0.35); }
+.gr-chalk p { margin: 3px 0; display: flex; justify-content: space-between; gap: 8px; }
+.gr-chalk p.up span { color: #f2e6a8; }
+.gr-chalk p b { font-weight: 400; font-size: 22px; }
+.gr-chalk p.turn, .gr-chalk p.out, .gr-chalk p.was { display: block; font-size: 15px; color: #c8c8bc; }
+.gr-chalk p.out { color: #9fe0a8; }
+.gr-chalk table { border-collapse: collapse; width: 100%; font-size: 15px; }
+.gr-chalk td, .gr-chalk th { text-align: center; padding: 1px 3px; font-weight: 400; border-bottom: 1px solid rgba(236, 235, 228, 0.12); }
+.gr-chalk tr.dead td { text-decoration: line-through; color: #8a8f88; }
+.gr-chalk tr.pts td { color: #f2e6a8; }
+@media (max-width: 760px) { .gr-darts-row { flex-direction: column; align-items: center; } .gr-chalk { flex: 0 0 auto; width: 100%; } }
+.gr-board.mine { cursor: none; }
+.gr-say { margin: 0; font-size: 18px; color: var(--muted); min-height: 1.4em; }
+.gr-board text { letter-spacing: 0; word-spacing: 0; }
+.mg-title { font-size: 20px; font-weight: 400; color: var(--accent); }
+.mg-card { border-collapse: collapse; font-size: 17px; align-self: flex-start; }
+.mg-card th, .mg-card td { border: 1px solid var(--line); padding: 2px 9px; text-align: center; min-width: 30px; }
+.mg-card td:first-child { text-align: left; white-space: nowrap; }
+.mg-card th.now { color: var(--accent); border-color: var(--accent); }
+.mg-card tr.par td { color: var(--muted); }
+.mg-card tr.turn td:first-child { color: var(--accent); }
+.mg-card td.under { color: #5ad06a; } .mg-card td.over { color: #ff8a6a; }
+.mg-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50% !important; margin-right: 6px; border: 1px solid #000; }
+/* ── bowling (client/src/basement/bowling.tsx) ── */
+.bw-board { position: absolute; z-index: 30; display: flex; flex-direction: column; gap: 1px; padding: 2px 3px; font: 7px/1 VT323, monospace; color: #4fe0ff; pointer-events: none; overflow: hidden; }
+.bw-board div { display: flex; justify-content: space-between; }
+.bw-board div.up { color: #ff4fd8; }
+.bw-board i { color: #c8ff4f; font-style: normal; margin-top: auto; }
+.bw-board b { font-weight: 400; }
+.bw-stage { position: relative; }
+.bw-pincam { position: absolute; top: 8px; right: 8px; width: 35%; height: auto; pointer-events: none; }
+.bw-sheet { border-collapse: collapse; font-size: 16px; align-self: flex-start; }
+.bw-sheet td { border: 1px solid var(--line); padding: 0; text-align: center; }
+.bw-sheet td.who { padding: 2px 8px; text-align: left; white-space: nowrap; }
+.bw-sheet tr.turn td.who { color: var(--accent); }
+.bw-sheet td.fr { width: 44px; }
+.bw-sheet td.fr.ten { width: 60px; }
+.bw-sheet td.fr.now { border-color: var(--accent); }
+.bw-sheet .marks { display: flex; justify-content: flex-end; border-bottom: 1px solid var(--line); }
+.bw-sheet .marks span { width: 15px; border-left: 1px solid var(--line); min-height: 18px; }
+.bw-sheet .tot { min-height: 20px; }
+.bw-sheet td.sum { padding: 2px 10px; font-size: 20px; }
+
+/* ── the DnD room's war table (client/src/basement/dnd.tsx) ── */
+.dnd-table { position: absolute; overflow: hidden; cursor: pointer; pointer-events: auto; }
+.dnd-table img { width: 100%; height: 100%; display: block; image-rendering: pixelated; opacity: 0.92; }
+.dnd-table i { position: absolute; border-radius: 50% !important; box-shadow: 0 0 0 0.5px #000; }
+.dnd-panel { width: 100%; min-width: 0; display: flex; flex-direction: column; min-height: 0; font-size: 16px; }
+.dnd-panel.min { width: 34px; min-width: 34px; align-items: center; padding-top: 6px; gap: 10px; }
+.dnd-panel.min span { writing-mode: vertical-rl; color: var(--muted); }
+.dnd-panel button, .dnd-btn { padding: 1px 8px; font-size: 15px; }
+.dnd-panel button.on { background: var(--accent); color: var(--accent-text); }
+.dnd-panel .danger { color: var(--danger); }
+.dnd-panel input, .dnd-panel select, .dnd-panel textarea { font: inherit; font-size: 15px; background: var(--raised); color: var(--text); border: 1px solid var(--line); padding: 1px 4px; }
+.dnd-panel .muted { color: var(--muted); }
+.dnd-panel .gap { flex: 1; }
+.dnd-btn { display: inline-flex; align-items: center; border: 1px solid var(--line); cursor: pointer; }
+.dnd-head { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.dnd-head b { color: var(--accent); font-size: 19px; font-weight: 400; }
+.dnd-dm { flex: 1; color: var(--muted); font-size: 15px; }
+.dnd-map-wrap { flex: 1 1 52%; min-height: 200px; display: flex; flex-direction: column; border-bottom: 1px solid var(--line); }
+.dnd-tools { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 4px 6px; }
+.dnd-tools select { max-width: 150px; }
+.dnd-cols input { width: 48px; }
+.dnd-map { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #0c0a10; touch-action: none; }
+.dnd-map.tool-move { cursor: grab; } .dnd-map.tool-ruler { cursor: crosshair; } .dnd-map.tool-ping { cursor: cell; }
+.dnd-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.dnd-world > img { display: block; width: 100%; height: 100%; image-rendering: pixelated; user-select: none; }
+.dnd-blank { width: 100%; height: 100%; background: #e8dcc0; }
+.dnd-grid { position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(to right, rgba(0,0,0,0.22) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.22) 1px, transparent 1px); }
+.dnd-token { position: absolute; box-sizing: border-box; border: 3px solid; border-radius: 50% !important; display: grid; place-items: center; color: #fff; text-shadow: 0 1px 2px #000; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.6); overflow: hidden; }
+.dnd-token span { font-family: sans-serif; font-weight: 700; line-height: 1; pointer-events: none; }
+.dnd-token.sel { outline: 3px solid #fff; outline-offset: 2px; }
+.dnd-token .hp { position: absolute; left: 0; bottom: 0; height: 12%; background: #3ecf5e; }
+.dnd-over { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+.dnd-ping { animation: dnd-ping 1.6s ease-out forwards; }
+@keyframes dnd-ping { from { r: 4; opacity: 1; } to { r: 90; opacity: 0; } }
+.dnd-tokened { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 5px 8px; border-top: 1px solid var(--line); background: var(--raised); }
+.dnd-tokened .name { width: 130px; }
+.dnd-tokened input[type=number] { width: 52px; }
+.dnd-tabs { display: flex; gap: 4px; padding: 4px 6px 0; }
+.dnd-pane { flex: 1 1 48%; min-height: 160px; overflow: auto; padding: 6px 8px; }
+.dnd-dicebar { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 6px; }
+.dnd-dicebar form { display: flex; gap: 4px; }
+.dnd-dicebar form input { width: 140px; }
+.dnd-log { display: flex; flex-direction: column; gap: 3px; }
+.dnd-roll { display: grid; grid-template-columns: auto 1fr auto; gap: 0 8px; align-items: baseline; padding: 3px 6px; border-left: 3px solid var(--line); background: var(--raised); }
+.dnd-roll .lbl { color: var(--muted); }
+.dnd-roll .tot { font-size: 24px; color: var(--text); grid-row: span 2; align-self: center; }
+.dnd-roll small { grid-column: 1 / 3; color: var(--muted); font-size: 13px; }
+.dnd-roll.crit { border-left-color: #3ecf5e; } .dnd-roll.crit .tot { color: #3ecf5e; }
+.dnd-roll.fumble { border-left-color: var(--danger); } .dnd-roll.fumble .tot { color: var(--danger); }
+.dnd-roll.secret { opacity: 0.75; border-left-style: dashed; }
+.dnd-init .row, .dnd-sheets .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 6px; }
+.dnd-init ol { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.dnd-init li { display: flex; gap: 8px; align-items: center; padding: 2px 6px; border: 1px solid var(--line); }
+.dnd-init li.now { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.dnd-init li input { width: 52px; }
+.dnd-init li .nm { flex: 1; }
+.dnd-init .small { width: 110px; }
+.dnd-sheet { display: flex; flex-direction: column; gap: 6px; }
+.dnd-sheet .top { display: flex; gap: 10px; }
+.dnd-sheet .top img, .dnd-sheet .noimg { width: 64px; height: 64px; object-fit: cover; border: 1px solid var(--line); display: grid; place-items: center; font-size: 36px; color: var(--muted); }
+.dnd-sheet .who { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.dnd-sheet .name { font-size: 20px; width: 100%; }
+.dnd-sheet .line, .dnd-sheet .vitals { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+.dnd-sheet .line input:not([type]) { width: 110px; }
+.dnd-sheet .cols { display: grid; grid-template-columns: minmax(150px, 1fr) minmax(200px, 1.3fr); gap: 10px; }
+.dnd-sheet .ab { display: grid; grid-template-columns: 1fr auto auto; gap: 2px 6px; align-items: center; padding: 3px 6px; border: 1px solid var(--line); margin-bottom: 3px; }
+.dnd-sheet .ab small { grid-column: 1 / 4; color: var(--muted); }
+.dnd-sheet .sv { grid-column: 1 / 4; font-size: 14px; display: flex; align-items: center; gap: 4px; }
+.dnd-sheet .sk { display: flex; align-items: center; gap: 6px; font-size: 15px; }
+.dnd-sheet .sk small { color: var(--muted); }
+.dnd-sheet .pr { padding: 0 4px; border: none; background: none; color: var(--muted); }
+.dnd-sheet .pr.p1, .dnd-sheet .pr.p2 { color: var(--accent); }
+.dnd-r { min-width: 40px; justify-content: center; }
+.dnd-sheet h4 { margin: 6px 0 0; font-weight: 400; color: var(--accent); font-size: 17px; }
+.dnd-sheet .atk { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.dnd-sheet .atk input:not([type]) { width: 120px; }
+.dnd-sheet textarea { min-height: 54px; resize: vertical; width: 100%; }
+.dnd-sheet .slots { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; }
+.dnd-sheet .slot { display: flex; flex-direction: column; align-items: center; gap: 2px; border: 1px solid var(--line); padding: 2px 4px; }
+.dnd-sheet .pips { display: flex; gap: 2px; flex-wrap: wrap; max-width: 60px; }
+.dnd-sheet .pips i { width: 8px; height: 8px; border: 1px solid var(--accent); cursor: pointer; }
+.dnd-sheet .pips i.used { background: var(--accent); }
+/* ── the chat's keyboard and its threads (Chat.tsx) ── */
+.messages:focus { outline: none; }
+.msg.selected { background: color-mix(in srgb, var(--accent) 14%, transparent); box-shadow: inset 3px 0 0 var(--accent); }
+.msg.selected.armed { background: color-mix(in srgb, var(--danger) 16%, transparent); box-shadow: inset 3px 0 0 var(--danger); }
+.armed-note { color: var(--danger); font-size: 13px; margin-top: 2px; }
+.key-hint { padding: 2px 16px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); }
+.thread-link { display: inline-flex; gap: 4px; align-items: baseline; margin-top: 3px; padding: 1px 8px; font-size: 14px; color: var(--accent); background: none; border: 1px solid var(--line); cursor: pointer; }
+.thread-link small { color: var(--muted); }
+.thread { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.thread-head { display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-bottom: 1px solid var(--line); }
+.thread-head b { color: var(--accent); font-weight: 400; }
+.thread-head small { color: var(--muted); }
+.composer[hidden], .messages[hidden] { display: none !important; }
+/* the DnD room's fires, and the TVs over the game room's bar */
+.fit-fire { position: absolute; image-rendering: pixelated; pointer-events: none; }
+.bar-tv { position: absolute; overflow: hidden; background: #0c1018; cursor: default; pointer-events: auto; }
+.bar-tv.on { cursor: pointer; box-shadow: 0 0 6px rgba(120, 180, 255, 0.35); }
+.bar-tv img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bar-tv .static { position: absolute; inset: 0; }
+.bar-tv small { position: absolute; left: 1px; bottom: 0; font: 5px/1 VT323, monospace; color: #fff; text-shadow: 0 0 1px #000; }
+
+
+/* Texas hold'em (basement/holdem.tsx): the betting bar under the table */
+.ho-table.sit { cursor: pointer; }
+.ho-bar { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; min-height: 34px; margin-top: 4px; }
+.ho-bar button.ho-go { background: var(--accent); color: var(--accent-text); }
+.ho-bar button.ho-allin { border-color: #ff8a6a; color: #ff8a6a; }
+.ho-raise { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ho-raise input[type='range'] { width: min(220px, 40vw); accent-color: var(--accent); }
+.ho-bar input[type='number'] { width: 84px; }
+.ho-field { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 18px; }
+.ho-field small, .ho-wait { color: var(--muted); font-size: 15px; }
+.ho-field input.bad { border-color: #ff5a4d; }
+
+/* ───────── a finger, not a mouse (the whole app on an iPad: device.ts isTablet, touch.ts) ───────── */
+/* Everything dragged with a pointer: without this the browser takes a moving finger for a scroll or a zoom, and calls
+   the drag off part of the way (a cue drawn back, a dart, a line on the whiteboard, the soundboard's grip). */
+.gr-table, .gr-board, .dnd-map, .board-frame canvas, .mirror-glass, .lk-cap, .by-drive, .splitter, .dock-grip, .club .wad, .club-ball, .vfx-hold, .arc-pad button { touch-action: none; }
+/* no zooming in on a double tap (it is the full screen of a shared screen), and no grey flash on every tap */
+body { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+/* a long press in the room or a game is not Safari's "save this picture" or a word picked out to copy */
+.club, .gr-overlay, .bday-overlay, .vfx-hold { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.club input, .club textarea, .gr-overlay input, .gr-overlay textarea { -webkit-user-select: text; user-select: text; }
+/* a tapped message shows its tools, as one under the mouse does (Chat.tsx useTapped) */
+.msg.tapped .actions { display: flex; }
+.msg.tapped { background: var(--hover); }
+.msg.tapped .gutter time { opacity: 1; }
+/* where nothing hovers, what hovering shows is there all the time */
+@media (hover: none) {
+  .stash-btn, .stash-item button { opacity: 1; }
+  .tile:fullscreen .tile-bar { opacity: 1; }
+}
+/* the Arcade's stick and button on a touch screen (Arcade.tsx touchPad) */
+.arc-pad { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-top: 12px; padding: 0 8px; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.arc-dpad { display: grid; grid-template: repeat(3, 56px) / repeat(3, 56px); }
+.arc-dpad button, .arc-fire { border-radius: 10px; background: #4a4257; color: #f4f1e9; border: 2px solid #2c2634; font-size: 22px; padding: 0; }
+.arc-dpad button:active, .arc-fire:active { background: #e2a93c; color: #2c2634; }
+.arc-dpad .u { grid-area: 1 / 2; } .arc-dpad .l { grid-area: 2 / 1; } .arc-dpad .r { grid-area: 2 / 3; } .arc-dpad .d { grid-area: 3 / 2; }
+.arc-fire { width: 96px; height: 96px; border-radius: 50%; background: #e5484d; font-size: 18px; letter-spacing: 1px; }

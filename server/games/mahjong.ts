@@ -342,6 +342,8 @@ export const mahjong: Rules<Mahjong> = {
     if (s.phase === 'claim') return [0, 1, 2, 3].filter((i) => s.claim!.options[i] && !s.claim!.answers[i]);
     return s.phase === 'handEnd' ? [0, 1, 2, 3] : [];
   },
+  // who could claim a tile shows what they hold: each is told only whether they themselves are being waited for
+  secretTurn: (s) => s.phase === 'claim',
   move(s, seat, m, rng) {
     if (!m || typeof m !== 'object') return 'That could not be read.';
     if (s.phase === 'handEnd') {

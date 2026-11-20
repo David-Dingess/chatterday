@@ -52,7 +52,7 @@ const js = async (body) => {
 };
 const go = async (url, wait = 2500) => { await cdp('Page.navigate', { url }); await sleep(wait); };
 /** Signs in as the demo's admin. (From a blank page: going from one address in the app to another only changes the part after the #, which loads nothing.) */
-const signIn = async () => { await go('about:blank', 300); await go(`${base}/#/login/Alex/demo-password`, 4000); };
+const signIn = async () => { await go('about:blank', 300); await go(`${base}/#/login/Avery/demo-password`, 4000); };
 const shot = async (name) => {
   const r = await cdp('Page.captureScreenshot', { format: 'png' });
   fs.writeFileSync(path.join(out, `${name}.png`), Buffer.from(r.result.data, 'base64'));

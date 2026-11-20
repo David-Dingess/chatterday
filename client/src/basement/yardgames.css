@@ -1,0 +1,7 @@
+/* The backyard's lawn games in the yard (pong.tsx, shoes.tsx, bocce.tsx): drawn a dot to a pixel, zoomed with the room. */
+.yg-layer, .yg-air, .yg-shadow { position: absolute; display: block; pointer-events: none; image-rendering: pixelated; }
+.yg-air { width: 2px; height: 2px; background: #f6f3ea; box-shadow: 0 0 0 0.5px rgba(30, 20, 10, 0.6); }
+.yg-air.shoe { width: 4px; height: 3px; background: none; box-shadow: none; }
+.yg-air.boc { width: 3px; height: 3px; border-radius: 1px; }
+.yg-shadow { width: 3px; height: 1px; border-radius: 50%; background: rgba(0, 0, 0, 0.32); }
+.yg-sides { font-size: 0.8em; color: var(--muted); }

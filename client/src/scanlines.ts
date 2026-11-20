@@ -29,7 +29,7 @@ function cut(): boolean {
   const pictures = document.querySelectorAll('video, iframe');
   const photos = document.querySelectorAll<HTMLElement>('.club-photo');
   let holes = '';
-  if ((pictures.length || photos.length) && (!document.fullscreenElement || document.fullscreenElement === document.documentElement) && !document.querySelector('.scrim, .lightbox')) {
+  if ((pictures.length || photos.length) && (!document.fullscreenElement || document.fullscreenElement === document.documentElement) && !document.querySelector('.scrim, .lightbox, .sdk-scrim')) {
     for (const el of pictures) {
       const b = seen(el);
       if (b) holes += ` M${b[0]} ${b[1]}H${b[2]}V${b[3]}H${b[0]}Z`;

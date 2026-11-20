@@ -111,6 +111,7 @@ Or press **Build the installer** in **Settings → Admin**, which does the same.
 - **Generic build:** without `desktop\server.txt`, the installer is generic and asks for an address on first run.
 - **Not code-signed:** Windows will warn "unknown publisher" (**More info → Run anyway**).
 - **Updates:** raise `version` in `desktop\package.json` so installed apps offer the update. Signing updates is optional; see `docs/SIGNED-UPDATES.md`.
+- **ffmpeg (optional, GPU screen capture):** only an **LGPL** build of ffmpeg 8.x is packed, from `desktop\vendor\ffmpeg\` or the PATH. `scripts/pack-ffmpeg.mjs` refuses builds with `--enable-gpl`, `--enable-nonfree`, libx264 or libx265, and packs the build's licence and `FFMPEG-BUILD.txt` with it. Don't download one for the host: they choose and place the build. Without one, the installer is built without ffmpeg and screen sharing uses the browser capture.
 - **No Tailscale inside:** the installer never contains Tailscale. If you're tempted to add it, re-read the ground rules.
 
 ### 9. Invite each friend (human step, partly)

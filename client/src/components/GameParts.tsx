@@ -9,8 +9,11 @@ import { Avatar } from './ui';
 /** How many screen dots a sprite dot gets in this view (2 to 6): see Games, which measures it. */
 export const Scale = createContext(2);
 
-const MARKS = ['robot', 'cards', 'pits'] as const;
-/** A 16x16 pixel mark: a robot head (a computer player), a hand of cards, or a mancala board. */
+const MARKS = ['robot', 'cards', 'pits', 'pool', 'darts', 'shuffle', 'bowling', 'golf', 'chips', 'cornhole', 'pong', 'shoes', 'bocce', 'fish', 'chess', 'checkers', 'go', 'four', 'mahjong', 'sudoku'] as const;
+/** A 16x16 pixel mark: a robot head (a computer player), a hand of cards, a mancala board, or one of the basement's
+ *  games (the eight ball, a dartboard, a shuffleboard weight, a pin and ball, a flag, a poker chip), cornhole, or the
+ *  backyard's (a rack of cups, a horseshoe, two bocce balls and the pallino), a fish (the lake), and the card table's board
+ *  games and the sudoku book in the same plain grey (a knight, a checker, a go board, four in a row, a mahjong tile, a grid). */
 export function Mark({ name }: { name: (typeof MARKS)[number] }) {
   return <i className="g-mark" aria-hidden style={{ '--i': MARKS.indexOf(name) } as CSSProperties} />;
 }

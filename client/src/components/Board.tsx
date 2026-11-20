@@ -2,8 +2,10 @@
 // each stroke as it is made, and the server keeps it.
 import { useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import { BOARD_H, BOARD_W, ink, INKS, loadBoard, paint, sendStep, watchBoard } from '../board';
+import { BOARD_H, BOARD_W, ink, INKS, loadBoard, paint, pictDo, pictGuess, pictNow, sendStep, watchBoard, watchPict } from '../board';
+import type { Pict } from '../board';
 import { useStore } from '../store';
+import '../drawguess.css';
 import { Icon, SureButton } from './ui';
 
 type Tool = 'pen' | 'eraser' | 'fill';
@@ -22,6 +24,13 @@ export function Board() {
   const [mine, setMine] = useState(0);              // how many things of mine can still be taken back
   const did = () => setMine((n) => Math.min(20, n + 1));
   const undo = () => { if (!mine || pen.current) return; sendStep({ op: 'undo' }); setMine((n) => n - 1); };
+  const game = usePict();
+  const meId = useStore((s) => s.me?.id);
+  // In a game only the drawer draws, and only while the clock runs; what was undoable before it is gone.
+  const locked = !!game && (game.phase === 'drawing' || game.phase === 'between') && !(game.phase === 'drawing' && game.drawer === meId);
+  const inPlay = !!game && game.phase !== 'over';
+  const turnKey = game ? `${game.round}:${game.drawer}:${game.phase}` : '';
+  useEffect(() => { setMine(0); up(); }, [turnKey]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     void loadBoard().catch(() => {});         // in case a stroke was missed while away
@@ -50,7 +59,7 @@ export function Board() {
     p.pts = p.pts.slice(-2);              // the next piece carries on from where this one stopped
   };
   const down = (e: ReactPointerEvent<HTMLCanvasElement>) => {
-    if (e.button !== 0) return;
+    if (e.button !== 0 || locked) return;
     up();          // a stroke still open (a second finger went down) is finished first, or its timer would be left running for good
     const [x, y] = at(e);
     if (tool === 'fill') { did(); return sendStep({ op: 'fill', c: colour, x, y }); }
@@ -91,7 +100,8 @@ export function Board() {
         <small>Everyone sees it as you draw, and it stays on the wall.</small>
         <button onClick={() => useStore.setState({ view: { kind: 'hangout' } })}>Back to the room</button>
       </header>
-      <div className="board-tools">
+      <DrawGuess game={game} meId={meId ?? ''} />
+      <div className={`board-tools${locked ? ' locked' : ''}`}>
         <span className="set">
           {(['pen', 'eraser', 'fill'] as Tool[]).map((t) => (
             <button key={t} className={tool === t ? 'on' : ''} onClick={() => setTool(t)} title={t === 'pen' ? 'Draw' : t === 'eraser' ? 'Erase' : 'Fill an area with the ink'}>{t === 'pen' ? 'Pen' : t === 'eraser' ? 'Eraser' : 'Fill'}</button>
@@ -109,14 +119,137 @@ export function Board() {
           ))}
         </span>
         <button className="undo" disabled={!mine} onClick={undo} title="Take back the last thing you drew (Ctrl+Z). What others have drawn over it stays.">Undo</button>
+        {(!game || game.phase === 'over') && <StartGame />}
         <SureButton className="wipe" title="Wipe the whole board clean, for everyone. Undo brings it back." onSure={() => { did(); sendStep({ op: 'clear' }); }}>Wipe it clean</SureButton>
       </div>
-      <div className="board-area" ref={area}>
-        <div className="board-frame">
-          <canvas ref={canvas} width={BOARD_W} height={BOARD_H} style={{ width: BOARD_W * scale, height: BOARD_H * scale }}
-            onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onLostPointerCapture={up} />
+      <div className="board-row">
+        <div className="board-area" ref={area}>
+          <div className={`board-frame${locked ? ' locked' : ''}`}>
+            <canvas ref={canvas} width={BOARD_W} height={BOARD_H} style={{ width: BOARD_W * scale, height: BOARD_H * scale }}
+              onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onLostPointerCapture={up} />
+          </div>
         </div>
+        {game && inPlay && <Guesses game={game} meId={meId ?? ''} />}
+        {game && !inPlay && game.feed.length > 0 && <Guesses game={game} meId={meId ?? ''} />}
       </div>
     </section>
+  );
+}
+
+
+// ───────── Draw & Guess ─────────
+function usePict() {
+  const [g, setG] = useState<Pict | null>(pictNow);
+  useEffect(() => watchPict(() => setG(pictNow())), []);
+  return g;
+}
+/** Seconds left on the game's clock, counting down. */
+function useLeft(ends: number) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 250); return () => window.clearInterval(t); }, []);
+  return Math.max(0, Math.ceil((ends - now) / 1000));
+}
+
+/** Starting a game: how many rounds (each one is everybody drawing once). */
+function StartGame() {
+  const [open, setOpen] = useState(false);
+  const online = useStore((s) => Object.values(s.presence).filter((p) => p.state !== 'offline').length);
+  if (!open) return <button className="pict-start" onClick={() => setOpen(true)} title="Take turns drawing a word while the other players guess it">Play Draw &amp; Guess</button>;
+  return (
+    <span className="set pict-rounds">
+      <small>Rounds:</small>
+      {[1, 2, 3].map((n) => <button key={n} disabled={online < 2} onClick={() => { setOpen(false); pictDo('open', n); }}>{n}</button>)}
+      <button onClick={() => setOpen(false)}>Cancel</button>
+      {online < 2 && <small className="warn">Needs two people on.</small>}
+    </span>
+  );
+}
+
+/** Beside the board: the game's own feed (what happened and everybody's guesses) and the box to guess in. */
+function Guesses({ game, meId }: { game: Pict; meId: string }) {
+  const users = useStore((s) => s.users);
+  const [text, setText] = useState('');
+  const feed = useRef<HTMLOListElement>(null);
+  useEffect(() => { const el = feed.current; if (el) el.scrollTop = el.scrollHeight; }, [game.feed.length]);
+  const name = (id?: string) => (id && users[id]?.name) || 'Somebody';
+  const drawing = game.phase === 'drawing', mine = drawing && game.drawer === meId, got = game.guessed.includes(meId);
+  const canType = game.phase !== 'over';
+  const place = !drawing ? 'Say something' : mine ? 'You are drawing: chat here, but no word' : got ? 'You got it: chat while the others guess' : 'Type a guess and press Enter';
+  const go = () => { const t = text.trim(); if (!t) return; pictGuess(t); setText(''); };
+  return (
+    <aside className="pict-side">
+      <h3>Guesses</h3>
+      <ol className="pict-feed" ref={feed}>
+        {game.feed.map((l, i) => (
+          <li key={i} className={`k-${l.k}`}>
+            {l.k === 'guess' ? <><b style={{ color: users[l.who ?? '']?.color }}>{name(l.who)}</b> {l.text}</> : l.text}
+          </li>
+        ))}
+      </ol>
+      {canType && (
+        <form className="pict-guess" onSubmit={(e) => { e.preventDefault(); go(); }}>
+          <input id="pict-guess" value={text} maxLength={60} placeholder={place} autoComplete="off" onChange={(e) => setText(e.target.value)} autoFocus={!mine} />
+          <button type="submit" disabled={!text.trim()}>Send</button>
+        </form>
+      )}
+    </aside>
+  );
+}
+
+function DrawGuess({ game, meId }: { game: Pict | null; meId: string }) {
+  const users = useStore((s) => s.users);
+  const left = useLeft(game?.ends ?? 0);
+  if (!game) return null;
+  const name = (id: string) => users[id]?.name ?? 'Somebody';
+  const drawing = game.phase === 'drawing', mine = game.drawer === meId;
+  const scores = Object.entries(game.scores).sort((a, b) => b[1] - a[1]);
+  const players = [...new Set([...scores.map(([id]) => id), ...game.players])].filter((id) => id && (users[id] || game.scores[id]));
+  if (game.phase === 'lobby') {
+    const ready = game.players.length >= 2;
+    return (
+      <div className="pict pict-lobby">
+        <div className="pict-line">
+          <b>Draw &amp; Guess</b>
+          <span>{game.rounds} {game.rounds === 1 ? 'round' : 'rounds'}, opened by {name(game.by)}.</span>
+          {!game.joined && <button className="pict-join" onClick={() => pictDo('join')}>Join</button>}
+          {game.joined && <button className="pict-join" disabled={!ready} onClick={() => pictDo('begin')} title={ready ? 'Start the game for everybody who has joined' : 'Somebody else has to press Join first'}>Start the game</button>}
+          {game.joined && <button onClick={() => pictDo('leave')}>Leave</button>}
+          {game.joined && !ready && <small>Waiting for somebody else to join.</small>}
+          <SureButton className="pict-stop" title="Put the game away, for everybody" onSure={() => pictDo('stop')}>Put it away</SureButton>
+        </div>
+        <ol className="pict-scores">
+          {game.players.map((id) => <li key={id}><span>{name(id)}</span><small>in</small></li>)}
+        </ol>
+      </div>
+    );
+  }
+  return (
+    <div className={`pict pict-${game.phase}`}>
+      <div className="pict-line">
+        {game.phase === 'over' ? <b>Final scores</b> : <b>Round {game.round} of {game.rounds}</b>}
+        {drawing && <span className="pict-who">{mine ? 'You are drawing' : `${name(game.drawer)} is drawing`}</span>}
+        {drawing && (mine
+          ? <span className="pict-word">{game.word.toUpperCase()}</span>
+          : <span className="pict-hint" title="A line for each letter">{[...game.hint].map((ch, i) => <i key={i} className={ch === ' ' ? 'gap' : ''}>{ch === ' ' ? '' : ch}</i>)}</span>)}
+        {game.phase === 'between' && <span className="pict-was">The word was <b>{game.was.toUpperCase()}</b></span>}
+        {game.phase !== 'over' && <span className={`pict-clock${drawing && left <= 10 ? ' low' : ''}`}>{drawing ? `${left} s` : `next in ${left} s`}</span>}
+        {drawing && mine && game.canSwap && <button onClick={() => pictDo('swap')} title="Once a turn, before anybody has got it">A different word</button>}
+        {drawing && !mine && <small>{game.guessed.includes(meId) ? 'You got it. Wait for the others.' : game.joined ? 'Type your guesses beside the board.' : 'Watching. Type a guess beside the board to join in.'}</small>}
+        {mine && drawing && <small>Draw it: no letters or numbers.</small>}
+        {game.phase !== 'over' && game.joined && <button onClick={() => pictDo('leave')} title="Leave the game; it goes on without you">Leave</button>}
+        {game.phase !== 'over' && <SureButton className="pict-stop" title="End the game for everybody and put the board back as it was" onSure={() => pictDo('stop')}>Stop the game</SureButton>}
+      </div>
+      {players.length > 0 && (
+        <ol className="pict-scores">
+          {players.map((id) => (
+            <li key={id} className={`${id === game.drawer && drawing ? 'drawer' : ''}${game.guessed.includes(id) ? ' got' : ''}`}>
+              <span>{name(id)}</span><b>{game.scores[id] ?? 0}</b>
+              {drawing && id === game.drawer && <small>drawing</small>}
+              {drawing && game.guessed.includes(id) && <small>got it</small>}
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
   );
 }

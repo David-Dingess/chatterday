@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
+import { isTablet } from '../device';
 import { send, useStore } from '../store';
 import { Icon } from './ui';
 
@@ -402,7 +403,7 @@ export function Arcade() {
       label(g, 'CHATTER', W / 2, 88, AMBER, 'center', 46);
       label(g, 'ARCADE', W / 2, 136, CORAL, 'center', 32);
       label(g, 'PICK A GAME', W / 2, 196, CREAM, 'center');
-      label(g, 'ENTER TO START', W / 2, 214, TEAL, 'center');
+      label(g, matchMedia('(pointer: coarse)').matches || isTablet() ? 'TAP ONE TO START' : 'ENTER TO START', W / 2, 214, TEAL, 'center');
       return;
     }
     (document.activeElement as HTMLElement | null)?.blur?.();      // (so Space does not press whatever button was last clicked)
@@ -423,12 +424,21 @@ export function Arcade() {
         }
       }
       run.draw(g);
-      if (done) { label(g, 'GAME OVER', W / 2, 118, AMBER, 'center', 32); label(g, 'ENTER: AGAIN', W / 2, 156, CREAM, 'center'); label(g, 'ESC: GAMES', W / 2, 172, TEAL, 'center'); }
+      if (done) { label(g, 'GAME OVER', W / 2, 118, AMBER, 'center', 32); if (matchMedia('(pointer: coarse)').matches || isTablet()) label(g, 'TAP THE GAME: AGAIN', W / 2, 156, CREAM, 'center'); else { label(g, 'ENTER: AGAIN', W / 2, 156, CREAM, 'center'); label(g, 'ESC: GAMES', W / 2, 172, TEAL, 'center'); } }
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
   }, [playing]);
+
+  // On a touch screen (an iPad, with no keyboard): the stick and the button on the screen, holding the same keys
+  // down as the arrows and Space do. Each is held for as long as the finger is on it, wherever the finger then goes.
+  const touchPad = isTablet() || matchMedia('(pointer: coarse)').matches;
+  const hold = (what: keyof Omit<Keys, 'hit'>) => ({
+    onPointerDown: (e: ReactPointerEvent<HTMLButtonElement>) => { e.preventDefault(); try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* held all the same */ } keys.current[what] = true; keys.current.hit.add(what); },
+    onPointerUp: () => { keys.current[what] = false; }, onPointerCancel: () => { keys.current[what] = false; }, onLostPointerCapture: () => { keys.current[what] = false; },
+    onContextMenu: (e: { preventDefault: () => void }) => e.preventDefault(),
+  });
 
   const shown = GAMES[playing?.game ?? chosen];
   const table = scores[shown.id] ?? [];
@@ -445,6 +455,17 @@ export function Arcade() {
           <div className="arc-marquee">{shown.name}</div>
           <div className="arc-screen"><canvas ref={canvas} width={W} height={H} /></div>
           <div className="arc-deck"><i className="stick" /><span>{shown.keys}</span><i className="dot y" /><i className="dot r" /><i className="dot w" /></div>
+          {touchPad && playing && ended === null && (
+            <div className="arc-pad">
+              <div className="arc-dpad">
+                <button className="u" aria-label="Up" {...hold('up')}>▲</button>
+                <button className="l" aria-label="Left" {...hold('left')}>◀</button>
+                <button className="r" aria-label="Right" {...hold('right')}>▶</button>
+                <button className="d" aria-label="Down" {...hold('down')}>▼</button>
+              </div>
+              <button className="arc-fire" {...hold('fire')}>FIRE</button>
+            </div>
+          )}
         </div>
         <aside className="arc-side">
           <h3>Games</h3>

@@ -9,7 +9,7 @@
   "scripts": {
     "start": "electron .",
     "helper": "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe -nologo -optimize -platform:x64 -out:sharesound.exe sharesound.cs",
-    "dist": "npm run helper && electron-builder --win nsis --publish never"
+    "dist": "npm run helper && node ../scripts/pack-ffmpeg.mjs && electron-builder --win nsis --publish never"
   },
   "devDependencies": {
     "electron": "^45.3.0",
@@ -44,6 +44,11 @@
       {
         "from": "sharesound.exe",
         "to": "sharesound.exe"
+      },
+      {
+        "from": "vendor/ffmpeg-packed",
+        "to": "ffmpeg",
+        "filter": ["**/*"]
       }
     ],
     "electronLanguages": [

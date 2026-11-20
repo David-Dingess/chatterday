@@ -11,8 +11,8 @@ const problems = [];
 const fail = (msg) => { if (problems.length < 40) problems.push(msg); };
 const F = 48, UP = SPRITE_UP, CH = F + UP, ROWS = SPRITE_ROWS.length;       // a cell is F wide and CH tall: UP rows of headroom, then the frame
 const W = F * 8, H = CH * ROWS;
-if (UP !== 18 || ROWS !== 18 || W !== 384 || H !== 66 * 18) fail(`a sheet should be 384 by ${66 * 18} (18 rows of 48 + 18): it is ${W} by ${H}, ${ROWS} rows of 48 + ${UP}`);
-if (SPRITE_ROWS.join() !== 'walk_down,walk_left,walk_right,walk_up,idle,sit_front,sit_side,sit_back,gaming,sleep,gaming_back,dance,cheer,reach,punch,floored,drink,drink_sit') fail('the rows are not in the order the app counts on: ' + SPRITE_ROWS.join());
+if (UP !== 18 || ROWS !== 23 || W !== 384 || H !== 66 * 23) fail(`a sheet should be 384 by ${66 * 23} (23 rows of 48 + 18): it is ${W} by ${H}, ${ROWS} rows of 48 + ${UP}`);
+if (SPRITE_ROWS.join() !== 'walk_down,walk_left,walk_right,walk_up,idle,sit_front,sit_side,sit_back,gaming,sleep,gaming_back,dance,cheer,reach,punch,floored,drink,drink_sit,sweep,call,roast,roast_side,roast_back') fail('the rows are not in the order the app counts on: ' + SPRITE_ROWS.join());
 let sheets = 0;
 const rowOf = (name) => SPRITE_ROWS.indexOf(name);
 /** A dot of a sheet: row `r`, column `i`, and (x, y) in that frame; y is negative in the headroom. */

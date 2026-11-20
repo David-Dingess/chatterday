@@ -24,6 +24,10 @@ const quick = process.argv.includes('quick');
 const DATA = path.join(os.tmpdir(), 'chatterday-flood-data'), LOG = path.join(os.tmpdir(), 'chatterday-flood.log');
 const env = { ...process.env, PORT: '4591', FLOOD_PORT: '4591', CHATTERDAY_LK_PORT: '7950', CHATTERDAY_DATA: DATA, FLOOD_LOG: LOG, FLOOD_PASSWORD: crypto.randomBytes(18).toString('base64url') };
 
+// The page as it is in the working tree, built into the temp folder (not client/dist, which the real server hands out).
+const DIST = path.join(os.tmpdir(), 'chatterday-flood-dist');
+if (spawnSync(process.execPath, [path.join(root, 'node_modules', 'vite', 'bin', 'vite.js'), 'build', '--outDir', DIST, '--emptyOutDir', '--logLevel', 'error'], { cwd: root, stdio: 'inherit' }).status !== 0) { console.error('The test build failed.'); process.exit(1); }
+env.CHATTERDAY_DIST = DIST;
 fs.rmSync(DATA, { recursive: true, force: true });
 fs.mkdirSync(DATA, { recursive: true });
 const log = fs.openSync(LOG, 'w');

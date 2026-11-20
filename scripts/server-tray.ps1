@@ -44,7 +44,14 @@ $menu = New-Object System.Windows.Forms.ContextMenuStrip
 $title = $menu.Items.Add('Chatterday server'); $title.Enabled = $false
 [void]$menu.Items.Add('-')
 [void]$menu.Items.Add('Show the log', $null, { Start-Process notepad.exe $log })
-[void]$menu.Items.Add('Restart', $null, { Stop-Server })       # the watcher below starts it again
+# Restart: asks the server to restart for an update first (everyone in voice leaves and is put back afterwards: see
+# scripts/restart.ps1); if it does not answer, it is stopped outright. Either way the watcher below starts it again.
+[void]$menu.Items.Add('Restart', $null, {
+  try {
+    $r = Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:$(if ($env:PORT) { $env:PORT } else { 4477 })/local/restart" -Headers @{ 'X-Chatterday-Local' = 'restart' } -TimeoutSec 5
+    if (-not ($r -is [psobject] -and $r.ok -eq $true)) { Stop-Server }      # (an older server answers with the page itself)
+  } catch { Stop-Server }
+})
 [void]$menu.Items.Add('Stop the server and quit', $null, {
   $script:stopping = $true
   Stop-Server

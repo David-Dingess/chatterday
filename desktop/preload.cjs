@@ -41,6 +41,12 @@ if (page === 'popup') {
     startShareSound: (id) => ipcRenderer.invoke('share-sound:start', String(id)),
     stopShareSound: () => ipcRenderer.send('share-sound:stop'),
     onShareSound: (cb) => { ipcRenderer.on('share-sound', (_e, chunk) => cb(chunk)); },
+    startShareVideo: (id, want) => ipcRenderer.invoke('share-video:start', String(id), { side: Number(want?.side), fps: Number(want?.fps) }),
+    stopShareVideo: () => ipcRenderer.send('share-video:stop'),
+    setShareVideoIdle: (idle) => ipcRenderer.send('share-video:idle', !!idle),
     onUpdate: (cb) => { ipcRenderer.on('update-progress', (_e, p) => cb({ state: String(p?.state), part: Number(p?.part) || 0 })); },
   });
+  // The pictures of a screen the app captures itself come down a channel of their own, which only the page can be
+  // given (a channel cannot cross the bridge above): it is posted to the page's own window, for the page alone.
+  ipcRenderer.on('share-video:port', (e) => { window.postMessage({ chatterdayShareVideo: true }, location.origin, e.ports); });
 }

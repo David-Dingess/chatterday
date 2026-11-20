@@ -18,6 +18,8 @@ import { go } from './games/go.ts';
 import { mahjong } from './games/mahjong.ts';
 
 export const GAMES: Record<string, Rules<any>> = { hearts, spades, rummy, mahjong, chess, checkers, go, four, mancala };
+/** What each game is called, for people's status ("Playing Hearts"). */
+const TITLES: Record<string, string> = { hearts: 'Hearts', spades: 'Spades', rummy: 'Rummy', mahjong: 'Mahjong', chess: 'Chess', checkers: 'Checkers', go: 'Go', four: 'Four in a Row', mancala: 'Mancala' };
 /** How long somebody who has dropped off keeps their seat before the others may hand it to the computer. */
 export const AWAY_GRACE = 15_000;
 
@@ -31,6 +33,8 @@ export type TableIO = {
   later?(fn: () => void, ms: number): void;
   now?(): number;
   rng?: Rng;
+  /** A game has ended: who won it (people only) and how many seats it was played at (for achievements). */
+  won?(kind: string, winners: string[], seats: number): void;
 };
 type Seat = { userId: string | null; bot: boolean };
 export type TableView = {
@@ -78,7 +82,7 @@ export function makeTable(io: TableIO) {
       seats: seats.map((s) => ({ userId: s.userId, bot: s.bot, away: !s.bot && s.userId !== null && !io.online(s.userId) })),
       game: r && state ? r.view(state, you) : null,
       result: r && state && phase === 'over' ? r.result(state) : null,
-      turn: r && state && phase === 'playing' ? r.turn(state) : [],
+      turn: r && state && phase === 'playing' ? r.turn(state).filter((i) => !r.secretTurn?.(state) || i === you) : [],
       min: r ? r.seats[0] : 0, bots: !!r?.bots,
     };
   }
@@ -93,6 +97,15 @@ export function makeTable(io: TableIO) {
     // (anybody who dropped off during the game does not hold a seat at an empty table)
     for (const s of seats) if (!s.bot && s.userId !== null && !io.online(s.userId)) s.userId = null;
   }
+  /** The seats a game is played at: a game for exactly four is filled up with computer players; otherwise the empty
+   *  seats are left out. Gives back why not, if too few are left. */
+  function seatUp(r: Rules<any>): string | null {
+    if (r.bots && r.seats[0] === r.seats[1]) seats = seats.map((s) => (filled(s) ? s : { userId: null, bot: true }));
+    const playing = seats.filter(filled);
+    if (playing.length < r.seats[0]) return r.bots ? `This needs ${r.seats[0]} players. Add a computer player or two.` : `This needs ${r.seats[0]} people.`;
+    seats = playing;
+    return null;
+  }
   function begin() {
     const r = rules()!;
     gameId++;
@@ -103,7 +116,11 @@ export function makeTable(io: TableIO) {
   function settle() {
     const r = rules();
     if (!r || phase !== 'playing') return;
-    if (r.result(state)) { phase = 'over'; gameId++; return; }
+    if (r.result(state)) {
+      phase = 'over'; gameId++;
+      try { io.won?.(kind!, r.result(state)!.winners.map((i) => (seats[i] && !seats[i].bot ? seats[i].userId : null)).filter((u): u is string => !!u), seats.length); } catch (e) { console.error('[games] won:', e); }
+      return;
+    }
     if (!people().length) { toLobby(); return; }            // only computers left: nobody is playing
     think();
   }
@@ -125,9 +142,10 @@ export function makeTable(io: TableIO) {
           if (err) { console.error('[games] a computer player tried something illegal:', kind, JSON.stringify(m), err); return; }
           break;
         }
+        // (inside the try too: this runs from a timer, where a throw would stop the whole server, not just this move)
+        settle();
+        push();
       } catch (e) { console.error('[games]', e); return; }
-      settle();
-      push();
     }, r.pause?.(state) ?? 800);
   }
 
@@ -195,11 +213,8 @@ export function makeTable(io: TableIO) {
       case 'start': {
         if (!r || phase !== 'lobby') return;
         if (me < 0) return refuse(userId, 'Take a seat first.');
-        // A game for exactly four is filled up with computer players; otherwise the empty seats are left out.
-        if (r.bots && r.seats[0] === r.seats[1]) seats = seats.map((s) => (filled(s) ? s : { userId: null, bot: true }));
-        const playing = seats.filter(filled);
-        if (playing.length < r.seats[0]) return refuse(userId, r.bots ? `This needs ${r.seats[0]} players. Add a computer player or two.` : `This needs ${r.seats[0]} people.`);
-        seats = playing;
+        const err = seatUp(r);
+        if (err) return refuse(userId, err);
         begin();
         settle();
         return push();
@@ -232,6 +247,9 @@ export function makeTable(io: TableIO) {
       case 'again': {               // the same game again, same seats
         if (!r || phase !== 'over') return;
         if (me < 0) return refuse(userId, 'Take a seat first.');
+        // (somebody may have stood up since the last game ended: nobody could ever play an empty seat)
+        const err = seatUp(r);
+        if (err) return refuse(userId, err);
         begin();
         settle();
         return push();
@@ -248,5 +266,14 @@ export function makeTable(io: TableIO) {
     push();
   }
 
-  return { handle, gone, view, /** for tests: the game itself */ peek: () => ({ kind, phase, seats, state }) };
+  /** The game somebody is sat at: playing, or waiting for it to start (see FitGame.playing in floor.ts). */
+  function playing(userId: string): { game: string; waiting: boolean } | null {
+    if (!kind || seatOf(userId) < 0) return null;
+    return { game: TITLES[kind] ?? kind, waiting: phase !== 'playing' };
+  }
+
+  /** The game being played at the table, if one is under way (for whoever is watching it: "Spectating Chess"). */
+  const going = (): string | null => (kind && phase === 'playing' ? TITLES[kind] ?? kind : null);
+
+  return { handle, gone, view, playing, going, /** for tests: the game itself */ peek: () => ({ kind, phase, seats, state }) };
 }

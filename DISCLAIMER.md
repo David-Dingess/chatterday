@@ -40,19 +40,23 @@ If you host Chatterday, **you** run the server. That means you are responsible f
   - **Tailscale.** Chatterday doesn't include or install Tailscale. Each person installs it from Tailscale's site and agrees to Tailscale's terms themselves. The free Personal plan is for non-commercial use.
 - **Weather credit.** Weather comes from [Open-Meteo](https://open-meteo.com), whose free API is for non-commercial use and asks for attribution (CC BY 4.0).
 
-## 5. Other people's work
+## 5. Content note
+
+Chatterday **depicts alcohol and tobacco use**: characters can drink at the bar, play beer pong, and smoke at the smoking table. It's cartoon pixel art, made for a group of adult friends, and none of it is an endorsement. If that isn't right for the people you're inviting, it's yours to change in your fork.
+
+## 6. Other people's work
 
 Chatterday uses open-source software, a font, outside services, and a voice engine and private-network installer that are downloaded during setup and build. Each keeps its own licence and terms. They're all listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 Nothing in this project is endorsed by, affiliated with, or sponsored by any of those projects or companies.
 
-## 6. Trademarks
+## 7. Trademarks
 
 Names of games, apps, companies and services mentioned in the code or docs belong to their owners. They're used only to describe things, for example to recognise which game someone is playing so their character can sit at a gaming desk. No affiliation or endorsement is implied.
 
 The classic card, board and tile games at the game table (Hearts, Spades, Rummy, Mahjong, Chess, Checkers, Go, Four in a Row, Mancala) are traditional games. The versions here are written from scratch.
 
-## 7. The desktop installer
+## 8. The desktop installer
 
 The Windows installer is **not code-signed**, so Windows will warn about an unknown publisher. Only run installers you built yourself, or ones you got directly from someone you trust. It carries only your server's address: no keys, and no Tailscale.
 

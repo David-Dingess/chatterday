@@ -1,0 +1,69 @@
+/* A birthday in the room (client/src/birthday.tsx): the cake and the card on the kitchen table, the neon sign in the
+   birthday person's colour, and the card opened up over the room. */
+
+/* ── in the room ── */
+.club > .bday-cake, .club > .bday-tent { background-repeat: no-repeat; pointer-events: none; }
+.club > .bday-cake { background-size: calc(100% * 4) 100%; background-position: 100% 0; }
+.club > .bday-tent { background-size: 100% 100%; }
+.club > .bday-cake.clicky, .club > .bday-tent.clicky { pointer-events: auto; cursor: pointer; }
+/* the flames: three frames, each candle's flame on its own beat, never quite in step (steps: a frame, not a blend) */
+.bday-cake.lit { animation: bday-flicker 0.92s steps(1, end) infinite; }
+@keyframes bday-flicker {
+  0% { background-position: 0 0; } 22% { background-position: 33.333% 0; } 41% { background-position: 66.667% 0; }
+  63% { background-position: 33.333% 0; } 78% { background-position: 0 0; } 88% { background-position: 66.667% 0; }
+}
+/* the candlelight on the table round it (only the candles: nobody standing by is lit up) */
+.club > .bday-glow { pointer-events: none; background: radial-gradient(closest-side, rgba(255, 196, 92, 0.32), rgba(255, 170, 70, 0.12) 60%, transparent); animation: bday-glow 1.3s steps(3, end) infinite alternate; }
+@keyframes bday-glow { from { opacity: 0.75; } to { opacity: 1; } }
+/* the smoke off each wick once they are blown out: dots of grey drifting up and fading */
+.club > .bday-smoke { width: 2px; height: 2px; background: #d9d6e2; pointer-events: none; opacity: 0; animation: bday-smoke 1.9s steps(10, end) forwards; }
+@keyframes bday-smoke {
+  0% { opacity: 0.9; transform: translate(0, 0); }
+  40% { opacity: 0.7; transform: translate(1px, -5px); }
+  100% { opacity: 0; transform: translate(-1px, -13px) scale(1.5); }
+}
+
+/* the neon sign in their colour: the sign's own shape, filled with it, and its glow in it too */
+.club > .club-neon.bday { background: none; filter: drop-shadow(0 0 1px var(--bc)) drop-shadow(0 0 3px var(--bc)) drop-shadow(0 0 8px color-mix(in srgb, var(--bc) 70%, transparent)); }
+.club > .club-neon.bday::before { content: ''; position: absolute; inset: 0; background: color-mix(in srgb, var(--bc) 72%, #fff);
+  -webkit-mask: url(/clubhouse/neon.png) 0 0 / 100% 100% no-repeat; mask: url(/clubhouse/neon.png) 0 0 / 100% 100% no-repeat; }
+
+/* ── the card, opened up ── */
+.bday-overlay { position: fixed; inset: 0; z-index: 900; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, 0.62); }
+.main-view > .bday-overlay { position: absolute; z-index: 50; }
+.bday-card { --ink: #1a1228; --paper: #f6f1e6; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); width: min(820px, 100%); max-height: 100%;
+  background: var(--paper); color: var(--ink); border: 4px solid var(--ink); box-shadow: 8px 8px 0 #000; }
+.bday-card b, .bday-card small, .bday-card cite, .bday-card h2, .bday-card time { color: var(--ink); }
+.bday-card button { background: var(--paper); color: var(--ink); border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); font-size: 20px; }
+.bday-card button:hover:not(:disabled) { background: var(--bc); color: var(--ink); border-color: var(--ink); }
+.bday-card button.primary { background: var(--ink); color: var(--paper); }
+.bday-card button.primary:hover:not(:disabled) { background: var(--bc); color: var(--ink); }
+/* the front: their colour, the cake, who it is for */
+.bday-front { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 22px 14px; min-width: 0;
+  background: color-mix(in srgb, var(--bc) 42%, var(--paper)); border-right: 4px dashed color-mix(in srgb, var(--ink) 45%, var(--paper)); }
+.bday-front h2 { font-size: 44px; line-height: 1; text-align: center; color: var(--ink); text-shadow: 3px 3px 0 color-mix(in srgb, var(--bc) 60%, #fff); }
+.bday-front .bday-cake.big { display: block; flex: none; max-width: 100%; background-repeat: no-repeat; background-size: 400% 100%; background-position: 100% 0; image-rendering: pixelated; }
+.bday-front .bday-cake.big.lit { animation: bday-flicker 0.92s steps(1, end) infinite; }
+.bday-for { font-size: 30px; line-height: 1; } .bday-for b { font-size: 40px; }
+.bday-note { font-size: 20px; opacity: 0.8; }
+.bday-whose { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.bday-whose button.on { background: var(--ink); color: var(--paper); }
+/* the inside: everybody's messages, and mine */
+.bday-inside { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 12px 16px 14px; gap: 10px; }
+.bday-inside > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 20px; opacity: 0.85; }
+.bday-lines { list-style: none; margin: 0; padding: 0; overflow-y: auto; min-height: 120px; max-height: 46vh; display: flex; flex-direction: column; gap: 12px; }
+.bday-lines li p { font-size: 24px; line-height: 1.05; overflow-wrap: anywhere; }
+.bday-lines li cite { display: inline-block; margin-top: 2px; font-style: normal; font-size: 20px; border-bottom: 3px solid; padding: 0 2px; }
+.bday-lines li cite::before { content: '- '; }
+.bday-empty { font-size: 22px; opacity: 0.6; }
+.bday-sign { display: flex; flex-direction: column; gap: 6px; border-top: 2px dashed color-mix(in srgb, var(--ink) 35%, var(--paper)); padding-top: 10px; }
+.bday-card .bday-sign textarea { width: 100%; resize: none; background: #fff; color: var(--ink); border: 2px solid var(--ink); font-size: 22px; padding: 4px 8px; caret-color: var(--ink); }
+.bday-card .bday-sign textarea::placeholder { color: color-mix(in srgb, var(--ink) 45%, #fff); }
+.bday-sign > div { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.bday-sign small { flex: 1; font-size: 18px; opacity: 0.6; }
+.bday-preview { font-size: 18px; opacity: 0.7; }
+@media (max-width: 640px) {
+  .bday-card { grid-template-columns: 1fr; overflow-y: auto; }
+  .bday-front { border-right: 0; border-bottom: 4px dashed color-mix(in srgb, var(--ink) 45%, var(--paper)); padding: 14px; }
+  .bday-front h2 { font-size: 34px; }
+}

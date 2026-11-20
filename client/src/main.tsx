@@ -1,10 +1,13 @@
+import { useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import '@fontsource/vt323';
 import './styles.css';
 import './activity';
 import './desktop';
+import './gamealerts';
 import './deafen';
 import './scanlines';
+import './achievements';
 import { Boundary } from './components/Boundary';
 import { Gate } from './components/Gate';
 import { Shell } from './components/Shell';

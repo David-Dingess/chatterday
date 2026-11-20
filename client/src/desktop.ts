@@ -20,7 +20,10 @@ if (native) {
   let told = '';
   const report = () => window.setTimeout(() => {
     const s = useStore.getState();
-    const online = Object.entries(s.presence).filter(([id, p]) => id !== s.me?.id && p.state !== 'offline').length;     // other people only
+    // Other people only, and only those about to hang out: at a computer (not away from it), and
+    // not working or asleep. (Four people asleep upstairs counted as "4 online now", 2026-11-18.)
+    const online = Object.entries(s.presence).filter(([id, p]) => id !== s.me?.id && p.state !== 'offline' && p.state !== 'away'
+      && p.place !== 'sleeping' && p.place !== 'working').length;
     // Only when it has changed: this is asked after everything anybody does, and the shell loads its counter afresh each time it is told
     const colour = accent(), now = `${online}|${colour}`;
     if (now === told) return;

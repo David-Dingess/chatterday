@@ -10,6 +10,8 @@ Voice chat, text chat, screen sharing, a shared soundboard, music from YouTube, 
 
 No accounts with anyone else. No monthly bill. Your chat never leaves your computer.
 
+> **Content note:** the house depicts alcohol and tobacco use (a bar with drinks, beer pong, a smoking table). It's meant for a group of adult friends.
+
 ![The house, with everyone in it](docs/screenshots/house.png)
 
 ## What it is

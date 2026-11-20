@@ -1,22 +1,30 @@
-import React, { memo, useEffect, useRef, useState } from 'react';
+import React, { memo, Suspense, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { native } from '../native';
+import { canShareScreen } from '../device';
 import type { Source } from '../native';
 import { api } from '../api';
 import { ask, GAME_NAMES, openDm, openText, send, setPrefs, toast, useStore } from '../store';
 import type { Me, Place, User } from '../types';
-import { applyVolumes, joinVoice, leaveVoice, setMuted, startShare, stopShare, toggleDeafen } from '../voice';
+import { applyVolumes, joinVoice, leaveVoice, setMuted, startAudio, startShare, stopShare, toggleDeafen } from '../voice';
 import { CLUB } from '../clubhouse.gen';
 import { Chat } from './Chat';
-import { Hangout, PLACES } from './Clubhouse';
+import { AT_COMPUTER, Hangout, PLACES } from './Clubhouse';
 import { MusicBox, Theatre } from './Music';
-import { Board } from './Board';
-import { Games } from './Games';
-import { Arcade } from './Arcade';
 import { Stage } from './Hangout';
 import { SoundDock } from './Panels';
-import { Settings } from './Settings';
-import { Avatar, Icon, Modal, presenceText } from './ui';
+import { later } from '../later';
+import '../devices';      // (the headset switch-over: it listens from the start, not only once Settings has been opened)
+
+// Each in a chunk of its own, fetched when first opened or once the page has settled (client/src/later.ts)
+const Board = later(() => import('./Board').then((m) => m.Board));
+const Games = later(() => import('./Games').then((m) => m.Games));
+const Arcade = later(() => import('./Arcade').then((m) => m.Arcade));
+const Settings = later(() => import('./Settings').then((m) => m.Settings));
+import { Avatar, Icon, Modal, presenceText, SureButton } from './ui';
+import { yardKey } from '../basement/yard';
+import { askableGame, askedAt, askToShare } from '../askshare';
+import { FxBadge, VoiceFxButton } from './VoiceFx';
 
 function ScreenPicker({ onClose }: { onClose: () => void }) {
   const [sources, setSources] = useState<Source[] | null>(null);
@@ -29,7 +37,7 @@ function ScreenPicker({ onClose }: { onClose: () => void }) {
         <h3>{title} <small>{kind === 'screen' ? 'shared without sound' : native?.startShareSound && sound ? 'shared with the sound of that program only' : 'shared without sound'}</small></h3>
         <div className="source-grid">
           {list.map((s) => (
-            <button key={s.id} onClick={() => { onClose(); void startShare(s.id); }}>
+            <button key={s.id} onClick={() => { onClose(); void startShare(s.id, s.name); }}>
               <img src={s.thumb} alt="" /><span>{s.name}</span>
             </button>
           ))}
@@ -45,6 +53,22 @@ function ScreenPicker({ onClose }: { onClose: () => void }) {
         {group('window', 'Windows')}
       </div>
     </Modal>
+  );
+}
+
+/** On a friend's row: ask them to share the game their PC says they are playing. Only while they are in my voice chat
+ *  and not sharing yet (client/src/askshare.ts); once asked, it stays pressed for ten minutes. */
+function AskShareButton({ user }: { user: User }) {
+  const [, bump] = useState(0);
+  const game = askableGame(user.id);
+  useEffect(() => { const t = window.setInterval(() => bump((n) => n + 1), 30_000); return () => window.clearInterval(t); }, []);
+  if (!game) return null;
+  const at = askedAt(user.id);
+  return (
+    <button className={`ask-share${at ? ' on' : ''}`} disabled={!!at} onClick={() => { askToShare(user.id); bump((n) => n + 1); }}
+      title={at ? `You asked ${user.name} to share at ${new Date(at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : `Ask ${user.name} to share ${game}`}>
+      <Icon name="eye" size={12} />
+    </button>
   );
 }
 
@@ -110,7 +134,7 @@ function ago(ts: number) {
 }
 
 /** Where are you? One button that shows where you are, and opens upwards into the list of places. Your character goes
- *  there and stays until you pick "I'm here". (Places in the room itself can be clicked too.) */
+ *  there and stays until you pick it again, and then the button says "At Computer". (Places in the room itself can be clicked too.) */
 const Where = memo(function Where() {
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
@@ -118,21 +142,21 @@ const Where = memo(function Where() {
   useEffect(() => {
     if (!open) return;
     const away = (e: MouseEvent) => { if (!box.current?.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener('mousedown', away);
-    return () => document.removeEventListener('mousedown', away);
+    document.addEventListener('pointerdown', away);      // (pointerdown: Safari on an iPad sends no mousedown for a tap on nothing in particular)
+    return () => document.removeEventListener('pointerdown', away);
   }, [open]);
-  const cur = PLACES.find(([id]) => id === place) ?? PLACES[0];
+  const cur = PLACES.find(([id]) => id === place) ?? AT_COMPUTER;
   return (
     <div className="where" ref={box}>
       {open && (
         <div className="where-list" role="menu">
           {PLACES.map(([id, icon, label]) => (
-            <button key={id} className={place === id ? 'active' : ''} onClick={() => { send({ t: 'place', place: id }); setOpen(false); }}><Icon name={icon} /> {label}</button>
+            <button key={id} className={place === id ? 'active' : ''} onClick={() => { send({ t: 'place', place: place === id ? '' : id }); setOpen(false); }}><Icon name={icon} /> {label}</button>
           ))}
         </div>
       )}
       <button className={`where-now${open ? ' open' : ''}`} onClick={() => setOpen(!open)}
-        title="Your character goes there and stays until you pick I'm here. You can also click a place in the room: the sofa, the theatre, a desk, the shower.">
+        title="Your character goes there and stays until you pick it again. You can also click a place in the room: the sofa, the theatre, a desk, the shower.">
         <small>Where are you?</small><span><Icon name={cur[1]} /> {cur[2]}</span><Icon name={open ? 'down' : 'up'} size={12} />
       </button>
     </div>
@@ -151,6 +175,7 @@ const Sidebar = memo(function Sidebar() {
   };
   // What is on the game table, in a word or two (only that: the table itself changes with every card played).
   const gameNow = useStore((st) => { const t = st.table; return !t?.kind ? '' : t.phase === 'playing' && t.you >= 0 && t.turn.includes(t.you) ? 'Your turn' : GAME_NAMES[t.kind]; });
+  useStore(yardKey);                  // (mowing, smoking: said in the backyard's statuses, not in anybody's presence)
   const [, beat] = useState(0);       // "Offline · 3h ago" is brought up to date once a minute
   useEffect(() => { const t = window.setInterval(() => beat((n) => n + 1), 60_000); return () => window.clearInterval(t); }, []);
   const me = s.me!;
@@ -165,6 +190,7 @@ const Sidebar = memo(function Sidebar() {
   const unread = textCh ? s.unread[textCh.id] ?? 0 : 0;
 
   const [open, setOpen] = useState<string | null>(null);
+  const [tidy, setTidy] = useState<string | null>(null);      // (the admin: the person whose status is being tidied up)
   const people = Object.values(s.users).filter((u) => u.role !== 'removed').sort((a, b) => a.name.localeCompare(b.name));
   const chatting = (u: User) => !!s.presence[u.id]?.voice && s.presence[u.id].state !== 'offline';
   const inSide = (u: User) => chatting(u) && sideCh != null && s.presence[u.id].voice!.channelId === sideCh.id;
@@ -185,16 +211,35 @@ const Sidebar = memo(function Sidebar() {
     const together = inVoice && p?.voice?.channelId === v.channelId && u.id !== me.id;
     return (
       <div key={u.id} className={`voice-member${chatting(u) ? '' : offline ? ' out asleep' : ' out'}`}>
-        <button className="member-row" disabled={!together} onClick={() => setOpen(open === u.id ? null : u.id)} title={`${u.name} — ${presenceText(p)}`}>
+        <button className="member-row" disabled={!together} onClick={() => setOpen(open === u.id ? null : u.id)} title={`${u.name} — ${presenceText(p)}${u.status && !offline ? ` — ${u.status}` : ''}`}>
           <Avatar user={u} size={40} speaking={talking(u.id)} />
-          <span><b>{u.name}{chatting(u) && p?.voice?.deafened ? <i className="quiet" title="Deafened: cannot hear or be heard"><Icon name="micoff" size={12} /><Icon name="phonesoff" size={12} /></i> : chatting(u) && p?.voice?.muted ? <i className="quiet" title="Muted"><Icon name="micoff" size={12} /></i> : null}{unreadDm(u.id) > 0 && <em className="dm-new" title="Unread private messages">{waiting(s.dms.find((x) => x.with === u.id)?.id)}</em>}</b><small>{offline && u.seenAt ? `Offline · ${ago(u.seenAt)}` : presenceText(p)}</small>{u.status && !offline && <small className="status">{u.status}</small>}</span>
+          <span><b>{u.name}{chatting(u) && <FxBadge userId={u.id} me={u.id === me.id} />}{chatting(u) && p?.voice?.deafened ? <i className="quiet" title="Deafened: cannot hear or be heard"><Icon name="micoff" size={12} /><Icon name="phonesoff" size={12} /></i> : chatting(u) && p?.voice?.muted ? <i className="quiet" title="Muted"><Icon name="micoff" size={12} /></i> : null}{unreadDm(u.id) > 0 && <em className="dm-new" title="Unread private messages"><Icon name="mail" size={14} />{waiting(s.dms.find((x) => x.with === u.id)?.id)}</em>}</b><small>{offline && u.seenAt ? `Offline · ${ago(u.seenAt)}` : presenceText(p)}</small>{u.status && !offline && <small className="status">{u.status}</small>}</span>
           {p?.voice?.sharing && <Icon name="screen" />}
         </button>
         {u.id !== me.id && (
           <span className="member-tools">
-            <button className={s.chat != null && s.dms.some((x) => x.id === s.chat && x.with === u.id) ? 'on' : ''} title={`Message ${u.name} privately`} onClick={() => void openDm(u.id)}><Icon name="send" size={12} /></button>
+            <button className={s.chat != null && s.dms.some((x) => x.id === s.chat && x.with === u.id) ? 'on' : unreadDm(u.id) > 0 ? 'waiting' : ''} title={unreadDm(u.id) > 0 ? `${u.name} sent you a private message` : `Message ${u.name} privately`} onClick={() => void openDm(u.id)}><Icon name="mail" size={12} /></button>
             {!offline && <button title={`Wave ${u.name} over`} onClick={() => { send({ t: 'wave', userId: u.id }); toast(`You waved at ${u.name}.`); }}><Icon name="wave" size={12} /></button>}
+            {/* ask them to share the game their PC says they are playing (in my voice chat, not sharing yet): askshare.ts */}
+            <AskShareButton user={u} />
+            {/* the admin only: out of the voice chat (left there AFK, say). Two clicks, so a slip does not do it. */}
+            {me.role === 'admin' && (
+              <button className={tidy === u.id ? 'on' : ''} title={`Tidy up ${u.name}'s status (gone, but still showing as here?)`} onClick={() => setTidy(tidy === u.id ? null : u.id)}><Icon name="pencil" size={12} /></button>
+            )}
+            {me.role === 'admin' && chatting(u) && (
+              <SureButton className="kick" ask="Kick?" title={`Take ${u.name} out of the voice chat`}
+                onSure={() => void api('/admin/kick-voice', { userId: u.id }).then(() => toast(`${u.name} is out of the voice chat.`)).catch((e) => toast(e.message))}><Icon name="close" size={12} /></SureButton>
+            )}
           </span>
+        )}
+        {tidy === u.id && me.role === 'admin' && (
+          <div className="tidy-status">
+            {([['', 'Clear'], ['away', 'Away'], ['sleeping', 'To bed']] as [string, string][]).map(([place, label]) => (
+              <button key={place || 'clear'} title={place ? `Set ${u.name} to ${label.toLowerCase()}` : `Take away what ${u.name} had chosen (back to what their PC says)`}
+                onClick={() => void api('/admin/set-status', { userId: u.id, place }).then(() => { toast(`${u.name}: ${place ? label.toLowerCase() : 'cleared'}.`); setTidy(null); }).catch((e) => toast(e.message))}>{label}</button>
+            ))}
+            {u.status && <button title={`Wipe "${u.status}"`} onClick={() => void api('/admin/set-status', { userId: u.id, clearText: true }).then(() => { toast(`${u.name}'s status line is wiped.`); setTidy(null); }).catch((e) => toast(e.message))}>Wipe words</button>}
+          </div>
         )}
         {open === u.id && together && (
           <div className="person-vols">
@@ -206,7 +251,7 @@ const Sidebar = memo(function Sidebar() {
     );
   };
   const editStatus = async () => {
-    const v = await ask('Your status (leave it empty to clear)', me.status);
+    const v = await ask('Your status', me.status, true);
     if (v === null) return;
     try { const r = await api<{ me: Me }>('/profile', { status: v }); useStore.setState({ me: r.me }); } catch (e: any) { toast(e.message); }
   };
@@ -268,13 +313,16 @@ const Sidebar = memo(function Sidebar() {
             <b>{v.connecting ? 'Connecting…' : inSideRoom ? 'At the Game Table' : 'In voice chat'}</b>
             <button className="hangup" title="Leave the voice chat" onClick={() => void leaveVoice()}><Icon name="hangup" />Leave</button>
           </div>
+          {v.audioBlocked && <button className="primary" onClick={() => void startAudio()}>Tap to hear everyone</button>}
           {v.micError && <small className="error">{v.micError}</small>}
           {v.talkingMuted && <small className="muted-note">You are talking, but your mic is muted.</small>}
           {v.sharing && <small className="watchers" title="Who has your screen open"><Icon name="eye" size={12} /> {watchers.length ? `${watchers.join(', ')} watching` : 'Nobody is watching yet'}</small>}
           <div className="voicebar-buttons">
             <button className={`${v.muted ? 'on' : ''}${v.gated && !v.muted ? ' gated' : ''}${v.talkingMuted ? ' nudge' : ''}`} title={v.muted ? 'Unmute' : v.gated ? 'Mute (the noise gate is holding your mic shut: you are below your line)' : 'Mute'} onClick={() => void setMuted(!v.muted)}><Icon name={v.muted ? 'micoff' : 'mic'} /></button>
             <button className={v.deafened ? 'on' : ''} title={v.deafened ? 'Undeafen' : 'Deafen'} onClick={() => void toggleDeafen()}><Icon name={v.deafened ? 'phonesoff' : 'phones'} /></button>
-            <button className={v.sharing ? 'on' : ''} title={v.sharing ? 'Stop sharing' : 'Share your screen'} onClick={share}><Icon name="screen" /></button>
+            {/* (not where the browser cannot share a screen at all: an iPad) */}
+            {(v.sharing || canShareScreen()) && <button className={v.sharing ? 'on' : ''} title={v.sharing ? 'Stop sharing' : 'Share your screen'} onClick={share}><Icon name="screen" /></button>}
+            {inVoice && <VoiceFxButton />}
           </div>
         </div>
       )}
@@ -349,7 +397,7 @@ function AskModal() {
     <Modal title={asking.title} onClose={() => done(null)}>
       <div className="modal-body ask">
         <input autoFocus value={value} onChange={(e) => setValue(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') done(value); }} />
-        <div className="row"><button className="primary" onClick={() => done(value)}>OK</button><button onClick={() => done(null)}>Cancel</button></div>
+        <div className="row"><button className="primary" onClick={() => done(value)}>OK</button>{asking.clear && <button onClick={() => done('')}>Clear</button>}<button onClick={() => done(null)}>Cancel</button></div>
       </div>
     </Modal>
   );
@@ -516,7 +564,12 @@ export function Shell() {
   }, [showMain]);
   useEffect(() => {
     if (!native) return;                              // a browser has its own F11
-    const key = (e: KeyboardEvent) => { if (e.key === 'F11') { e.preventDefault(); toggleAppFull(); } };
+    // Esc leaves full screen too, whatever the window does with it by itself; not while a box is open, where Esc only
+    // closes the box (each box listens for it on its own).
+    const key = (e: KeyboardEvent) => {
+      if (e.key === 'F11') { e.preventDefault(); toggleAppFull(); }
+      else if (e.key === 'Escape' && document.fullscreenElement === document.documentElement && !document.querySelector('.scrim')) { void document.exitFullscreen().catch(() => {}); }
+    };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
   }, []);
@@ -544,7 +597,9 @@ export function Shell() {
       {!solo && <main>
         {showMain && <div className="main-row" ref={row}>
           <div className="main-view">
-            {view.kind === 'stage' ? <Stage /> : view.kind === 'theatre' ? <Theatre /> : view.kind === 'board' ? <Board /> : view.kind === 'games' ? <Games /> : view.kind === 'arcade' ? <Arcade /> : <Hangout />}
+            <Suspense fallback={null}>
+              {view.kind === 'stage' ? <Stage /> : view.kind === 'theatre' ? <Theatre /> : view.kind === 'board' ? <Board /> : view.kind === 'games' ? <Games /> : view.kind === 'arcade' ? <Arcade /> : <Hangout />}
+            </Suspense>
           </div>
           <SoundDock />
         </div>}
@@ -559,14 +614,15 @@ export function Shell() {
         )}
       </main>}
       {!connected && <div className="banner">Lost the connection to the server. Trying again…</div>}
-      {settingsOpen && <Settings />}
+      {settingsOpen && <Suspense fallback={null}><Settings /></Suspense>}
       {picker && <ScreenPicker onClose={() => useStore.setState({ picker: false })} />}
       {asking && <AskModal />}
       {notice && (
         <div className="notice" role="status">
           <span>{notice.text}</span>
           <button className="primary" onClick={notice.run}>{notice.label}</button>
-          <button className="icon" title="Not now" onClick={() => useStore.setState({ notice: null })}><Icon name="close" size={12} /></button>
+          {notice.no ? <button onClick={notice.no.run}>{notice.no.label}</button>
+            : <button className="icon" title="Not now" onClick={() => useStore.setState({ notice: null })}><Icon name="close" size={12} /></button>}
         </div>
       )}
       {toastText && <div className="toast" role="status">{toastText}</div>}

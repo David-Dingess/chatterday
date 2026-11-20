@@ -216,20 +216,19 @@ def rug(x0, y0, x1, y1, field, edge, band, lattice, seed, kind='persian'):
             base.px(x, y, pile(x, y, c, seed) if b > 1 else shade(c, 0.08) if (x + y) % 2 else c)
 
 
-def shag(x0, y0, x1, y1):
-    """A big shag rug on the wood: long cream pile lying every which way, a ragged edge, round corners."""
+def shag(cx, cy, rx, ry):
+    """An oval shag rug on the wood, (cx, cy) its middle and rx, ry how far it reaches each way: long cream pile lying
+    every which way, and a ragged edge."""
     tones = [rgb('#f4ecd8'), rgb('#e8dcc0'), rgb('#fbf6ea'), rgb('#d6c8a6'), rgb('#efe4cb')]
     deep = rgb('#b9a882')
 
     def inside(x, y):
-        dx, dy = min(x - x0, x1 - x), min(y - y0, y1 - y)
-        if dx < 0 or dy < 0:
+        d = (1 - math.hypot((x - cx) / rx, (y - cy) / ry)) * min(rx, ry)        # how far in from the edge, roughly in dots
+        if d < 0:
             return False
-        if dx < 6 and dy < 6 and (6 - dx) ** 2 + (6 - dy) ** 2 > 40:            # the corners are rounded off
-            return False
-        return min(dx, dy) > 0 or hsh(x, y, 5) % 3 > 0                             # and the edge is ragged: a tuft missing here and there
-    for y in range(y0, y1 + 3):
-        for x in range(x0, x1 + 3):
+        return d > 1 or hsh(x, y, 5) % 3 > 0                                       # the edge is ragged: a tuft missing here and there
+    for y in range(cy - ry, cy + ry + 3):
+        for x in range(cx - rx, cx + rx + 3):
             if inside(x, y):
                 # each tuft is a short stroke, two or three dots long, lying down the room or a little across it
                 lean = hsh(x // 3, y // 4, 7) % 3 - 1
@@ -278,8 +277,8 @@ def floors():
     # the living room's: sea blue in a herringbone, with a cream stitch every sixteen dots
     bone = lambda x, y: 2 if (x % 16 == 0 and y % 16 == 0) or (x % 16 == 8 and y % 16 == 8) else 1 if (x + (y if (y // 6) % 2 else -y)) % 6 == 0 else 0
     rug(362, 210, 513, 300, rgb('#2f5f78'), rgb('#e8dcc0'), rgb('#1f3f52'), bone, 22, kind='modern')
-    # and a big shag rug on the boards between the desks and the kitchen
-    shag(62, 172, 338, 224)
+    # and an oval shag rug on the boards between the desks and the kitchen, under the radio and the bean bags
+    shag(189, 186, 90, 30)
 
 
 def walls():
@@ -370,12 +369,13 @@ def item_ball(c, x, y):                                 # a football: white, a b
                     '..wkkkw..'], dict(w=rgb('#f4f6f9'), k=rgb('#1b1c26')))
 
 
-BED_ROWS = (69, 154)                 # the rows of the room a desk, its screens and its chair take up: the bed that replaces them covers these
+DESK_UP = 10                         # how far the desks (and their chairs, and the beds that replace them) stand up the room from the foot of the wall: pushed right back, to leave a way along the room in front of them
+BED_ROWS = (69 - DESK_UP, 154 - DESK_UP)      # the rows of the room a desk, its screens and its chair take up: the bed that replaces them covers these
 BED_W = 52
 bed_tiles = []                       # one picture per desk: that stretch of wall and floor with a bed in it instead
 
 
-BED_TOP = 97                         # where a sleeper's 48-dot frame starts, down the room: their pillow is 2 below, their blanket ends 44 below
+BED_TOP = 97 - DESK_UP                         # where a sleeper's 48-dot frame starts, down the room: their pillow is 2 below, their blanket ends 44 below
 
 
 def bed_tile(dx, clean):
@@ -414,7 +414,7 @@ def bed_tile(dx, clean):
     tile[under, :3] = (tile[under, :3] * 0.7 + np.array([20, 14, 40]) * 0.3).astype(np.uint8)
     tile[m] = arr[m]
     bed_tiles.append(tile)
-    return dict(at=[dx - 1, BED_ROWS[0], BED_W, BED_ROWS[1] - BED_ROWS[0] + 1], x=dx + 25, y=T + 45, ax=dx + 25, ay=WALL + 64)
+    return dict(at=[dx - 1, BED_ROWS[0], BED_W, BED_ROWS[1] - BED_ROWS[0] + 1], x=dx + 25, y=T + 45, ax=dx + 25, ay=WALL + 64 - DESK_UP)
 
 
 def desk_place(dx, dy, island=False):
@@ -565,7 +565,8 @@ def pic_lighthouse(c, x0, y0, w, h):
 
 # The pictures on the back wall, behind the desks. The big one in the gilded frame is the admin's to hang (Settings,
 # Admin): the app shows their picture over the one painted here, at its full sharpness. The four smaller ones are
-# only paintings, painted here.
+# paintings, painted here, until the admin has uploaded enough photos for them too: then the day's photos hang over
+# them (server/wallphotos.ts picks them, a new set each midnight on the house's clock).
 #   name, where its top-left corner hangs, its size in dots, its frame, what paints it
 GALLERY = [
     dict(name='photo', size=(PHOTO_W, PHOTO_H), frame='gilt', paint=placeholder),      # hung by main()
@@ -587,6 +588,8 @@ def framed_photo(g, x0, y0):
     x1, y1 = x0 + w - 1, y0 + h - 1
     if g['frame'] == 'gilt':                                              # where the admin's picture goes
         L['photo'] = [x0, y0, w, h]
+    else:                                                                 # and the smaller ones, which the admin's uploads can hang over too
+        L.setdefault('gallery', []).append(dict(name=g['name'], at=[x0, y0, w, h]))
 
     def gilt(c):
         gold = FRAMES['gold']
@@ -725,8 +728,10 @@ def lounge():
             c.rect(x0 + 2, sy + 8, x0 + 7, sy + 8, rgb(band)); c.rect(x0 + 2, sy + 11, x0 + 7, sy + 11, rgb(band))
     put(base, sofa)
     block(sx0, sy, sx0 + 111, sy + 31)
-    # (each cushion is a seat of its own; the end ones take in the sofa's arms)
-    living = [dict(x=sx0 + 20 + 24 * k, y=sy + 37, ax=sx0 + 20 + 24 * k, ay=sy + 46, side=False, flip=False,
+    # (each cushion is a seat of its own; the end ones take in the sofa's arms). Whoever sits there has their feet 29 below
+    # its top: their seat on the front of the cushion, their back against the cushion behind, and their shins down over
+    # the skirt to just above the rug. (Further down, at 37, they stood on the rug in front of it.)
+    living = [dict(x=sx0 + 20 + 24 * k, y=sy + 29, ax=sx0 + 20 + 24 * k, ay=sy + 46, side=False, flip=False,
                    hit=[sx0 + (8 + 24 * k if k else 0), sy, 24 + (8 if k in (0, 3) else 0), 32]) for k in range(4)]
 
     # Two armchairs, seen from the side, facing each other across the table: a leather club chair on the left and a
@@ -842,7 +847,7 @@ def lounge():
         crop[(crop[..., :3] == np.array(col, np.uint8)).all(axis=-1), 3] = alpha
     block(tcx - 22, ty, tcx + 22, ty + 20)
 
-    bx, by = 170, 188                                                   # the boombox: on the shag rug, beside the bean bags
+    bx, by = 122, 180                                                   # the boombox: on the shag rug, beside the bean bags
 
     def boombox(c):
         body = Mat('#3a3d50', hi='#5b5f78', lo='#22242f')
@@ -944,19 +949,19 @@ def snack():
             c.rect(cx - 3, 323, cx + 3, 323, steel.lo)                    # the foot of the bowl
     put(base, bowls, edge=False)
     # the pets: where they eat (standing to the right of the bowls, facing them) and where they like to sit or nap
-    L['pets'] = dict(bowl=dict(x=175, y=323), spots=[dict(x=96, y=180), dict(x=160, y=188), dict(x=270, y=162), dict(x=150, y=300),
+    L['pets'] = dict(bowl=dict(x=175, y=323), spots=[dict(x=86, y=200), dict(x=110, y=164), dict(x=270, y=162), dict(x=150, y=300),
                                                      dict(x=228, y=270), dict(x=292, y=302), dict(x=436, y=196), dict(x=440, y=300),
                                                      dict(x=500, y=306), dict(x=366, y=190)])
     L['snack'] = [dict(x=146, y=278, face='up'), dict(x=176, y=278, face='up'), dict(x=210, y=262, face='down')]
     # where somebody working out stands: the open wood floor behind the desks
-    L['gym'] = [dict(x=150, y=190), dict(x=136, y=206), dict(x=124, y=196), dict(x=138, y=180), dict(x=160, y=178), dict(x=114, y=184)]      # (on the shag rug, between the cat tree and the radio)
+    L['gym'] = [dict(x=300, y=190), dict(x=286, y=206), dict(x=274, y=196), dict(x=288, y=178), dict(x=312, y=176), dict(x=264, y=184)]      # (on the open boards between the rug and the lounge)
 
 
 def cat_tree():
-    """A cat tree at the left end of the shag rug: two posts bound in sisal, a carpeted base with a cubby on it, a
-    shelf halfway up and a bed at the top. Pets that climb sit and sleep on it a good part of the time: `perches` are
-    the places (where their feet go), and `foot` is where one stands on the floor to jump up."""
-    x0, by = 70, 218                                                     # its left edge, and the bottom of its base
+    """A cat tree in the lounge, behind the sofa and in front of the theatre seats, right of the middle: two posts bound in sisal, a carpeted base with a cubby on it, a
+    shelf halfway up and a bed at the top. The cats sit and sleep on it a good part of the time: `perches` are the
+    places (where a cat's feet go), and `foot` is where one stands on the floor to jump up."""
+    x0, by = 462, 197                                                    # its left edge, and the bottom of its base (just behind the sofa's back)
     fleece = Mat('#6f8fa3', hi='#93b0c2', lo='#4a6578')
     sisal, wrap = rgb('#c9a268'), rgb('#8a6638')
 
@@ -974,7 +979,7 @@ def cat_tree():
                 c.px(x, y + 1, fleece.base)
 
     def tree(c):
-        for x in range(x0 + 2, x0 + 35):                                 # its shadow on the rug
+        for x in range(x0 + 2, x0 + 35):                                 # its shadow on the carpet
             base.px(x, by + 1, shade(base.get(x, by + 1), 0.3))
         post(c, x0 + 4, by - 44, by - 6)                                 # the tall post, and the short one
         post(c, x0 + 23, by - 28, by - 6)
@@ -996,8 +1001,8 @@ def cat_tree():
         c.rect(x0 - 2, by - 49, x0 + 14, by - 49, fleece.lo)              # (the far rim, seen over the cushion)
     put_over(tree, by + 1)
     block(x0, by - 8, x0 + 32, by)
-    L['pets']['tree'] = dict(z=by + 1, foot=dict(x=x0 + 12, y=by + 6),
-                             perches=[dict(x=x0 + 6, y=by - 47), dict(x=x0 + 24, y=by - 32), dict(x=x0 + 8, y=by - 5)])
+    L['pets']['tree'] = dict(z=by + 1, foot=dict(x=x0 - 12, y=by - 3),
+                            perches=[dict(x=x0 + 6, y=by - 47), dict(x=x0 + 24, y=by - 32), dict(x=x0 + 8, y=by - 5)])
 
 
 # Every lamp in the room, for the app to light: where its light falls (the middle of the pool, and how far it reaches
@@ -1010,7 +1015,7 @@ def light(x, y, rx, ry, colour, strength):
 
 
 def lamps():
-    """What lights the room: a lamp on a side table by the sofa, a paper lantern on the floor by the tree, and a brass
+    """What lights the room: a lamp on a side table by the sofa, a paper lantern on the floor by the media console, and a brass
     picture light over two of the pictures."""
     brass = Mat('#c9a13a', hi='#f0d27a', lo='#7a5a12')
     chrome = Mat('#aeb8c6', hi='#e6ecf3', lo='#6f7a8a')
@@ -1048,8 +1053,8 @@ def lamps():
         light(cx, gy + gh // 2 - 2, gw // 2 + 14, gh // 2 + 16, '#ffd58a', 0.38)
         light(cx, gy - 6, 12, 6, '#fff1cf', 0.55)
 
-    # ── on the floor in the corner of the living room, by the tree: a paper lantern, three soft bulges of it, lit ──
-    px0, py0 = 492, 325                                                 # its middle, and where it stands
+    # ── on the floor by the media console, to its right: a paper lantern, three soft bulges of it, lit ──
+    px0, py0 = 413, 325                                                 # its middle, and where it stands
 
     def lantern(c):
         paper = Mat('#ffe3a0', hi='#fff7dc', lo='#e9a94e')
@@ -1079,7 +1084,7 @@ def bean_bags():
     their legs are out over the front of it."""
     long, wide = 18.0, 14.5                                              # half its length, and half its width at the middle
     bags = []
-    for cx, cy, deg, col in ((214, 190, -24, '#c8453f'), (250, 198, 8, '#2f8f86'), (284, 189, 38, '#6f52b5')):
+    for cx, cy, deg, col in ((166, 182, -24, '#c8453f'), (202, 190, 8, '#2f8f86'), (236, 181, 38, '#6f52b5')):
         base_col = rgb(col)
         tones = dict(hi=mix(base_col, (255, 244, 220), 0.38), mid=base_col, lo=mix(base_col, (20, 14, 40), 0.30), deep=mix(base_col, (20, 14, 40), 0.52))
         ca, sa = math.cos(math.radians(deg)), math.sin(math.radians(deg))
@@ -1133,14 +1138,15 @@ def bean_bags():
 
 
 def arcade():
-    """An old arcade cabinet against the west wall, below the first desk, seen from the side: its back is to the
-    wall and it faces into the room. A dark laminate side with gold edging down its front, the head with the
+    """An old arcade cabinet against the east wall, in the lounge's near right-hand corner, seen from the side: its back
+    is to the wall and it faces into the room (it is drawn facing right, as if against the west wall, then turned round). A dark laminate side with gold edging down its front, the head with the
     marquee jutting out at the top (no name on it: a zigzag in red, orange and gold along the side, and the lit
     glass showing at the front), the screen leaning back under it, the control panel sticking out with its stick,
     and three stripes running down the side below. It is a picture and nothing more: nothing on it moves or
     flashes. Whoever plays stands at its front, facing it (`L['arcade']`: where their feet go, and the part of the
     picture that is the machine, to be clicked)."""
-    x0, B = 6, 216                                                      # the wall it stands against, and the row its foot stands on
+    x0, B = 0, 325                                                      # (drawn from x 0, then turned round onto the wall at XW); the row its foot stands on
+    XW = 521                                                            # the east wall's last column of floor
     T = B - 41                                                          # the top of it
     shell = Mat('#2c2634', hi='#4a4257', lo='#18141e')
     gold = Mat('#e2a93c', hi='#f6d27a', lo='#9a6c1c')
@@ -1191,12 +1197,157 @@ def arcade():
                 for xx in (x, x + 1):
                     if 2 <= xx <= 14:
                         c.px(x0 + xx, T + r, rgb(col))
-    for x in range(x0 + 1, x0 + 18):                                    # its shadow on the floor
+    def turned(c):                                                      # facing left, its back to the east wall
+        t = Cv(W, H)
+        cabinet(t)
+        c.a[:, XW - 20:XW + 1] = t.a[:, 20::-1]
+    for x in range(XW - 17, XW):                                        # its shadow on the floor
         base.px(x, B + 1, shade(base.get(x, B + 1), 0.3))
-    put_over(cabinet, B + 1)
-    block(x0, B - 8, x0 + 19, B)
-    L['arcade'] = dict(x=x0 + 35, y=B + 1, ax=x0 + 42, ay=B + 2, hit=[x0, T, 21, 43])
-    light(x0 + 20, T + 14, 15, 12, '#ffd58a', 0.3)                      # the marquee's and the screen's own light, steady
+    put_over(turned, B + 1)
+    block(XW - 19, B - 8, XW, B)
+    L['arcade'] = dict(x=XW - 35, y=B + 1, ax=XW - 42, ay=B + 2, hit=[XW - 20, T, 21, 43])
+    light(XW - 20, T + 14, 15, 12, '#ffd58a', 0.3)                      # the marquee's and the screen's own light, steady
+
+
+def stairs():
+    """Stairs down to the basement, against the west wall where the arcade machine stood: a flight of oak treads with
+    cream risers, starting at floor level under the first desk and going down towards the bathroom's wall, each step
+    darker than the last until the bottom is lost in the dark. A banister guards the open side (a walnut rail on white
+    spindles, with a newel post at the top), and a rail runs down the wall. Nobody uses them yet: `L['stairs']` says
+    where the flight is, where one stands at its top to go down (`top`), and how many steps there are."""
+    X0, X1 = 7, 36                                                      # the flight's edges: against the wall, 30 wide
+    TOP, STEP, N = 160, 6, 11                                           # the top step's back edge, how deep each step is, and how many
+    BOT = TOP + STEP * N - 1
+    oak = Mat('#a87a52', hi='#cf9f70', lo='#7a5434')
+    cream = rgb('#e6dcc6')
+    walnut = Mat('#5a3620', hi='#8a5a38', lo='#2e1a0e')
+    white = Mat('#efe8d8', hi='#ffffff', lo='#b8ae98')
+    pit = rgb('#120e18')
+
+    def flight(c):
+        for k in range(N):                                              # from the top down
+            y0 = TOP + k * STEP
+            dark = min(0.94, 0.08 * k + 0.05 * max(0, k - 4) ** 2)       # each one further down, in more shadow
+            for r in range(STEP):
+                y = y0 + r
+                for x in range(X0, X1 + 1):
+                    if r < 3:                                           # the tread: boards, a seam between them
+                        col = oak.lo if (x - X0) % 10 == 9 else oak.base
+                        if r == 0 and k:
+                            col = shade(col, 0.18)                      # in the shade of the nosing above it
+                    elif r == 3:
+                        col = oak.hi                                    # the nosing, catching the light
+                    else:
+                        col = cream if r == 4 else shade(cream, 0.12)   # the riser, down to the next step
+                    if x < X0 + 2:
+                        col = shade(col, 0.2)                           # the wall's shade down that side
+                    elif x > X1 - 2:
+                        col = shade(col, 0.1)
+                    c.px(x, y, mix(col, pit, dark))
+        for y in range(BOT - 3, BOT + 1):                               # the bottom: lost in the dark
+            for x in range(X0, X1 + 1):
+                c.px(x, y, pit)
+        for y in range(TOP + 2, BOT - 4):                               # the rail down the wall, on brass brackets
+            dark = min(0.92, 0.08 * (y - TOP) / STEP + 0.05 * max(0, (y - TOP) / STEP - 4) ** 2)
+            c.px(X0 + 1, y, mix(walnut.hi, pit, dark)); c.px(X0 + 2, y, mix(walnut.base, pit, dark))
+            if (y - TOP) % 15 == 7:
+                c.px(X0, y, mix(rgb('#e2c36a'), pit, dark))
+        # the banister along the open side: the floor's cut edge, white spindles, and the walnut rail on them
+        for y in range(TOP, BOT + 1):
+            c.px(X1 + 1, y, white.lo)                                   # the edge of the floor, finished in white
+            if (y - TOP) % 3 == 0:
+                c.px(X1 + 2, y, white.base)                             # a spindle, seen past the rail
+            c.px(X1 + 3, y, walnut.hi); c.px(X1 + 4, y, walnut.base)
+        for x in range(X1 + 5, X1 + 7):                                 # the rail's shadow on the boards beside it
+            for y in range(TOP + 2, BOT + 2):
+                if x == X1 + 5 or y % 2:
+                    base.px(x, y, shade(base.get(x, y), 0.22))
+        c.part(rows(X1 + 1, TOP - 9, X1 + 6, TOP - 7), walnut, hi='t', lo='b')        # the newel post at the top: a cap...
+        c.part(rows(X1 + 2, TOP - 6, X1 + 5, TOP + 3), white, hi='l', lo='r')         # ...on a square white post
+        c.rect(X1 + 2, TOP + 4, X1 + 5, TOP + 4, white.lo)
+    put(base, flight)
+    block(X0 - 1, TOP, X1 + 6, BOT)
+    L['stairs'] = dict(rect=[X0, TOP, X1 - X0 + 1, BOT - TOP + 1], top=dict(x=X0 + 15, y=TOP - 4), steps=N, down='south')
+
+
+def goal():
+    """A football goal on the boards beside the foot of the stairs, against the bathroom's wall and in front of the fig, its mouth facing right, into the room: a white
+    frame and a net. Seen from above and in front, its two posts and the bar across them make one white line down its
+    mouth (the near post a little thicker), with the net going back from it to the banister: its roof, its sides, and
+    its back. The net is see-through: a ball in it shows through the mesh. `L['goal']` is the box inside it (left, top,
+    right, bottom: the ball is in when it is inside that) and where to set off the cheering. The server (server/ball.ts)
+    lets the net catch the ball, and the app shouts GOAL."""
+    BX, MX, YN, YS, HT = 46, 64, 196, 224, 12                           # its back, its mouth, its far side and its near side (on the floor), and how tall it is
+    frame = Mat('#f4f4f0', hi='#ffffff', lo='#a9adb8')
+    mesh = rgb('#f2f4f8')
+
+    def net(c):
+        for y in range(YN - HT, YS + 1):
+            for x in range(BX, MX):
+                roof = y < YS - HT                                      # over the roof and the far side, or down the near side
+                back = x - BX < 3
+                if (x + y) % 6 == 0 or (x - y) % 6 == 0:                        # a diamond mesh
+                    c.px(x, y, mesh)
+        for x in range(BX, MX + 1):                                     # the near side's foot along the floor, and the top of its back
+            c.px(x, YS, frame.lo)
+            c.px(x, YS - HT, frame.base if x > BX + 2 else frame.lo)
+        for y in range(YN - HT, YS + 1):                                # the back of it, down at the banister
+            c.px(BX, y, frame.lo)
+        for y in range(YN - HT, YS + 1):                                # the mouth: bar and posts, one white line
+            c.px(MX, y, frame.hi); c.px(MX + 1, y, frame.base)
+        for y in range(YS - HT, YS + 1):                                # the near post, a little thicker, its right side in shade
+            c.px(MX + 2, y, frame.lo)
+        c.rect(MX - 1, YN - HT - 1, MX + 2, YN - HT - 1, frame.lo)      # the bar's far end, over the far post
+    for x in range(BX + 1, MX + 3):                                     # its shadow on the boards
+        base.px(x, YS + 1, shade(base.get(x, YS + 1), 0.25))
+    put_over(net, YS + 1, edge=False)
+    crop = occluders[-1][0]                                             # the mesh is see-through
+    crop[(crop[..., :3] == np.array(mesh, np.uint8)).all(axis=-1), 3] = 120
+    block(BX - 1, YN - 1, MX + 1, YN)                                   # its far side, its near side and its back: the ball comes in only by the mouth
+    block(BX - 1, YS - 1, MX + 1, YS)
+    block(BX - 1, YN, BX, YS)
+    L['goal'] = dict(box=[BX + 1, YN + 1, MX, YS - 1], x=MX - 6, y=(YN + YS) // 2, mouth=MX)
+
+
+def media_console():
+    """A low black media console against the near wall, to the right of the bin: the boy-cave corner. An LED strip
+    glows along its top edge, two open cubbies show a games console and a stack of comics, and on top stand the toys:
+    a lava lamp, a rainbow slinky, a yo-yo, a fidget spinner, a twisty cube and a magic 8-ball. Clicking it offers them
+    (L['held']['console']); whoever fetches one stands just above it, looking down at it."""
+    x0, x1, top = 354, 405, 309
+    def piece(c):
+        body = Mat('#24232e', hi='#3a3950', lo='#14131c')
+        c.part(rows(x0, top, x1, top + 3), Mat('#34334a', hi='#4a4966', lo='#24232e'), hi='t', lo='')      # its top, seen from above
+        c.part(rows(x0, top + 4, x1, top + 15), body, hi='', lo='rb')                                     # its front
+        for x in range(x0 + 1, x1):                                                                        # the LED strip: magenta into cyan
+            t = (x - x0) / (x1 - x0)
+            c.px(x, top + 4, mix(rgb('#ff4fd8'), rgb('#2fd3ff'), t))
+        for cx0 in (x0 + 3, x0 + 27):                                                                      # two open cubbies
+            c.rect(cx0, top + 7, cx0 + 21, top + 13, rgb('#0b0a10'))
+        c.rect(x0 + 6, top + 11, x0 + 18, top + 13, rgb('#e9ecf3')); c.rect(x0 + 6, top + 11, x0 + 18, top + 11, rgb('#ffffff'))   # a white games console, lying down
+        c.px(x0 + 8, top + 12, rgb('#4f9cf0'))
+        for k, col in enumerate(('#e5484d', '#3b82f6', '#f2c230', '#3fbf63')):                             # a stack of comics
+            c.rect(x0 + 31, top + 13 - k, x0 + 44, top + 13 - k, rgb(col))
+        for x in (x0 + 1, x1 - 2):
+            c.rect(x, top + 16, x + 1, top + 17, rgb('#0b0a10'))                                           # its feet
+        # on top, left to right
+        c.part([(top - 9, x0 + 3, x0 + 4), (top - 8, x0 + 2, x0 + 5)] + rows(x0 + 2, top - 7, x0 + 5, top - 1), Mat('#ff4f6a', hi='#ffb0a0', lo='#a8203a'), hi='tl', lo='rb')   # the lava lamp's glass
+        c.px(x0 + 3, top - 6, rgb('#ffd84a')); c.rect(x0 + 4, top - 4, x0 + 4, top - 3, rgb('#ffd84a'))  # its blobs
+        c.rect(x0 + 2, top - 10, x0 + 5, top - 10, rgb('#c9ced9')); c.rect(x0 + 1, top, x0 + 6, top + 1, rgb('#c9ced9'))   # cap and base
+        for k, col in enumerate(('#8b6be0', '#ff6fb7', '#3b82f6', '#3fbf63', '#f2c230', '#ff8f2e', '#e5484d')):    # the slinky, stepping over
+            c.rect(x0 + 9 + k, top - 2 - (k % 3 == 1), x0 + 10 + k, top, rgb(col))
+        c.rect(x0 + 20, top - 3, x0 + 22, top - 1, rgb('#e5484d')); c.px(x0 + 21, top - 2, rgb('#f4f1e9'))   # the yo-yo
+        c.rect(x0 + 21, top - 5, x0 + 21, top - 4, rgb('#26262e'))
+        for dx, dy in ((0, -3), (-2, 0), (2, 0)):                                                          # the spinner, lying flat
+            c.px(x0 + 27 + dx, top - 1 + dy // 3, rgb('#2fd3c6'))
+        c.rect(x0 + 26, top - 1, x0 + 28, top - 1, rgb('#2fd3c6')); c.px(x0 + 27, top - 1, rgb('#26262e'))
+        for i, col in enumerate(('#e5484d', '#f2c230', '#3fbf63', '#3b82f6', '#f4f1e9', '#ff8f2e', '#3fbf63', '#e5484d', '#3b82f6')):   # the cube
+            c.px(x0 + 33 + i % 3, top - 3 + i // 3, rgb(col))
+        c.part([(top - 4, x0 + 41, x0 + 43), (top - 3, x0 + 40, x0 + 44), (top - 2, x0 + 40, x0 + 44), (top - 1, x0 + 41, x0 + 43)], Mat('#1d1b22', hi='#4a4860', lo='#0b0a10'), hi='tl', lo='rb')   # the 8-ball
+        c.rect(x0 + 41, top - 3, x0 + 42, top - 2, rgb('#f4f1e9')); c.px(x0 + 42, top - 3, rgb('#1d1b22'))
+    put_over(piece, top + 17, shadow=True)
+    block(x0, top - 2, x1, top + 17)
+    L['console'] = dict(hit=[x0, top - 10, x1 - x0 + 1, 28])
 
 
 def trash_can():
@@ -1255,18 +1406,70 @@ def ball_sheet():
 
 
 DRINKS = ['beer', 'coffee', 'tiki', 'water', 'coke']
+# Everything that can be in somebody's hand, in the order of the sheet (drinks.png): what is in the fridge, then what
+# is on the coffee table, what comes out of the microwave, and the toys on the media console.
+TABLE_THINGS = ['book', 'cigarette', 'bong', 'remote', 'chips', 'vape']
+MICROWAVE_THINGS = ['pizza', 'burger', 'pasta', 'salad', 'hotdog', 'taco', 'ramen', 'popcorn']
+CONSOLE_THINGS = ['yoyo', 'slinky', 'spinner', 'cube', 'eightball']
+HELD = DRINKS + TABLE_THINGS + MICROWAVE_THINGS + CONSOLE_THINGS
 
 
 def drinks_sheet():
     """What comes out of the fridge, as it looks in somebody's hand: each in a box 10 dots by 14, standing on the bottom of it, side by side in the
-    order of DRINKS. A bottle of beer in amber glass, a mug of coffee steaming, a tiki mug with a paper umbrella and a
+    order of DRINKS. A bottle of beer in amber glass, a mug of coffee (its steam is animated by the stylesheet), a tiki mug with a paper umbrella and a
     straw, a bottle of water, and a red can that is definitely not Coke."""
-    t = Cv(10 * len(DRINKS), 14)
+    t = Cv(10 * len(HELD), 14)
+    # (the short ones are lifted off the bottom of the box, `lift` dots, so the fist that holds them does not hide them)
+    lift = dict(cigarette=0, remote=1, chips=2, pizza=2, burger=3, pasta=3, salad=3, taco=3, ramen=2, popcorn=2, yoyo=1, slinky=2, spinner=0, cube=3, eightball=3)
     pics = dict(
+        # the coffee table
+        book=(['.kwwwww.', '.krrrrr.', '.krrrrr.', '.kryyrr.', '.krrrrr.', '.krrrrr.', '.krrrrr.', '.krrrrr.', '.kkkkkk.'],     # a hardback: red, a gold title, pages along the top
+              dict(k='#5a1a1a', r='#b8322c', y='#f2c24b', w='#f4f1e9')),
+        cigarette=(['....s...', '.....s..', '....s...', '.....o..', '....w...', '...w....', '..w.....', '.a......'],          # lit, held up, a curl of smoke
+                   dict(s='#cfd6e6', o='#ff7a2a', w='#f4f1e9', a='#d9a35a')),
+        bong=(['..ss....', '..gg....', '..gg....', '..gg....', '..gg.g..', '..ggg...', '.gggg...', 'gwwwwg..', 'gwwwwg..', '.gggg...'],   # green glass, the bowl stem off the side, water in the foot
+              dict(s='#cfd6e6', g='#59b88a', w='#a9d5e6')),
+        remote=(['..kkk...', '..krk...', '..kkk...', '..kwk...', '..kbk...', '..kwk...', '..kkk...', '..kkk...'],
+                dict(k='#26262e', r='#e5484d', w='#c9cfd9', b='#3b82f6')),
+        chips=(['.yyyyy..', 'yrrrrry.', 'yrwwwry.', 'yrrrrry.', 'yyyyyyy.', 'yyyyyyy.', '.yyyyy..'],                       # a bag of crisps
+               dict(y='#f2c230', r='#d8342c', w='#fbf9f2')),
+        vape=(['...k....', '..kbk...', '..kbk...', '..kkk...', '..kgk...', '..kkk...', '..kkk...', '..kkk...'],
+              dict(k='#3a3d50', b='#59d98a', g='#9aa0b0')),
+        # the microwave
+        pizza=(['...y....', '..yry...', '..yyy...', '.yyryy..', '.yyyyy..', 'yryyyry.', 'bbbbbbb.'],                         # a slice, point up: pepperoni, the crust at the hand
+               dict(y='#f2c24b', r='#c8382c', b='#c98a4a')),
+        burger=(['.bbbbbb.', 'bwbbbwbb', 'gggggggg', 'rrrrrrrr', 'kkkkkkkk', 'bbbbbbbb', '.bbbbbb.'],                       # sesame bun, lettuce, tomato, patty
+                dict(b='#d99a4a', w='#f4ead0', g='#59b84a', r='#d8342c', k='#5a3420')),
+        pasta=(['...s.s..', '..s.s...', '.yyyyyy.', 'yryyyyry', 'wwwwwwww', '.wwwwww.', '..wwww..'],                     # a bowl of spaghetti, steaming, sauce on top
+               dict(s='#cfd6e6', y='#f2d27a', r='#c8382c', w='#f4f1e9')),
+        salad=(['..g.g...', '.gggrgg.', 'gtgggtgg', 'wwwwwwww', '.wwwwww.', '..wwww..'],
+               dict(g='#59b84a', r='#e5484d', t='#f2c230', w='#f4f1e9')),
+        hotdog=(['..b.....', '.brb....', '.byb....', '.brb....', '.byb....', '.brb....', '.byb....', '.brb....', '..b.....'],   # held upright: bun, sausage, mustard
+                dict(b='#d99a4a', r='#b8442c', y='#f2c230')),
+        taco=(['..yyyy..', '.ygrgy..', 'ykrkgky.', 'yyyyyyy.'],
+              dict(y='#f2c24b', g='#59b84a', r='#d8342c', k='#6a3a20')),
+        ramen=(['..s.s...', '.wwwwww.', '.rrrrrr.', '.wwwwww.', '.wrwwrw.', '.wwwwww.', '..wwww..'],                    # a cup of noodles, steaming
+               dict(s='#cfd6e6', w='#f4f1e9', r='#d8342c')),
+        popcorn=(['.w.w.w..', 'wwwwwww.', 'rwrwrwr.', 'rwrwrwr.', 'rwrwrwr.', '.rwrwr..'],
+                 dict(w='#fbf6e0', r='#d8342c')),
+        # the media console
+        yoyo=(['...k....', '...k....', '...k....', '..rrr...', '.rrwrr..', '..rrr...'],                                    # on its string from the finger
+              dict(k='#26262e', r='#e5484d', w='#f4f1e9')),
+        slinky=(['.ccccc..', '.ppppp..', '.bbbbb..', '.ggggg..', '.yyyyy..', '.ooooo..', '.rrrrr..'],                     # a rainbow one
+                dict(c='#8b6be0', p='#ff6fb7', b='#3b82f6', g='#3fbf63', y='#f2c230', o='#ff8f2e', r='#e5484d')),
+        spinner=(['....b...', '...bwb..', '....b...', '..b.k.b.', '.bwbkbwb', '..b...b.'],                                 # a fidget spinner, three lobes, held by its hub: the hub (k) sits under the fist
+                 dict(b='#2fd3c6', w='#f4f1e9', k='#26262e')),
+        cube=(['rryygg', 'rryygg', 'bbwwrr', 'bbwwrr', 'ggoobb', 'ggoobb'],                                              # a twisty cube, scrambled
+              dict(r='#e5484d', y='#f2c230', g='#3fbf63', b='#3b82f6', w='#f4f1e9', o='#ff8f2e')),
+        eightball=(['..kkkk..', '.kkkkkk.', 'kkwwkkkk', 'kkwkkkkk', 'kkwwkkkk', '.kkkkkk.', '..kkkk..'],
+                   dict(k='#1d1b22', w='#f4f1e9')),
+
         beer=(['...cc...', '...aa...', '...aa...', '...aa...', '..ahad..', '..ahad..', '..llll..', '..lrll..', '..ahad..', '..ahad..', '..aadd..'],      # a long-neck, in amber glass
               dict(c='#d9b24a', a='#b5651d', d='#7a3e12', h='#f0b060', l='#f1e7c8', r='#c0392b')),
-        coffee=(['..s..s..', '...s..s.', '..s..s..', '........', '.wwwwww.', '.wbbbbwk', '.wwwwwwk', '.wwwwwk.', '..wwww..', '........'],
-                dict(s='#cfd6e6', w='#f4f1e9', b='#5a3a26', k='#c9c2b4')),
+        # (no steam drawn: three rows of empty space where it was keep the mug where it always stood, and the steam is
+        # animated wisps from the stylesheet, .actor[data-drink="coffee"] .drink::after)
+        coffee=(['........', '........', '........', '........', '.wwwwww.', '.wbbbbwk', '.wwwwwwk', '.wwwwwk.', '..wwww..', '........'],
+                dict(w='#f4f1e9', b='#5a3a26', k='#c9c2b4')),
         tiki=(['...pp...', '..pppp.g', '.pppppg.', '...k.g..', '.tttttt.', '.tetett.', '.tttttt.', '.tmmmmt.', '.tttttt.', '..tttt..'],
               dict(p='#ff6fa8', g='#59d98a', k='#3a2a1a', t='#8a5a3c', e='#2a1a10', m='#f2c24b')),
         water=(['...bb...', '...bb...', '..cccc..', '.cccccc.', '.cwcccc.', '.cwcccc.', '.llllll.', '.cwcccc.', '.cccccc.', '..cccc..'],
@@ -1274,11 +1477,11 @@ def drinks_sheet():
         coke=(['........', '..ssss..', '.rrrrrr.', '.rrrrrr.', '.rwwrrr.', '.rrwwrr.', '.rrrwwr.', '.rrrrrr.', '.rrrrrr.', '..ssss..'],
               dict(r='#d8342c', w='#fbf9f2', s='#c9ced9')),
     )
-    for k, name in enumerate(DRINKS):
+    for k, name in enumerate(HELD):
         lines, colours = pics[name]
         while lines and not lines[-1].strip('.'):              # each stands on the bottom of its box, whatever its height
             lines = lines[:-1]
-        stamp(t, 1 + 10 * k, 13 - len(lines), lines, {ch: rgb(c) for ch, c in colours.items()})
+        stamp(t, 1 + 10 * k, 13 - len(lines) - lift.get(name, 0), lines, {ch: rgb(c) for ch, c in colours.items()})
     return outline(t.a)
 
 
@@ -1387,6 +1590,39 @@ def bathroom():
         c.part(rows(22, 316, 32, 321), PORC, hi='', lo='rb')
         c.rect(22, 316, 32, 316, PORC.lo)                                 # the foot of it, in the bowl's shade
     put(base, toilet, shadow=True)
+
+    # a little side table against the back wall, under the hanging plant, between the urinal and the sink, with a
+    # sudoku book and a pencil on it: clicking it opens the book (client/src/components/Sudoku.tsx). Its top is seen from
+    # above, its front has a drawer with a brass knob; the book is closed, a red cover with a white label and a grid on it
+    tx0, tx1, ttop, tfront, tfoot = 57, 69, 263, 267, 273
+
+    def side_table(c):
+        oak_ = Mat('#a0734c', hi='#c39466', lo='#6e4a2f')
+        c.part(rows(tx0, ttop, tx1, tfront - 1), oak_, hi='t', lo='')                      # the top
+        c.rect(tx0, tfront - 1, tx1, tfront - 1, oak_.hi)                                  # its front edge, catching the light
+        c.part(rows(tx0 + 1, tfront, tx1 - 1, tfoot - 2), Mat('#86603f', hi='#a0734c', lo='#5a3b24'), hi='', lo='rb')      # the front
+        c.rect(tx0 + 2, tfront + 1, tx1 - 2, tfront + 3, rgb('#93694a'))                  # the drawer, a seam under it
+        c.rect(tx0 + 2, tfront + 4, tx1 - 2, tfront + 4, rgb('#4a3018'))
+        c.rect(tx0 + 5, tfront + 2, tx0 + 7, tfront + 2, rgb('#e2b04a'))                  # its knob
+        for lx in (tx0 + 1, tx1 - 2):                                                      # two stubby feet
+            c.rect(lx, tfoot - 1, lx + 1, tfoot, rgb('#4a3018'))
+        # the book, lying open on the top: two white pages ruled in a fine grey grid, a number pencilled in here and there,
+        # the spine down the middle, and the pages' thickness along the bottom. A yellow pencil lies along the front edge
+        bx0, by0, bx1, by1 = tx0 + 1, ttop - 2, tx1 - 1, ttop + 2
+        mid = (bx0 + bx1) // 2
+        c.rect(bx0, by1 + 1, bx1, by1 + 1, rgb('#d8ccae'))                                 # the pages' edges
+        c.rect(bx0, by0, bx1, by1, rgb('#fbf8ee'))                                         # the open pages
+        for y in range(by0, by1 + 1):
+            for x in range(bx0, bx1 + 1):
+                if x != mid and ((x - bx0) % 2 == 1 or (y - by0) % 2 == 1):
+                    c.px(x, y, rgb('#c3c6d2'))                                             # the grid
+        c.rect(mid, by0, mid, by1 + 1, rgb('#9a8f7a'))                                     # the spine
+        c.px(bx0 + 2, by0 + 2, rgb('#2a2430')); c.px(mid + 2, by0, rgb('#2a2430')); c.px(bx1 - 1, by0 + 2, rgb('#2f62d8'))   # numbers
+        c.rect(bx0 + 1, ttop + 4, bx0 + 7, ttop + 4, rgb('#f2c84b'))                       # the pencil
+        c.px(bx0, ttop + 4, rgb('#3a3440')); c.px(bx0 + 8, ttop + 4, rgb('#e98aa0'))
+    put(base, side_table, shadow=True)
+    block(tx0, ttop + 2, tx1, tfoot)
+    L['sudoku'] = dict(rect=[tx0 - 1, ttop - 3, tx1 - tx0 + 3, tfoot - ttop + 5], book=[tx0 + 1, ttop - 2, tx1 - tx0 - 1, 6])
 
     def sink(c):
         c.part(rows(84, 237, 105, 252), Mat('#8a5a3c'), hi='t', lo='rb')    # mirror
@@ -1779,7 +2015,7 @@ def neon_sign():
 
 
 def ficus(px, py):
-    """A weeping fig in a big round pot, in the corner of the living room: a thin trunk, and a loose head of small
+    """A weeping fig in a big round pot, beside the stairs down, just behind the football goal: a thin trunk, and a loose head of small
     leaves with gaps of air in it. (px, py) is the middle of the pot's foot."""
     pot = Mat('#e9e2cf', hi='#fffaf0', lo='#b3a88c')
     leaf = [rgb('#2f6b3a'), rgb('#3f8a47'), rgb('#57a555'), rgb('#234f2c')]
@@ -2007,8 +2243,8 @@ class Scene(Cv):
 
 
 # The yard has four looks, one a season, each drawn by the same code from its own colours: the leaves of every kind of
-# tree, and the lawn. Summer is the one the colours above were chosen for. The app shows the one for the month (US
-# Eastern): March to May spring, June to August summer, September to November fall, December to February winter.
+# tree, and the lawn. Summer is the one the colours above were chosen for. The app shows the one for the month (on the
+# house's clock): March to May spring, June to August summer, September to November fall, December to February winter.
 SUMMER = {}                                           # summer's own colours, noted the first time a season is set (they are defined further down)
 SEASONS = dict(
     spring=dict(                                          # new leaf, the dogwoods and the little maple in blossom, a lush lawn
@@ -3064,7 +3300,7 @@ def decor():
     L['door'] = dict(x=270, y=324)
 
     plant(141, 323, ((-4, 15, -3), (-1, 22, 0), (2, 18, 3), (0, 12, -1)))
-    ficus(511, 326)
+    ficus(62, 186)                                                      # beside the stairwell, just behind the goal (its pot behind the net)
     big_leafy(366, 226)                                                 # to the left of the sofa
 
     # places to stand when away from the keyboard
@@ -3174,17 +3410,20 @@ def main():
     framed_photo(GALLERY[0], (desk_x[2] + desk_x[3] + 50) // 2 - PHOTO_W // 2, 17)
     for g in GALLERY[1:]:                                     # and four smaller ones beside it, each a different size
         framed_photo(g, *g['at'])
-    L['pcs'] = [desk_place(x, WALL) for x in desk_x]
+    L['pcs'] = [desk_place(x, WALL - DESK_UP) for x in desk_x]
     L['laptops'] = [dict(x=182, y=300), dict(x=300, y=322), dict(x=218, y=324)]
     lounge()
     bean_bags()
     arcade()
+    stairs()
+    goal()
     snack()
     cat_tree()              # (after snack, which lists the pets' other places)
     neon = neon_sign()
     lamps()
     kitchen_table()
     trash_can()
+    media_console()
     bathroom()
     decor()
     L['grid'] = grid()
@@ -3208,7 +3447,8 @@ def main():
     # from, without the half a body of padding), and the edges of the floor.
     L['blocks'] = [list(b) for b in blocked]
     L['floor'] = [10, WALL + 4, 517, FLOOR_END - 1]
-    L['drinks'] = DRINKS
+    L['drinks'] = HELD
+    L['held'] = dict(fridge=DRINKS, coffee=TABLE_THINGS, microwave=MICROWAVE_THINGS, console=CONSOLE_THINGS)
     sky, ground, clouds = window_frames()
     big(sky).save(os.path.join(pub, 'sky.png'))
     big(ground).save(os.path.join(pub, 'ground.png'))
@@ -3232,16 +3472,18 @@ def main():
     # These are the furniture itself: every seat is a place of its own (its `hit`), and open floor is somewhere to stand,
     # so none of these takes in a seat or any floor that can be walked on (the way out is the doorway, below the mat).
     # (the fridge is listed before the kitchen it stands in: the first place a click is inside is the one it means)
-    L['spots'] = [['fridge', 134, 210, 23, 56], ['kitchen', 134, 210, 64, 56],
+    # (the microwave too, on the counter; and the coffee table and the media console, each for things to hold)
+    L['spots'] = [['fridge', 134, 210, 23, 56], ['microwave', 173, 223, 20, 15], ['kitchen', 134, 210, 64, 56], ['coffee', 413, 257, 45, 21],
+                  ['console'] + L['console']['hit'],
                   ['bathroom', 4, 284, 36, 40], ['showering'] + L['shower']['rect'], ['away', 254, 324, 34, 10]]
     L['spots'] += [['trash'] + L['trash']['hit']]              # the bin: grab a wad of paper to throw at it
-    L['spots'] += [['desk', d['x'] - 25, WALL - 22, 50, d['y'] - WALL + 26] for d in L['pcs']]
+    L['spots'] += [['desk', d['x'] - 25, WALL - 22 - DESK_UP, 50, d['y'] - WALL + 26 + DESK_UP] for d in L['pcs']]
     strip, where, lights = seasonal_art()
     big(strip).save(os.path.join(pub, 'deco.png'))
     big(lights).save(os.path.join(pub, 'lights.png'))
     # where each seasonal piece is on its strip ([x, width, height]), and where they go in the room (by their bottom-left corner)
     L['deco'] = dict(size=[int(strip.shape[1]), int(strip.shape[0])], at=where)
-    L['season'] = dict(pumpkins=[[236, 327], [181, 234], [368, 314]], tree=[352, 326], lights=[6, 4, 516, 6])      # (the tree: the lounge's near left corner; the fig and the lantern have the right one)
+    L['season'] = dict(pumpkins=[[236, 327], [181, 234], [368, 314]], tree=[352, 326], lights=[6, 4, 516, 6])      # (the tree: the lounge's near left corner; the arcade machine has the right one)
     for name, tile in weather_tiles().items():
         big(tile).save(os.path.join(pub, name + '.png'))
     ww, wh = WIN[2], WIN[3]

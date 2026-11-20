@@ -14,7 +14,7 @@ try {
 } catch { /* no .env: fine */ }
 export const DATA = path.resolve(process.env.CHATTERDAY_DATA || path.join(ROOT, 'data'));
 export const UPLOADS = path.join(DATA, 'uploads');
-export const DIST = path.join(ROOT, 'client', 'dist');
+export const DIST = path.resolve(process.env.CHATTERDAY_DIST || path.join(ROOT, 'client', 'dist'));      // (another folder: a test build, so trying a change does not ship it)
 export const PORT = Number(process.env.PORT || 4477);
 /** LiveKit ports: signalling stays on loopback (we proxy it); tcp/udp carry the media. */
 const lkBase = Number(process.env.CHATTERDAY_LK_PORT || 7880);

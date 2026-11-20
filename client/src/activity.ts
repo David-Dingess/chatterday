@@ -64,7 +64,7 @@ export function pushActivity(force = false) {
   if (a.state === 'away' && lastState !== 'away') awaySince = Date.now();
   if (lastState === 'away' && a.state !== 'away' && placeSetAt < awaySince) {
     const s = S(), place = s.me && s.presence[s.me.id]?.place;
-    if (place === 'sleeping' || place === 'away') send({ t: 'place', place: '' });
+    if (place === 'sleeping' || place === 'away') send({ t: 'place', place: '', auto: true });      // (asleep for the night, the server keeps them in bed)
   }
   lastState = a.state;
   const key = a.state + '|' + a.label;
@@ -118,7 +118,8 @@ hooks.message.push((m) => {
   const mention = mentionsMe(m) || !!dm;
   if (s.prefs.notify === 'mentions' && !mention) return;
   // A small ping for every message from somebody else, with the chat open or not (but not a volley of them)
-  if (Date.now() - lastPing > 1200) { lastPing = Date.now(); chime('message'); }
+  // (a private message, or my name, gets the brighter run: those are the ones not to miss)
+  if (Date.now() - lastPing > 1200) { lastPing = Date.now(); chime(mention ? 'dm' : 'message'); }
   if (viewing) return;
   if (document.hasFocus() || typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
   const n = new Notification(dm ? `${userName(m.userId)} (private)` : `${userName(m.userId)} in Text Chat`, { body: veiled(m.content) || 'sent an attachment', silent: true, tag: `fc-${m.channelId}` });

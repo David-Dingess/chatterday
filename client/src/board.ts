@@ -56,6 +56,7 @@ function flood(x: number, y: number, c: number) {
 
 export type Step = { op: 'line'; c: number; s: number; pts: number[]; /** which of my strokes this is a piece of */ k: number } | { op: 'fill'; c: number; x: number; y: number } | { op: 'clear' } | { op: 'undo' };
 function apply(d: any) {
+  if (d.op === 'pict') return takePict(d.game);
   const c = (Number(d.c) || 0) % INKS.length;
   if (d.op === 'clear') px.fill(0);
   else if (d.op === 'reload') return void loadBoard().catch(() => {});
@@ -87,11 +88,38 @@ export function paint(canvas: HTMLCanvasElement | null) {
 
 /** Fetches the whole picture as the server has it. */
 export async function loadBoard() {
-  const r = await api<{ data: string }>('/board');
+  const r = await api<{ data: string; pict?: Pict | null }>('/board');
+  takePict(r.pict ?? null);
   const bin = atob(r.data);
   if (bin.length !== px.length) return;
   for (let i = 0; i < px.length; i++) px[i] = bin.charCodeAt(i) % INKS.length;
   changed();
 }
 hooks.ready.push(() => void loadBoard().catch(() => {}));
+
+// ───────── Draw & Guess (server/drawguess.ts) ─────────
+// The server runs the game; this keeps what it last said. Only the drawer is sent the word. Guesses are typed beside
+// the board and shown in the game's own feed, never in the text chat.
+export type Pict = {
+  by: string; round: number; rounds: number; drawer: string; phase: 'lobby' | 'drawing' | 'between' | 'over';
+  /** when this part ends, on this page's clock */ ends: number; turnMs: number;
+  /** the word as guessers see it ("_ _ A _"), the word itself (the drawer only), and the word just gone */ hint: string; word: string; was: string;
+  guessed: string[]; scores: Record<string, number>; canSwap: boolean;
+  /** who is in the game, and whether I am */ players: string[]; joined: boolean;
+  /** the game's own lines: what happened, and everybody's guesses */ feed: { k: 'sys' | 'guess' | 'got'; who?: string; text: string }[];
+};
+let pict: Pict | null = null;
+const pictWatchers = new Set<() => void>();
+function takePict(g: any) {
+  pict = g && typeof g === 'object' ? { ...g, ends: Number(g.ends) - (Number(g.now) || Date.now()) + Date.now() } : null;
+  for (const w of pictWatchers) w();
+}
+/** The game on the board just now, if there is one. */
+export const pictNow = () => pict;
+/** Calls back whenever the game changes. Returns the way to stop. */
+export function watchPict(fn: () => void) { pictWatchers.add(fn); return () => { pictWatchers.delete(fn); }; }
+/** Open a game (with so many rounds), join or leave it, start it, stop it, or ask for a different word (the drawer, once a turn). */
+export function pictDo(what: 'open' | 'join' | 'leave' | 'begin' | 'stop' | 'swap', rounds?: number) { send({ t: 'board', op: 'pict', do: what, rounds }); }
+/** A guess, from the box beside the board. */
+export function pictGuess(text: string) { send({ t: 'board', op: 'pict', do: 'guess', text }); }
 hooks.board.push(apply);

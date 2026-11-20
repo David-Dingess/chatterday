@@ -3,6 +3,9 @@ import { api, upload } from '../api';
 import { toast, useStore } from '../store';
 import { Icon, SureButton } from './ui';
 
+/** Every time zone this browser knows, for the house's clock. */
+const ZONES: string[] = (() => { try { return (Intl as unknown as { supportedValuesOf(k: string): string[] }).supportedValuesOf('timeZone'); } catch { return []; } })();
+
 // The admin's pages: who is allowed in, what the place is called, the keys for the things that need one, the
 // town the weather is read for, the picture on the wall, the soundboard, and the installer friends use.
 
@@ -13,7 +16,9 @@ type Installer = {
   serverUrl: string; built: { name: string; version: string; at: number } | null; building: boolean; failed: boolean; log: string;
   tailscaleIp: string; port: number; mediaPorts: number[];
 };
-type Config = { giphyKey: string; giphyFromEnv?: boolean; youtubeKey: boolean; town: Town | null; tz: string; hostTz: string; unit: 'F' | 'C'; photo: string | null; installer: Installer };
+/** The biggest photo the wall takes (LIMITS.photo on the server). */
+const PHOTO_MAX = 12 * 1048576;
+type Config = { giphyKey: string; giphyFromEnv?: boolean; youtubeKey: boolean; town: Town | null; tz: string; hostTz: string; envTz?: string; unit: 'F' | 'C'; photo: string | null; wall?: { id: string; url: string }[]; wallMax?: number; installer: Installer };
 
 const when = (ts: number) => new Date(ts).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 const fail = (e: any) => toast(e.message);
@@ -110,17 +115,24 @@ function Place({ cfg, reload }: { cfg: Config; reload: () => void }) {
   const [q, setQ] = useState('');
   const [towns, setTowns] = useState<Town[] | null>(null);
   const [busy, setBusy] = useState(false);
+  const [tzDraft, setTzDraft] = useState(cfg.tz);
   const save = (patch: Record<string, unknown>, said = 'Saved.') => api('/admin/settings', patch).then(() => { toast(said); reload(); }).catch(fail);
   const find = async () => {
     if (q.trim().length < 2) return;
     try { setTowns((await api<{ towns: Town[] }>(`/admin/towns?q=${encodeURIComponent(q.trim())}`)).towns); } catch (e) { fail(e); }
   };
-  const hang = async (file: File | undefined) => {
-    if (!file) return;
+  const hang = async (files: File[]) => {
+    if (!files.length) return;
     setBusy(true);
-    try { const f = await upload(file, 'photo'); await save({ photo: f.id }, 'It is on the wall.'); } catch (e) { fail(e); }
+    let hung = 0;
+    for (const file of files) {
+      if (file.size > PHOTO_MAX) { fail(new Error(`${file.name} is too big. The limit is ${PHOTO_MAX / 1048576} MB.`)); continue; }
+      try { const f = await upload(file, 'photo'); await api('/admin/settings', { wallAdd: f.id }); hung++; } catch (e) { fail(e); }
+    }
+    if (hung) { toast(hung === 1 ? 'It is on the wall.' : `${hung} photos are on the wall.`); reload(); }
     setBusy(false);
   };
+  const wallPhotos = cfg.wall ?? [];
 
   return (
     <>
@@ -129,19 +141,25 @@ function Place({ cfg, reload }: { cfg: Config; reload: () => void }) {
         <input maxLength={40} value={name} onChange={(e) => setName(e.target.value)} onBlur={() => { if (name.trim() && name.trim() !== settings.serverName) void save({ serverName: name }); }} />
       </label>
 
-      <h3>The picture on the lounge wall</h3>
-      <p className="hint">It hangs in the gold frame where the projector screen comes down. A group photo works well; anything wider than it is tall fits best.</p>
+      <h3>Photos on the lounge wall</h3>
+      <p className="hint">The wall has five frames: the big gold one and four small ones beside it. Each shows one of these photos,
+        cut to the frame's shape from the middle, and they change every day at midnight on the house's clock. Frames without a photo keep
+        their paintings. Clicking a photo in the room shows it whole. PNG, JPG or WebP, up to {PHOTO_MAX / 1048576} MB each; group photos
+        wider than they are tall suit the big frame.</p>
+      {wallPhotos.length > 0 && <div className="wall-thumbs">{wallPhotos.map((w) => (
+        <figure key={w.id}><img className="photo-thumb" src={w.url} alt="" />
+          <SureButton onSure={() => void save({ wallRemove: w.id }, 'Taken down.')}>Take down</SureButton></figure>))}</div>}
       <div className="row">
-        {settings.photo && <img className="photo-thumb" src={settings.photo} alt="The picture on the wall" />}
-        <label className="btn">{busy ? 'Hanging it…' : settings.photo ? 'Change the picture' : 'Choose a picture'}
-          <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden disabled={busy} onChange={(e) => { void hang(e.target.files?.[0]); e.target.value = ''; }} />
+        <label className="btn">{busy ? 'Hanging them…' : wallPhotos.length ? 'Add photos' : 'Choose photos'}
+          <input type="file" multiple accept="image/png,image/jpeg,image/webp" hidden disabled={busy || wallPhotos.length >= (cfg.wallMax ?? 60)} onChange={(e) => { void hang([...(e.target.files ?? [])]); e.target.value = ''; }} />
         </label>
-        {settings.photo && <SureButton onSure={() => void save({ photo: null }, 'Taken down.')}>Take it down</SureButton>}
+        {wallPhotos.length > 1 && <SureButton onSure={() => void save({ wallClear: true }, 'All taken down.')}>Take them all down</SureButton>}
+        <span className="hint">{wallPhotos.length ? `${wallPhotos.length} photo${wallPhotos.length > 1 ? 's' : ''}.` : 'No photos yet: the frames show their paintings.'}</span>
       </div>
 
       <h3>Weather and the clock</h3>
       <p className="hint">The yard and the windows show the real weather in one town, and the house keeps that town's time for everybody. It comes from Open-Meteo, which needs no key.</p>
-      <p>{cfg.town ? <>The house is in <b>{cfg.town.name}</b> ({settings.tz}).</> : <>No town picked: fair skies, and the clock follows the host PC ({cfg.hostTz}).</>}</p>
+      <p>{cfg.town ? <>The house is in <b>{cfg.town.name}</b>.</> : <>No town picked: fair skies.</>} The house's clock is on <b>{settings.tz}</b>{cfg.tz ? '' : cfg.envTz ? ' (CHATTERDAY_TZ in .env)' : " (the host PC's own)"}.</p>
       <div className="row">
         <input placeholder="Town or city" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') void find(); }} />
         <button onClick={() => void find()}>Look it up</button>
@@ -153,6 +171,13 @@ function Place({ cfg, reload }: { cfg: Config; reload: () => void }) {
       {towns && (towns.length
         ? <div className="picks">{towns.map((t) => <button key={`${t.lat},${t.lon}`} onClick={() => { setTowns(null); setQ(''); void save({ town: t }, `The house is in ${t.name}.`); }}>{t.name}</button>)}</div>
         : <p className="hint">Nothing by that name. Try the nearest bigger town.</p>)}
+      <p className="hint">The clock decides night and day in the yard, the holidays, birthdays and the times in the log. Picking a town sets it to that town's; set it here to keep another.</p>
+      <div className="row">
+        <input list="admin-tz" placeholder={cfg.envTz || cfg.hostTz} value={tzDraft} spellCheck={false} aria-label="Time zone" onChange={(e) => setTzDraft(e.target.value.trim())} />
+        <datalist id="admin-tz">{ZONES.map((z) => <option key={z} value={z} />)}</datalist>
+        <button disabled={!tzDraft || tzDraft === cfg.tz || !ZONES.includes(tzDraft)} onClick={() => void save({ tz: tzDraft }, `The clock is on ${tzDraft} now.`)}>Set the clock</button>
+        {cfg.tz && <button onClick={() => { setTzDraft(''); void save({ tz: '' }, `The clock follows ${cfg.envTz ? '.env' : 'the host PC'} now.`); }}>Use {cfg.envTz || `the host PC's (${cfg.hostTz})`}</button>}
+      </div>
 
       <h3>GIF search</h3>
       <p className="hint">The GIF button in chat searches Giphy, which needs a free key: make an account at developers.giphy.com, create an app (choose API), and paste its key here. Without one, people can still paste GIF links.</p>

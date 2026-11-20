@@ -189,17 +189,23 @@ function load(url: string) {
   return p;
 }
 
-function start(clip: Clip) {
+/** How loud an entrance sound plays, next to the same clip pressed on the soundboard. */
+const ENTRANCE_LEVEL = 0.6;
+
+function start(clip: Clip, level0 = 1) {
   const a = ac();
   const src = a.createBufferSource();
   const level = a.createGain();
-  level.gain.value = clip.gain;
+  level.gain.value = clip.gain * level0;
   src.buffer = clip.buffer;
   src.connect(level).connect(master!);
   src.onended = () => level.disconnect();
   src.start(0, clip.from, clip.length);
   playingUntil = Math.max(playingUntil, Date.now() + clip.length * 1000);
 }
+/** Wakes the sound of the soundboard and the tones from a tap: a phone (iOS above all) plays nothing until it has been
+ *  touched, and the sounds others press arrive with no tap of mine to start them. */
+export function wakeSounds() { if (!silent) ac(); }
 export async function playUrl(url: string) {
   if (silent) return;
   start(await load(url));
@@ -213,11 +219,11 @@ function busyFor(id: number, ms: number) {
   window.setTimeout(() => useStore.setState((s) => (s.soundBusy[id] === until ? { soundBusy: Object.fromEntries(Object.entries(s.soundBusy).filter(([k]) => Number(k) !== id)) } : s)), ms + 30);
 }
 /** Plays a soundboard sound, all the way through. `audible` false (deafened, say) still holds the button for its length. */
-export async function playSound(sound: { id: number; url: string }, audible = true) {
+export async function playSound(sound: { id: number; url: string }, audible = true, entrance = false) {
   busyFor(sound.id, 2500);                   // until its real length is known: the first time, it has to be fetched
   const clip = await load(sound.url);
   busyFor(sound.id, clip.length * 1000);
-  if (audible && !silent) start(clip);
+  if (audible && !silent) start(clip, entrance ? ENTRANCE_LEVEL : 1);
 }
 export const soundBusy = (id: number) => (useStore.getState().soundBusy[id] ?? 0) > Date.now();
 
@@ -227,9 +233,11 @@ const TONES: Record<string, [number, number][]> = {
   mute: [[330, 0]],
   unmute: [[494, 0]],
   message: [[1175, 0], [1568, 0.07]],          // a small two-note ping
+  dm: [[784, 0], [988, 0.06], [1175, 0.12], [1568, 0.18], [2093, 0.27], [1568, 0.36], [2093, 0.42]],      // a private message (or my name): a bright run up, and a sparkle on top
   wave: [[660, 0], [880, 0.1], [660, 0.2], [880, 0.3]],
   nudge: [[392, 0], [392, 0.14]],            // you are talking while muted
   door: [[784, 0], [587, 0.22]],             // ding-dong: somebody has signed on
+  trophy: [[523, 0], [659, 0.07], [784, 0.14], [1047, 0.21], [1319, 0.33]],      // an achievement earned (client/src/achievements.tsx): a little run up
 };
 export function chime(kind: keyof typeof TONES) {
   const { prefs, voice } = useStore.getState();
@@ -238,27 +246,29 @@ export function chime(kind: keyof typeof TONES) {
   for (const [freq, at] of TONES[kind]) {
     const o = a.createOscillator();
     const g = a.createGain();
-    o.type = 'sine';
+    // (the private-message run is a triangle, a little brighter than the others' sine, and its notes ring a little longer)
+    const bright = kind === 'dm' || kind === 'trophy', ring = bright ? 0.32 : 0.18;
+    o.type = bright ? 'triangle' : 'sine';
     o.frequency.value = freq;
     const t0 = a.currentTime + at;
     g.gain.setValueAtTime(0, t0);
     // the tones follow the soundboard's slider, but never drop so low that they are missed
     g.gain.linearRampToValueAtTime(0.1 * (0.45 + 0.55 * soundGain(prefs.soundVol)), t0 + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + ring);
     o.connect(g).connect(a.destination);
     o.onended = () => g.disconnect();
     o.start(t0);
-    o.stop(t0 + 0.2);
+    o.stop(t0 + ring + 0.02);
   }
 }
 
-hooks.sound.push((id, channelId) => {
+hooks.sound.push((id, channelId, entrance) => {
   const s = useStore.getState();
   const sound = s.sounds.find((x) => x.id === id);
   // Only in voice, and only a sound meant for the voice chat I am in. (The server sends them only there anyway;
   // this is a second lock, in case it and this page ever disagree about where I am.)
   if (!sound || s.voice.channelId == null || (channelId != null && channelId !== s.voice.channelId)) return;
-  void playSound(sound, !s.voice.deafened).catch(() => {});
+  void playSound(sound, !s.voice.deafened, entrance).catch(() => {});
 });
 
 hooks.wave.push(() => chime('wave'));

@@ -7,7 +7,8 @@ export async function api<T = any>(path: string, body?: unknown, method?: string
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw Object.assign(new Error(j.error || r.statusText), { status: r.status });
+  // (over HTTP/2, as through Cloudflare, there is no statusText: a bare 404 said nothing at all)
+  if (!r.ok) throw Object.assign(new Error(j.error || r.statusText || `the server said ${r.status}`), { status: r.status });
   return j as T;
 }
 

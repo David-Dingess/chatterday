@@ -1,0 +1,43 @@
+/* The disco lights (client/src/disco.tsx). */
+
+/* One canvas of light, two room dots to each of its dots, laid just over the room's picture (and the wall clock, the
+   whiteboard, the desks' screens, the beds: all z-index 1 or 2) and under everything that stands in the room
+   (characters, pets and props are z-index 100 and up, by where they stand), so nobody is ever lit or tinted.
+   Hard light: its dark violet dims what is under it, its bright colours throw coloured light on it. */
+.club > .disco-lights {
+  position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 3;
+  image-rendering: pixelated; pointer-events: none; mix-blend-mode: hard-light;
+}
+/* the room's own lamps are off while the disco is on */
+.club[data-disco] .club-glow { opacity: 0 !important; transition: none; }
+/* and the props standing in the room (chairs, bean bags, plants: drawn over the light) are dimmed to match the room
+   round them, without any colour: the bathroom's own are left alone (marked by disco.tsx) */
+.club[data-disco] > .club-over:not([data-disco-keep]) { filter: brightness(0.74) saturate(0.85); }
+
+/* The light switch: a cream plate on the wall with its toggle up (the room's lights on) or down (the disco). */
+.club > .disco-switch {
+  position: absolute; z-index: 4; box-sizing: border-box; cursor: pointer;
+  background: #d8d2c0; border: 1px solid #6f6a5c; box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.45);
+}
+.club > .disco-switch::before {                     /* the slot */
+  content: ''; position: absolute; left: 1px; top: 1px; width: 2px; height: 5px; background: #7d776a;
+}
+.club > .disco-switch::after {                      /* the toggle */
+  content: ''; position: absolute; left: 1px; top: 1px; width: 2px; height: 3px; background: #f4f0e4; box-shadow: 0 1px 0 #9c9584;
+}
+.club > .disco-switch.on::after { top: 3px; box-shadow: 0 -1px 0 #9c9584; }
+.club > .disco-switch:hover { outline: 1px solid var(--accent); }
+.hangout.mini .disco-switch { cursor: default; }
+.hangout.mini .disco-switch:hover { outline: none; }
+
+/* The mirror ball, on its chain from the top of the room, in front of the big photo: over the light (it is the light)
+   and under everybody. Its box clips it, so it comes down out of the ceiling and winds back up into it. */
+.club > .disco-drop { position: absolute; top: 0; z-index: 4; overflow: hidden; pointer-events: none; }
+.disco-rig { position: absolute; inset: 0; will-change: transform;
+  transition: transform 2.4s cubic-bezier(0.5, 0, 0.7, -0.15); }                 /* going up: the way down, run backwards */
+.disco-rig.down { transition: transform 2.4s cubic-bezier(0.3, 1.15, 0.5, 1); }   /* coming down: settles with a little bounce */
+.disco-rig.still { transition: none; }
+.disco-chain { position: absolute; top: 0; width: 2px;
+  background: repeating-linear-gradient(180deg, #c9ccd6 0 2px, #6d7080 2px 3px); box-shadow: 1px 0 0 rgba(0, 0, 0, 0.35); }
+.disco-ball { position: absolute; left: 0; image-rendering: pixelated; filter: drop-shadow(0 0 3px rgba(200, 220, 255, 0.55)); }
+@media (prefers-reduced-motion: reduce) { .disco-rig, .disco-rig.down { transition: none; } }

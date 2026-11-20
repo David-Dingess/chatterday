@@ -48,7 +48,7 @@ const cast = [
 // The accounts are made here, straight in the throwaway database, each with a look, a desk and (mostly) a pet.
 const PASSWORD = 'demo-password';
 const COLORS = ['#3fbf63', '#ff8f2e', '#ff6fb7', '#3b82f6', '#e5484d', '#2fd3c6', '#f2c230'];
-const you = createUser('Alex', PASSWORD, 'admin');
+const you = createUser('Avery', PASSWORD, 'admin');
 run('UPDATE users SET look = ?, pet = ?, desk = ?, color = ? WHERE id = ?', JSON.stringify(randomLook(11)), JSON.stringify({ ...randomPet(4), name: 'Biscuit' }), JSON.stringify(randomDesk(3)), '#8b6be0', you);
 const PET_NAMES = ['Mochi', 'Pepper', 'Waffles', 'Luna', 'Ziggy', 'Olive', 'Bean'];
 cast.forEach((f, k) => {
@@ -87,20 +87,20 @@ function apply(friend, what) {
   ws.on('error', () => {});
 }
 
-// The link signs you in as Alex, who is the admin.
-const link = `http://localhost:${process.env.PORT}/#/login/Alex/${PASSWORD}`;
+// The link signs you in as Avery, who is the admin.
+const link = `http://localhost:${process.env.PORT}/#/login/Avery/${PASSWORD}`;
 // DEMO_APP=1 opens it in the desktop app (with its own window frame) instead of the browser.
 const electron = path.resolve(import.meta.dirname, '..', 'desktop', 'node_modules', 'electron', 'dist', 'electron.exe');
 if (process.env.DEMO_APP && fs.existsSync(electron)) {
   const profile = path.join(os.tmpdir(), 'chatterday-demo-profile');
   fs.rmSync(profile, { recursive: true, force: true });
   fs.mkdirSync(profile, { recursive: true });
-  fs.writeFileSync(path.join(profile, 'config.json'), JSON.stringify({ serverUrl: `http://localhost:${process.env.PORT}`, pendingHash: `login/Alex/${PASSWORD}`, closeToTray: false }));
-  console.log(`\n  Chatterday demo is running in the desktop app. It signs you in as Alex, the admin.\n  Friends change what they are doing every ${STEP} seconds. Close the app window to stop the demo.\n`);
+  fs.writeFileSync(path.join(profile, 'config.json'), JSON.stringify({ serverUrl: `http://localhost:${process.env.PORT}`, pendingHash: `login/Avery/${PASSWORD}`, closeToTray: false }));
+  console.log(`\n  Chatterday demo is running in the desktop app. It signs you in as Avery, the admin.\n  Friends change what they are doing every ${STEP} seconds. Close the app window to stop the demo.\n`);
   const app = spawn(electron, [path.resolve(import.meta.dirname, '..', 'desktop')], { env: { ...process.env, CHATTERDAY_PROFILE: profile }, stdio: 'ignore' });
   app.on('exit', () => process.exit(0));
 } else {
-  console.log(`\n  Chatterday demo is running. If the page did not open, go to:\n  ${link}\n\n  It signs you in as Alex, the admin. Friends change what they are doing every ${STEP} seconds.\n  Close this window to stop the demo.\n`);
+  console.log(`\n  Chatterday demo is running. If the page did not open, go to:\n  ${link}\n\n  It signs you in as Avery, the admin. Friends change what they are doing every ${STEP} seconds.\n  Close this window to stop the demo.\n`);
   if (!process.env.DEMO_NO_OPEN) exec(`start "" "${link}"`);
 }
 

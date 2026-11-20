@@ -59,6 +59,28 @@ from tailscale.com and signs in with their own account, accepting Tailscale's Te
 only checks whether Tailscale is running (with its open-source command-line tool, BSD-3-Clause) and links to Tailscale's
 download page. Tailscale is a trademark of Tailscale Inc.; Chatterday is not affiliated with it.
 
+**FFmpeg (optional, packed into the installer only if the host provides one).** The desktop app can capture a shared
+screen on the graphics card with [FFmpeg](https://ffmpeg.org) 8.0 or later. Nothing downloads it: the host puts a build
+in `desktop\vendor\ffmpeg\` (or has one on their PATH), and `scripts/pack-ffmpeg.mjs` packs it when the installer is built.
+
+- **Licence:** LGPL-2.1-or-later (LGPL-3.0-or-later for a build configured with `--enable-version3`). The packer runs
+  `ffmpeg -version` and **refuses** any build configured with `--enable-gpl`, `--enable-nonfree`, `--enable-libx264` or
+  `--enable-libx265`, so only an LGPL build is ever passed on. (Encoding goes through the graphics card's own encoders:
+  NVENC, AMF or Quick Sync.)
+- **Shipped with it:** the build's own licence file (`resources\ffmpeg\LICENSE-ffmpeg.*` in the installed app) and
+  `resources\ffmpeg\FFMPEG-BUILD.txt`, which records that build's exact version, its full configure line, the licence it
+  is under and links to its source. `scripts/build-installer.ps1` stops if ffmpeg was packed without them.
+- **Unmodified, and a separate program.** `ffmpeg.exe` (and a "shared" build's own DLLs) are copied as they are. The app
+  starts it as its own process and reads its output; nothing of FFmpeg is linked into Chatterday. Anyone may replace it
+  with another build.
+- **Source:** the release tarball for that version at `https://ffmpeg.org/releases/` (for example
+  `ffmpeg-8.0.1.tar.xz`), or the matching commit or tag in `https://github.com/FFmpeg/FFmpeg`. `FFMPEG-BUILD.txt` names
+  the exact one. The build scripts are those of whoever made the build (for example BtbN's FFmpeg-Builds on GitHub).
+- Without a packed ffmpeg, the app uses one on the PC's PATH if it can capture, or falls back to the browser's own
+  screen capture. A PC's own ffmpeg is that person's, under whatever licence it came with.
+
+FFmpeg is a trademark of Fabrice Bellard, originator of the FFmpeg project. Chatterday is not affiliated with it.
+
 **`desktop\sharesound.exe`** is not downloaded. It is built from `desktop/sharesound.cs` in this repository, using the
 C# compiler that comes with Windows.
 
@@ -131,8 +153,8 @@ two MIT-licensed projects. Nothing was copied from either; they were looked at f
 Chatterday has nothing to do with the companies and products named in it. Some names appear only so the app can
 recognise what is running on a PC and show a friendly status ("playing Minecraft", "watching Netflix"). These include
 Steam, Epic Games, Riot Games, Xbox, GOG, Ubisoft, EA, Rockstar Games, Battle.net, Minecraft, Roblox, osu!, Dolphin,
-Melee, Overwatch, World of Warcraft, GTA V, Diablo IV, Puzzle Pirates, RuneScape/RuneLite, VLC, Plex, Netflix, Stremio,
-Kodi, Jellyfin, Disney+, YouTube, Twitch, Hulu, Prime Video, Crunchyroll, Peacock, Paramount+, Apple TV and Max (in
+World of Warcraft, GTA V, Diablo IV, VLC, Plex, Netflix, Stremio,
+Kodi, Jellyfin, Disney+, YouTube, Hulu, Prime Video, Crunchyroll, Peacock, Paramount+, Apple TV and Max (in
 `desktop/main.cjs` and `client/src/components/Settings.tsx`). GIPHY, YouTube, Google, Tailscale, LiveKit, Open-Meteo,
 Electron and Windows are named because Chatterday uses them. Every trademark belongs to its owner.
 

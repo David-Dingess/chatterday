@@ -152,3 +152,4 @@ export async function voiceToken(user: { id: string; name: string }, channelId: 
   at.addGrant({ room: `vc-${channelId}`, roomJoin: true, canPublish: true, canSubscribe: true, canPublishData: true });
   return at.toJwt();
 }
+

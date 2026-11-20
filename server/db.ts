@@ -54,9 +54,6 @@ CREATE TABLE IF NOT EXISTS stash (
 );
 CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 `);
-// entrance_for: set on a clip from the "entrance sounds" folder, to the id of the person it belongs to. Such a clip
-// is that person's own entrance sound and not a soundboard button. (Added to a table that may already exist.)
-try { db.exec('ALTER TABLE sounds ADD COLUMN entrance_for TEXT'); } catch { /* it is there already */ }
 // the arcade machine: each person's best score at each of its games
 db.exec('CREATE TABLE IF NOT EXISTS arcade_scores (game TEXT NOT NULL, user_id TEXT NOT NULL, score INTEGER NOT NULL, at INTEGER NOT NULL, PRIMARY KEY (game, user_id))');
 db.exec(`
@@ -73,9 +70,50 @@ CREATE TABLE IF NOT EXISTS playlist_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT, playlist_id INTEGER NOT NULL, video_id TEXT NOT NULL, title TEXT NOT NULL, seconds INTEGER NOT NULL DEFAULT 0
 );
 `);
-// When a saved song's title and length were last checked with YouTube: its terms ask for stored data to be refreshed
-// (or deleted) within 30 days. 0 = never, so songs saved before this column existed are checked first.
-try { db.exec('ALTER TABLE playlist_items ADD COLUMN fetched_at INTEGER NOT NULL DEFAULT 0'); } catch { /* it is there already */ }
+
+// ---- Upgrades ----------------------------------------------------------------------------------------------------
+// A database made by an older version opens in this one with nothing lost: each step below only adds (a column, an
+// index or a table), never drops or rewrites, and is safe to run again. PRAGMA user_version records the last step a
+// database has had. A v1 database (Chatterday 1.x) never set it, so it is 0 and gets every step.
+const hasColumn = (table: string, column: string) =>
+  (db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).some((c) => c.name === column);
+const addColumn = (table: string, column: string, type: string) => {
+  if (!hasColumn(table, column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+};
+const UPGRADES: (() => void)[] = [
+  // 1 (v1 -> v2)
+  () => {
+    // entrance_for: set on a clip from the "entrance sounds" folder, to the id of the person it belongs to. Such a
+    // clip is that person's own entrance sound and not a soundboard button. (Already there on most v1 servers.)
+    addColumn('sounds', 'entrance_for', 'TEXT');
+    // thread_id: a reply in a message's thread (the message it hangs off); replies are not in the chat itself
+    addColumn('messages', 'thread_id', 'INTEGER');
+    db.exec('CREATE INDEX IF NOT EXISTS messages_thread ON messages (thread_id, id)');
+    // entrance_at: when their entrance sound last played. Kept here, not only in memory, so a restart of the server
+    // does not let it play again for somebody who was announced a few minutes before.
+    addColumn('users', 'entrance_at', 'INTEGER');
+    // fetched_at: when a saved song's title and length were last checked with YouTube: its terms ask for stored data
+    // to be refreshed (or deleted) within 30 days. 0 = never, so songs saved before this column existed go first.
+    addColumn('playlist_items', 'fetched_at', 'INTEGER NOT NULL DEFAULT 0');
+  },
+];
+{
+  const at = (db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version;
+  const hadPeople = !!db.prepare('SELECT 1 FROM users LIMIT 1').get();     // (a brand-new database: nothing to say)
+  if (at > UPGRADES.length) console.error(`[db] this database is from a newer version of Chatterday (schema ${at}, this one knows ${UPGRADES.length}).`);
+  for (let v = at; v < UPGRADES.length; v++) {
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      UPGRADES[v]();
+      db.exec(`PRAGMA user_version = ${v + 1}`);
+      db.exec('COMMIT');
+      if (hadPeople) console.log(`[db] upgraded the database to schema ${v + 1}`);
+    } catch (e) {
+      db.exec('ROLLBACK');
+      throw e;
+    }
+  }
+}
 
 const cache = new Map<string, StatementSync>();
 const stmt = (sql: string) => {
