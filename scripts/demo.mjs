@@ -108,5 +108,17 @@ for (const friend of cast) friend.cookie = await join(friend.name);
 let turn = Number(process.env.DEMO_TURN) || 0;
 const tick = () => { cast.forEach((f) => apply(f, f.plan[turn % f.plan.length])); turn++; };
 tick();
-globalThis.chatterdayDemo = { tick };            // for scripts/screenshots.mjs, which moves everyone on by itself
+// For scripts/screenshots.mjs: tick moves everyone on, and floor takes you (Avery) and everyone online to that floor
+// ('' is upstairs), standing in rows from (x, y).
+const admin = { cookie: await join('Avery') };
+const floor = async (fit, x, y) => {
+  if (admin.ws?.readyState !== WebSocket.OPEN) {
+    admin.ws = new WebSocket(`ws://127.0.0.1:${process.env.PORT}/ws?kind=app`, { headers: { Cookie: admin.cookie, Origin: base } });
+    admin.ws.on('error', () => {});
+    await new Promise((res) => admin.ws.on('open', res));
+  }
+  [admin, ...cast].filter((f) => f.ws?.readyState === WebSocket.OPEN)
+    .forEach((f, k) => f.ws.send(JSON.stringify({ t: 'floor', fit, x: x + (k % 4) * 14, y: y + Math.floor(k / 4) * 14 })));
+};
+globalThis.chatterdayDemo = { tick, floor };
 if (!process.env.DEMO_HOLD) setInterval(tick, STEP * 1000);      // DEMO_HOLD=1 keeps everyone where they are, for taking pictures

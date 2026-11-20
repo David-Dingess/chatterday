@@ -6,7 +6,7 @@
 
 A private hangout for you and a few friends, hosted on your own PC.
 
-Voice chat, text chat, screen sharing, a shared soundboard, music from YouTube, and a pixel-art house where everyone's character shows what they are up to.
+Voice chat, text chat, screen sharing, a shared soundboard, music from YouTube, and a pixel-art house where everyone's character shows what they are up to. Down the stairs there's a game room, a karaoke lounge and a D&D table. Out the back door there's a campsite, a backyard pool, a lake to fish in and nine holes of mini golf.
 
 No accounts with anyone else. No monthly bill. Your chat never leaves your computer.
 
@@ -29,13 +29,15 @@ It is built for a small group. The house has six desks, and each desk turns into
 **Talking**
 
 - One voice chat and a side room for a couple of people off doing something else.
-- Screen sharing. Share a window and the others hear that program and nothing else.
+- Screen sharing. Share a window and the others hear that program and nothing else. A share nobody is watching drops to 2 frames a second until somebody looks.
+- With an LGPL build of ffmpeg packed into the installer (optional, see [docs/FFMPEG.md](docs/FFMPEG.md)), the desktop app captures with the graphics card's own encoder, which is much lighter on a PC that's also running a game.
 - A mic test, a noise gate, push to talk, and per-person volume.
 - Louder voices are turned down to match the quietest one, so nobody booms.
 
 **Chat**
 
 - One text chat for the group, plus private chats between two people.
+- Threads: reply to a message in a thread of its own, so a side conversation doesn't bury the main one.
 - GIF search, link previews, spoilers, reactions, search, file and picture uploads.
 - Chat is kept for good in a database on the host PC.
 
@@ -45,7 +47,7 @@ It is built for a small group. The house has six desks, and each desk turns into
 
 - A soundboard that belongs to the group. Add a sound and everyone gets the button.
 - A shared Player. Type a song or paste a YouTube link and it plays for everyone in voice at the same moment.
-- A whiteboard on the wall that anyone can draw on.
+- A whiteboard on the wall that anyone can draw on, and Draw & Guess on it: one person draws a word only they can see, and everyone else guesses.
 - Entrance and exit sounds, a doorbell when somebody signs on, a wave to call somebody over.
 
 **Games**
@@ -53,10 +55,50 @@ It is built for a small group. The house has six desks, and each desk turns into
 - A game table for up to four: Hearts, Spades, Rummy, Mahjong (with a coach that says how far your hand is from ready), Chess, Checkers, Go, Four in a Row and Mancala. Empty seats can be filled by the house.
 - An arcade machine with four games of its own and a high-score board.
 - A football to kick round the room, and paper to throw at the kitchen bin. The house keeps count.
+- A sudoku book on the coffee table.
+- Downstairs and outside, more (see below): pool, darts, Texas Hold'em, shuffleboard, bowling, beer pong, cornhole, horseshoes, bocce, fishing and mini golf.
+- **Play Games** lists all 21 games. Pick one and your character walks there, down the stairs or out the door if it has to.
+- Trophies for all of it, on a rack in the basement, with a progress bar for the ones you haven't earned yet.
 
 ![The game table](docs/screenshots/games.png)
 
 ![The arcade machine](docs/screenshots/arcade.png)
+
+## Downstairs and outside
+
+The house has more than one floor. Take the stairs down, or walk out of a side door, and everyone sees you go. Your friends in the list can see where you've got to ("in voice · at the lake"), and voice chat carries on wherever you are.
+
+**The game room.** A bar with stools, a jukebox, a pool table, darts, a poker table for Texas Hold'em, shuffleboard and a bowling lane. The TVs over the bar show what's on the projector upstairs.
+
+![The game room](docs/screenshots/gameroom.png)
+
+**The karaoke lounge.** A stage, a big screen and a sign-up list. Sign up with a song (searched on YouTube with the host's key, karaoke versions first) and the lounge works through the line-up in the shared Player, with an announcer calling up whoever's next.
+
+![The karaoke lounge](docs/screenshots/karaoke.png)
+
+**The D&D room.** A war table at the side of the room: upload a map and set its grid, place tokens, measure, ping, and draw. There are dice (with advantage, disadvantage and secret rolls), an initiative order and character sheets. Anybody can run it, or somebody can take the DM's chair.
+
+![The D&D room](docs/screenshots/dnd.png)
+
+**The unfinished basement.** A bare bulb, an old couch, the laundry and the trophy rack.
+
+**The campsite**, out the east door: a fire, chairs, a tent and cornhole. At night it's lit by the fire and the lanterns.
+
+![The campsite at night](docs/screenshots/outside.png)
+
+**The backyard**, out the west door: a pool, a hot tub, a patio, beer pong, horseshoes and bocce.
+
+![The backyard](docs/screenshots/backyard.png)
+
+**The lake**, down the path past the campsite. Cast, wait for a bite, set the hook and reel it in. The board by the bait shop keeps the records.
+
+![The lake](docs/screenshots/lake.png)
+
+**Mini golf**, up the path from the backyard. Nine holes over three courses, with a score card.
+
+![Mini golf](docs/screenshots/minigolf.png)
+
+Outside follows the real time of day and the season, like the yard upstairs.
 
 **The house**
 
@@ -66,7 +108,9 @@ It is built for a small group. The house has six desks, and each desk turns into
 - Grab a drink from the fridge, take a shower, sweep the floor, work out, sink into a bean bag with your phone.
 - Dance, hug, high five, or punch somebody. Pet a pet. Cats climb the cat tree.
 - Birthdays (balloons, cake, party hat), pumpkins in October, a tree in December.
-- A picture of your choosing in the gold frame on the lounge wall.
+- A picture of your choosing in the gold frame on the lounge wall, and your group's photos in the smaller frames beside it. The photos change every day at the house's midnight, with no photo shown twice in a row.
+- A clock on the wall in the house's own time zone, which the admin sets.
+- A robot vacuum that does its rounds.
 
 ## Build your character
 
@@ -149,7 +193,7 @@ Everything is in **Settings → Admin**. Nothing needs a config file.
 
 **People and invites.** Nobody gets in without an invite. Make a link, send it privately, and it works once. The newcomer picks their own name and password. You can cancel an unused invite, give somebody a new password, make somebody else an admin, or remove a person.
 
-**This place.** The name, the picture on the wall, the weather town, and the keys.
+**This place.** The name, the picture on the wall, the photos in the wall's frames, the weather town, the house's time zone (it starts as the host PC's), and the keys.
 
 **Soundboard.** Add a pile of sounds at once, or delete the ones nobody wants.
 
@@ -195,7 +239,7 @@ The house is the home screen, seen from above.
 - **Offline or away**: not in the house at all. They walk out of the door.
 - **At the computer**: at a desk. The monitor and the lights change if they are gaming or watching something.
 - **In voice**: on the sofa and the armchairs.
-- **Somebody is sharing a screen**: everyone in that voice chat moves to the theatre seats. The projector rolls down and shows the share. Click it to watch.
+- **Somebody is sharing a screen**: everyone in that voice chat moves to the theatre seats. The projector rolls down and shows the share. Click it to watch. If the sharer is in a game, the projector shows a screen for that kind of game (racing, shooter, cards and so on, all drawn for Chatterday) instead of a still of their desktop.
 - **In the side room**: round the kitchen table.
 
 ![Movie night: a shared screen on the projector](docs/screenshots/theatre.png)
@@ -233,6 +277,7 @@ Locked out as the admin? On the host PC: `node server/accounts.ts reset <name>`.
 - **GIF search** is limited by Giphy's free tier (100 searches an hour for the whole group).
 - **Music** plays in YouTube's own player, on screen: YouTube's rules don't allow sound without the picture, so folding the Player away stops it for you. Searching by name needs a YouTube API key (pasting links doesn't). A video its owner doesn't allow on other sites is skipped.
 - **A whole screen is shared without sound.** Share a window to send sound.
+- **Karaoke's song search needs the YouTube key.**
 - **One pet each.**
 - The host PC has to be on.
 
@@ -254,6 +299,7 @@ Close the window to stop it. It never touches `data/`.
 
 ```
 npm test                              # draws hundreds of random characters, pets and desks and checks every part
+node --test server/test/*.test.mjs    # the server's tests, each on a throwaway server of its own
 node scripts/test-server.mjs          # a throwaway server on port 4478
 node scripts/desktop-smoke.mjs        # drives the desktop app end to end against it
 node scripts/screenshots.mjs          # retakes the pictures in this README from the demo
@@ -266,6 +312,7 @@ node scripts/flood/run.mjs            # floods a throwaway server of its own (po
 |---|---|
 | `server/` | The Node server: web UI, chat, uploads, invites. It also runs LiveKit. The rules of each table game are in `server/games/`. |
 | `client/` | The UI (React). Built into `client/dist`, which the server hands out. |
+| `server/basement/`, `client/src/basement/` | The floors below and outside the house, and their games. A new floor needs no change anywhere else: the room and the server find it by its file name. |
 | `client/src/draw/` | The artist. Characters, pets and desks are drawn here, in the browser, dot by dot. |
 | `shared/` | The lists of parts (hair, hats, coats, desk items). The page and the server both read them. |
 | `desktop/` | The Windows app friends install. A thin shell: tray, presence, hotkeys, screen picker. |
@@ -282,7 +329,9 @@ No outside art is used. Every dot is drawn by code.
 
 **The room**: `scripts/make-clubhouse.py` draws the floor, walls, furniture and the yard in each season (it needs Python with Pillow and numpy). Edit it, run it, then `npm run build`. The neon sign on the wall is written by the same script (`SIGN_LINES`).
 
-**Cards, pieces and tiles**: `scripts/make-games.py`.
+**The other floors**: each one is drawn by its own `scripts/basement/<id>.py`, through `scripts/make-basement.py`.
+
+**Cards, pieces and tiles**: `scripts/make-games.py`. The game screens for the projector: `scripts/make-game-screens.py`.
 
 ## If something is wrong
 

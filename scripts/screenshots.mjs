@@ -117,6 +117,17 @@ try {
   await sleep(600);
   await shot('admin');
 
+  // ── downstairs and outside: everybody online goes down the stairs (or out of the door) together ──
+  const FLOORS = [['gameroom', 22, 233, 15], ['karaoke', 22, 233, 15], ['dnd', 22, 233, 15], ['outside', 36, 178, 21], ['backyard', 492, 161, 15],
+    ['lake', 202, 314, 15], ['minigolf', 474, 326, 15]];
+  for (const [fit, x, y, hour] of FLOORS) {
+    await go(`${base}/?hour=${hour}`, 3000);
+    await demo.floor(fit, x, y);
+    await sleep(5000);
+    await shot(fit);
+  }
+  await demo.floor('', 260, 200);
+
   // ── somebody new, with an invite: the welcome flow ──
   const invite = await post('/api/invites', { label: 'for Dana', hours: 72 });
   await post('/api/logout', {});
